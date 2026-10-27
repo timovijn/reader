@@ -4,12 +4,15 @@ import vm from 'node:vm';
 const source=await readFile(new URL('../worker/page.html',import.meta.url),'utf8');
 const handlers=new Map(),styles=new Map(),classes=new Set(),frames=[];
 const reset={},scope={contains:()=>false};let geometryUpdates=0;
+const feedbackClasses=new Set(),timers=new Map();let nextTimer=0;
+const feedback={textContent:'',classList:{add:name=>feedbackClasses.add(name),remove:name=>feedbackClasses.delete(name)}};
 const context={
  document:{addEventListener(name,handler,options){handlers.set(name,{handler,options});},
   documentElement:{style:{setProperty:(k,v)=>styles.set(k,v)},classList:{add:name=>classes.add(name)}},elementFromPoint:()=>null},
  window:{innerWidth:1000,innerHeight:800,scrollBy:()=>{}},
  requestAnimationFrame:callback=>{frames.push(callback);return frames.length;},
- $:selector=>selector==='#zoom-reset'?reset:scope,current:{},clearSelectionInk:()=>{},refreshReaderGeometry:()=>geometryUpdates++
+ $:selector=>selector==='#zoom-reset'?reset:selector==='#zoom-feedback'?feedback:scope,current:{},clearSelectionInk:()=>{},refreshReaderGeometry:()=>geometryUpdates++,
+ setTimeout:(callback,delay)=>{timers.set(++nextTimer,{callback,delay});return nextTimer;},clearTimeout:id=>timers.delete(id)
 };
 vm.runInNewContext(source.slice(source.indexOf('function textPinchScale('),source.indexOf('function ambientGrainMetrics(')),context);
 function fire(name,properties={}){
@@ -36,4 +39,15 @@ assert.equal(fire('touchstart',{touches:[{clientX:0,clientY:0}]}),false);
 fire('wheel',{ctrlKey:true,deltaY:-10000,deltaMode:0});assert.equal(zoom(),4);
 fire('wheel',{ctrlKey:true,deltaY:10000,deltaMode:0});assert.equal(zoom(),.65);
 assert.ok(geometryUpdates>0);
+reset.onclick();while(frames.length)frames.shift()();
+// Small wheel packets accumulate until a step is crossed, instead of being lost.
+for(let i=0;i<10;i++)fire('wheel',{ctrlKey:true,deltaY:-1,deltaMode:0});
+assert.equal(zoom(),1.1);assert.equal(feedback.textContent,'110%');
+reset.onclick();while(frames.length)frames.shift()();
+fire('touchstart',{touches:touches(100)});fire('touchmove',{touches:touches(107.5)});assert.equal(zoom(),1.1);
+fire('touchmove',{touches:touches(105)});assert.equal(zoom(),1.1);
+fire('touchmove',{touches:touches(102)});assert.equal(zoom(),1);
+assert.equal(feedback.textContent,'100%');assert.ok(feedbackClasses.has('visible'));
+const fade=[...timers.values()].find(timer=>timer.delay===1000);assert.ok(fade);fade.callback();assert.ok(!feedbackClasses.has('visible'));
 console.log('Passed: text-only trackpad/touch/Safari pinch, native-gesture cancellation, duplicate gesture prevention, normal scrolling, zoom bounds and reset.');
+console.log('Passed: discrete zoom steps, accumulated small gestures, boundary hysteresis and temporary percentage feedback.');
