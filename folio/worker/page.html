@@ -56,13 +56,13 @@ body[data-theme="dark"]{--paper:#23231f;--ink:#e5e2d8;--muted:#aaa69b;--line:#49
 .focus #reader::before{top:0}
 @media print,(forced-colors:active){#reader::before,#reader::after{display:none}}
 
-.article{max-width:calc(var(--article-width) + 52px);padding-right:76px}
+.article{max-width:calc(var(--article-width) + 52px);padding-left:76px;padding-right:24px}
 .article-body{position:relative}
-.line-numbers{position:absolute;inset:0 -34px 0 auto;width:23px;pointer-events:none;user-select:none;-webkit-user-select:none;direction:ltr}
+.line-numbers{position:absolute;inset:0 auto 0 -34px;width:23px;pointer-events:none;user-select:none;-webkit-user-select:none;direction:ltr}
 .line-number{position:absolute;inset-inline-end:0;color:var(--muted);opacity:.38;font:400 9px/1 var(--font-mono);font-variant-numeric:tabular-nums;text-align:right}
-.reading-target{position:absolute;left:30px;white-space:nowrap;color:var(--muted);opacity:.65;font:400 9px/1 var(--font-mono);font-variant-numeric:tabular-nums;text-align:left}
+.reading-target{position:fixed;left:0;top:0;white-space:nowrap;color:var(--muted);opacity:.65;font:400 9px/1 var(--font-mono);font-variant-numeric:tabular-nums;text-align:right}
 .reading-target.is-complete{color:var(--ink);opacity:.75}
-@media(max-width:700px){.article{padding-inline:22px 76px}.line-numbers{left:auto;right:-28px;width:20px}.line-number,.reading-target{font-size:8px}.reading-target{left:25px}}
+@media(max-width:700px){.article{padding-inline:76px 22px}.line-numbers{left:-28px;right:auto;width:20px}.line-number,.reading-target{font-size:8px}.reading-target{left:0}}
 @media print,(forced-colors:active){.line-numbers{display:none}}
 
 .browser-import-link{font-size:10px;color:var(--muted);text-decoration:underline;text-underline-offset:4px;padding:0;margin-top:13px}
@@ -196,6 +196,22 @@ function scheduleReaderEdges(){
  });
 }
 let lineNumberFrame=0,readerLines=[],readerTarget=null;
+let targetMotionFrame=0,targetRenderedY=null,targetGoalY=0,targetLastTime=0,targetComplete=false;
+const readingProgressMotion=matchMedia('(prefers-reduced-motion: reduce)');
+function smoothReadingPosition(current,target,elapsed){
+ if(Math.abs(target-current)<.1)return target;
+ return current+(target-current)*(1-Math.exp(-Math.max(0,elapsed)/130));
+}
+function paintReadingTarget(time){
+ targetMotionFrame=0;
+ if(!current||!readerTarget?.isConnected)return;
+ const elapsed=targetLastTime?Math.min(64,time-targetLastTime):16;targetLastTime=time;
+ targetRenderedY=readingProgressMotion.matches?targetGoalY:smoothReadingPosition(targetRenderedY??targetGoalY,targetGoalY,elapsed);
+ if(Math.abs(targetGoalY-targetRenderedY)<.1)targetRenderedY=targetGoalY;
+ readerTarget.style.transform='translateY('+targetRenderedY+'px)';
+ readerTarget.classList.toggle('is-complete',targetComplete&&Math.abs(targetRenderedY-targetGoalY)<.5);
+ if(targetRenderedY!==targetGoalY)targetMotionFrame=requestAnimationFrame(paintReadingTarget);else targetLastTime=0;
+}
 function readingTargetPosition(lines,articleTop,scrollY,viewportHeight,headerHeight,maxScroll){
  if(!lines.length)return{top:0,height:0,progress:0,line:0};
  const first=lines[0],last=lines.at(-1);
@@ -209,13 +225,21 @@ function readingTargetPosition(lines,articleTop,scrollY,viewportHeight,headerHei
 }
 function updateReadingTarget(){
  if(!current||!readerTarget||!readerLines.length)return;
- const root=$('#article-body');
- const position=readingTargetPosition(readerLines,root.getBoundingClientRect().top+window.scrollY,window.scrollY,window.innerHeight,$('.reader-top').getBoundingClientRect().height,Math.max(0,document.documentElement.scrollHeight-window.innerHeight));
- readerTarget.style.top=position.top+'px';readerTarget.style.lineHeight=position.height+'px';
- readerTarget.classList.toggle('is-complete',position.progress>=1);
+ const root=$('#article-body'),rect=root.getBoundingClientRect();
+ const position=readingTargetPosition(readerLines,rect.top+window.scrollY,window.scrollY,window.innerHeight,$('.reader-top').getBoundingClientRect().height,Math.max(0,document.documentElement.scrollHeight-window.innerHeight));
+ // Smooth viewport coordinates, so normal scrolling doesn't make an absolute
+ // marker jump upwards before it catches up with its next document position.
+ targetGoalY=rect.top+position.top;targetComplete=position.progress>=1;
+ readerTarget.style.left=(readerTarget.parentElement.getBoundingClientRect().left-8-readerTarget.getBoundingClientRect().width)+'px';
+ readerTarget.style.lineHeight=position.height+'px';
+ if(targetRenderedY===null||readingProgressMotion.matches){
+  targetRenderedY=targetGoalY;readerTarget.style.transform='translateY('+targetGoalY+'px)';
+  readerTarget.classList.toggle('is-complete',targetComplete);
+ }else if(!targetMotionFrame)targetMotionFrame=requestAnimationFrame(paintReadingTarget);
  $('#progress').setAttribute('aria-valuenow',String(Math.round(position.progress*100)));
  $('#progress').setAttribute('aria-valuetext','Line '+position.line+' of '+readerLines.length);
 }
+readingProgressMotion.addEventListener('change',updateReadingTarget);
 function scheduleLineNumbers(){
  if(!current||lineNumberFrame)return;
  lineNumberFrame=requestAnimationFrame(()=>{
@@ -241,7 +265,8 @@ function scheduleLineNumbers(){
   const gutter=document.createElement('div');gutter.className='line-numbers';gutter.setAttribute('aria-hidden','true');
   lines.forEach((line,index)=>{const number=document.createElement('span');number.className='line-number';number.textContent=String(index+1);number.style.top=line.top+'px';number.style.lineHeight=line.height+'px';gutter.append(number)});
   readerLines=lines;
-  readerTarget=document.createElement('span');readerTarget.className='reading-target';readerTarget.textContent='/ '+lines.length;
+  readerTarget=document.createElement('span');readerTarget.className='reading-target';readerTarget.textContent=String(lines.length);
+  if(targetMotionFrame)cancelAnimationFrame(targetMotionFrame);targetMotionFrame=0;targetRenderedY=null;targetLastTime=0;
   if(lines.length)gutter.append(readerTarget);
   root.append(gutter);updateReadingTarget();scheduleSelectionInk();
  });

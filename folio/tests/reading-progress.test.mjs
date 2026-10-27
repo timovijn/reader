@@ -16,3 +16,13 @@ for(const scroll of [400,1000,2000,3000]){const y=300+at(scroll).top-scroll;asse
 const short=position([{top:0,height:24},{top:40,height:24}],300,0,800,75,0);assert.equal(short.progress,1);assert.equal(short.top,40);
 assert.equal(position([],0,0,800,75,0).progress,0);
 console.log('Passed: travelling total position, end-line alignment, reverse scrolling, visible gutter placement and short articles.');
+const smoothStart=source.indexOf('function smoothReadingPosition(');
+const smoothEnd=source.indexOf('\nfunction paintReadingTarget',smoothStart);
+const smooth=vm.runInNewContext('('+source.slice(smoothStart,smoothEnd)+')');
+let y=0;
+for(let i=0;i<120;i++){const next=smooth(y,100,16);assert.ok(next>=y&&next<=100);y=next;}
+assert.equal(y,100,'The total settles exactly onto its final line');
+assert.ok(smooth(100,0,16)>0&&smooth(100,0,16)<100,'Reverse scrolling is also eased');
+let slow=0,fast=0;for(let i=0;i<10;i++)slow=smooth(slow,100,16);for(let i=0;i<20;i++)fast=smooth(fast,100,8);
+assert.ok(Math.abs(slow-fast)<.00001,'Easing is independent of display refresh rate');
+console.log('Passed: smooth forward/reverse movement, no overshoot, exact settling and refresh-rate independence.');
