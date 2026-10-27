@@ -134,9 +134,9 @@ html.reading{scrollbar-width:none}html.reading::-webkit-scrollbar{display:none}
 /* Full-viewport mesh. Reference samples: shadow #44423b, mid #737063,
    centre #9a9688, highlight #bfbcb4. Lift shadows for readable dark text.
    Native gradients stay resolution independent; only transforms animate. */
-body{isolation:isolate;--ambient-base:#b7b4aa;--ambient-shadow:rgba(68,66,59,.6);--ambient-mid:rgba(115,112,99,.24);--ambient-light:rgba(191,188,180,.92);--paper:#b7b4aa;--ink:#24231e;--muted:#414037;--grain-opacity:.032;background:var(--ambient-base)}
-body[data-theme="white"]{--ink:#252525;--ambient-base:#f5f5ef;--ambient-shadow:rgba(152,160,139,.16);--ambient-mid:rgba(197,195,177,.2);--ambient-light:rgba(255,255,255,.95);--paper:#f5f5ef;--muted:#65665c;--grain-opacity:.026}
-body[data-theme="dark"]{--ink:#e5e2d8;--ambient-base:#25271f;--ambient-shadow:rgba(8,15,9,.62);--ambient-mid:rgba(80,79,56,.32);--ambient-light:rgba(130,128,99,.2);--paper:#25271f;--muted:#b5b5a3;--grain-opacity:.032}
+body{isolation:isolate;--ambient-base:#b7b4aa;--ambient-shadow:rgba(68,66,59,.6);--ambient-mid:rgba(115,112,99,.24);--ambient-light:rgba(191,188,180,.92);--paper:#b7b4aa;--ink:#24231e;--muted:#414037;--grain-opacity:.075;background:var(--ambient-base)}
+body[data-theme="white"]{--ink:#252525;--ambient-base:#f5f5ef;--ambient-shadow:rgba(152,160,139,.16);--ambient-mid:rgba(197,195,177,.2);--ambient-light:rgba(255,255,255,.95);--paper:#f5f5ef;--muted:#65665c;--grain-opacity:.055}
+body[data-theme="dark"]{--ink:#e5e2d8;--ambient-base:#25271f;--ambient-shadow:rgba(8,15,9,.62);--ambient-mid:rgba(80,79,56,.32);--ambient-light:rgba(130,128,99,.2);--paper:#25271f;--muted:#b5b5a3;--grain-opacity:.075}
 .ambient-background{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;contain:strict;background:var(--ambient-base)}
 .ambient-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .ambient-background[data-renderer="gpu"] .ambient-field,.ambient-background[data-renderer="gpu"] .ambient-grain{display:none}
@@ -554,6 +554,7 @@ function createAmbientRenderer(){
    precision highp float;
    uniform vec2 resolution;
    uniform float time;
+   uniform float grainStrength;
    uniform vec4 baseColor,shadowColor,midColor,lightColor;
    float field(vec2 uv,vec2 centre,vec2 radius){
     return 1.0-smoothstep(0.0,1.0,length((uv-centre)/radius));
@@ -563,21 +564,36 @@ function createAmbientRenderer(){
     p+=dot(p,p.yzx+33.33);
     return fract((p.x+p.y)*p.z);
    }
+   float flowNoise(vec2 point){
+    vec2 cell=floor(point),f=fract(point);
+    f=f*f*(3.0-2.0*f);
+    return mix(mix(random(cell),random(cell+vec2(1.0,0.0)),f.x),
+               mix(random(cell+vec2(0.0,1.0)),random(cell+vec2(1.0,1.0)),f.x),f.y);
+   }
    vec3 layer(vec3 colour,vec4 paint,float weight){return mix(colour,paint.rgb,paint.a*weight);}
    void main(){
     vec2 uv=gl_FragCoord.xy/resolution;
     uv.y=1.0-uv.y;
-    vec2 drift=vec2(sin(time/74.0),sin(time/93.0))*0.045;
+    // Warp the colour fields into irregular contours, with independent, slow
+    // currents rather than moving a set of circular gradients together.
+    vec2 warp=vec2(flowNoise(uv*2.6+vec2(time/210.0,-time/287.0)),
+                   flowNoise(uv*2.4+vec2(17.3-time/263.0,8.7+time/193.0)))-0.5;
+    uv+=warp*0.32;
+    vec2 drift=vec2(sin(time/74.0),sin(time/93.0))*0.055;
+    vec2 counter=vec2(sin(time/113.0+2.1),cos(time/81.0+1.3))*0.065;
     vec3 colour=baseColor.rgb;
     colour=layer(colour,lightColor,field(uv,vec2(0.14,0.92)-drift,vec2(0.9,1.1)));
-    colour=layer(colour,midColor,field(uv,vec2(0.9,0.42)+drift,vec2(0.9,1.0)));
+    colour=layer(colour,midColor,field(uv,vec2(0.9,0.42)+counter,vec2(0.9,1.0)));
     colour=layer(colour,shadowColor,field(uv,vec2(0.02,0.0)+drift,vec2(1.12,1.3)));
-    colour=layer(colour,lightColor,0.18*field(uv,vec2(0.76,0.18)-drift,vec2(0.9,1.0)));
-    colour=layer(colour,shadowColor,0.18*field(uv,vec2(0.66,0.88)+drift,vec2(0.95,1.1)));
+    colour=layer(colour,lightColor,0.18*field(uv,vec2(0.76,0.18)-counter,vec2(0.9,1.0)));
+    colour=layer(colour,shadowColor,0.18*field(uv,vec2(0.66,0.88)+counter,vec2(0.95,1.1)));
     // Stationary, zero-mean triangular noise before the final 8-bit write.
     // The same monochrome offset preserves the palette and avoids colour specks.
     float dither=(random(gl_FragCoord.xy)+random(gl_FragCoord.xy+vec2(139.7,73.1))-1.0)*1.5/255.0;
-    gl_FragColor=vec4(clamp(colour+dither,0.0,1.0),1.0);
+    // Visible film grain is separate from the anti-banding dither, and remains
+    // fixed to the screen so the slowly flowing colour never looks like static.
+    float grain=(random(gl_FragCoord.xy+vec2(42.3,91.7))+random(gl_FragCoord.xy+vec2(217.1,14.3))-1.0)*grainStrength;
+    gl_FragColor=vec4(clamp(colour+dither+grain,0.0,1.0),1.0);
    }
   `);
   program=gl.createProgram();gl.attachShader(program,vertex);gl.attachShader(program,fragment);gl.linkProgram(program);
@@ -587,7 +603,7 @@ function createAmbientRenderer(){
   buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
   gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);
   const position=gl.getAttribLocation(program,'position');gl.enableVertexAttribArray(position);gl.vertexAttribPointer(position,2,gl.FLOAT,false,0,0);
-  const uniforms=Object.fromEntries(['resolution','time','baseColor','shadowColor','midColor','lightColor'].map(name=>[name,gl.getUniformLocation(program,name)]));
+  const uniforms=Object.fromEntries(['resolution','time','grainStrength','baseColor','shadowColor','midColor','lightColor'].map(name=>[name,gl.getUniformLocation(program,name)]));
   function colour(value){
    value=value.trim();
    if(/^#[0-9a-f]{6}$/i.test(value))return[1,3,5].map(i=>parseInt(value.slice(i,i+2),16)/255).concat(1);
@@ -597,6 +613,7 @@ function createAmbientRenderer(){
   function updateTheme(){
    if(stopped)return;
    const styles=getComputedStyle(document.body);
+   gl.uniform1f(uniforms.grainStrength,document.body.dataset.theme==='dark'?.018:.024);
    for(const [uniform,variable] of [['baseColor','base'],['shadowColor','shadow'],['midColor','mid'],['lightColor','light']])gl.uniform4fv(uniforms[uniform],colour(styles.getPropertyValue('--ambient-'+variable)));
    draw(performance.now());
   }
