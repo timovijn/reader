@@ -48,13 +48,6 @@ footer{border-top:1px solid var(--line);max-width:1060px;margin:auto;padding:21p
 body[data-theme="dark"]{--paper:#23231f;--ink:#e5e2d8;--muted:#aaa69b;--line:#49483f;--panel:#35352e}body[data-theme="white"]{--paper:#fff;--ink:#252525;--muted:#777;--line:#ddd;--panel:#f1f1ef}.focus header,.focus .reader-top{display:none}.focus .article{margin-top:65px}.focus-exit{position:fixed;bottom:24px;right:24px;border:1px solid var(--line);background:var(--paper);padding:10px 16px;font-size:10px;z-index:5}
 @media(max-width:700px){header{height:78px;padding:0 23px}.nav{gap:17px}.nav button{font-size:10px}.brand{font-size:21px}main.home{padding:0 23px}.intro{padding:59px 0 52px}.intro h1{font-size:37px;letter-spacing:-1.5px}.intro>p{font-size:11px}.eyebrow{font-size:9px}.url-form{gap:8px;padding-left:12px}.url-form>svg{display:none}.url-form input{font-size:11px}.primary{padding:12px;font-size:10px;gap:8px}.section-heading>span,.section-heading h2 span{display:none}.card{grid-template-columns:2ch 1fr auto;gap:12px;padding:24px 0}.card h3{font-size:16px}.card-meta{font-size:8px;gap:6px;flex-wrap:wrap}.card p{font-size:10px}.card-bottom>span{display:none}.card-bottom{justify-content:flex-end}.manifesto p{font-size:9px}footer{padding:20px 23px;font-size:8px}.reader-top{padding:17px 23px}.reader-actions{gap:6px}.reader-actions button{padding:7px}.reader-actions .action-label,.back span{display:none}.settings{right:23px;top:60px}.article{margin-top:38px}.article h1{font-size:30px}.article .dek{font-size:17px}.article-body{font-size:calc(var(--article-size) - 1px)}.article-end{font-size:9px}}
 
-/* Fade the viewport edges without intercepting article links or controls. */
-#reader{--reader-fade-size:clamp(28px,6vh,56px)}
-#reader::before,#reader::after{content:"";position:fixed;left:0;right:0;height:var(--reader-fade-size);pointer-events:none;z-index:2}
-#reader::before{top:var(--reader-fade-top,0px);background:linear-gradient(to bottom,var(--paper),transparent)}
-#reader::after{bottom:0;background:linear-gradient(to top,var(--paper),transparent)}
-.focus #reader::before{top:0}
-@media print,(forced-colors:active){#reader::before,#reader::after{display:none}}
 
 .article{max-width:calc(var(--article-width) + 16px);padding-left:40px;padding-right:24px}
 .article-body{position:relative}
@@ -143,12 +136,11 @@ body[data-theme="dark"]{--ink:#e5e2d8;--ambient-base:#25271f;--ambient-shadow:rg
 .ambient-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .ambient-background[data-renderer="gpu"] .ambient-field,.ambient-background[data-renderer="gpu"] .ambient-grain,.ambient-background[data-renderer="gpu"] .ambient-highlight{display:none}
 .ambient-field{position:absolute;inset:-24%;background:radial-gradient(ellipse at 8% 5%,var(--ambient-shadow) 0%,transparent 59%),radial-gradient(ellipse at 90% 42%,var(--ambient-mid) 0%,transparent 62%),radial-gradient(ellipse at 14% 92%,var(--ambient-light) 0%,transparent 62%)}
+.ambient-field{transform:translate(var(--ambient-layout-x,0%),var(--ambient-layout-y,0%)) rotate(var(--ambient-layout-angle,0deg)) scale(1.1)}
 .ambient-field::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 76% 18%,var(--ambient-light) 0%,transparent 58%),radial-gradient(ellipse at 66% 88%,var(--ambient-shadow) 0%,transparent 65%);opacity:.18}
 .ambient-grain{position:absolute;inset:0;opacity:var(--grain-opacity);background-image:var(--ambient-noise,url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='192' height='192' viewBox='0 0 192 192'%3E%3Cfilter id='grain' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Cpath fill='%23000' filter='url(%23grain)' d='M0 0h192v192H0z'/%3E%3C/svg%3E"));background-size:var(--ambient-noise-size,192px) var(--ambient-noise-size,192px);mix-blend-mode:normal}
 /* Neutral, uncorrelated noise masks colour steps without darkening the paper. */
 .reader-panel{background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:blur(14px)}
-#reader::before{background:linear-gradient(to bottom,color-mix(in srgb,var(--paper) 35%,transparent),transparent)}
-#reader::after{background:linear-gradient(to top,color-mix(in srgb,var(--paper) 35%,transparent),transparent)}
 @media(prefers-reduced-motion:reduce){.ambient-field,.ambient-field::after{animation:none;will-change:auto}}
 @media print{.ambient-background{display:none}body,body[data-theme]{background:white;color:black}}
 @media(forced-colors:active){.ambient-background{display:none}.reader-panel{background:Canvas;backdrop-filter:none}}
@@ -238,7 +230,7 @@ function renderBody(blocks,base){
   const el=document.createElement(tag);if(Array.isArray(content))renderInline(el,content,base);else el.textContent=text;root.append(el);
  }
 }
-function openArticle(article){clearSelectionInk();current=article;document.body.classList.add('focus');document.documentElement.classList.add('reading');setReaderControls(false);$('#scroll-dot').hidden=false;$('#article-body').dir=['rtl','ltr'].includes(article.dir)?article.dir:'auto';$('#home').hidden=true;$('#reader').hidden=false;$('#settings').hidden=true;$('#settings-toggle').setAttribute('aria-expanded','false');$('#article-title').textContent=article.title;$('#article-source').textContent=article.url?new URL(article.url).hostname.replace(/^www\./,''):article.category||'A moment to yourself';$('#article-dek').textContent=article.excerpt||'';$('#article-dek').hidden=!article.excerpt;$('#article-byline').textContent=[article.author||(!article.url?'Folio':''),article.minutes+' min read',article.url?'Reading view':'Original sample essay'].filter(Boolean).join(' · ');renderBody(article.body,article.url);$('#original').hidden=!article.url;if(article.url)$('#original').href=article.url;updateBookmark();document.title=article.title+' — Folio';window.scrollTo(0,0);$('#article-title').tabIndex=-1;$('#article-title').focus({preventScroll:true});resetScrollArrow();scheduleReaderEdges();scheduleLineNumbers();scheduleScrollDot();}
+function openArticle(article){clearSelectionInk();current=article;document.body.classList.add('focus');document.documentElement.classList.add('reading');setReaderControls(false);$('#scroll-dot').hidden=false;$('#article-body').dir=['rtl','ltr'].includes(article.dir)?article.dir:'auto';$('#home').hidden=true;$('#reader').hidden=false;$('#settings').hidden=true;$('#settings-toggle').setAttribute('aria-expanded','false');$('#article-title').textContent=article.title;$('#article-source').textContent=article.url?new URL(article.url).hostname.replace(/^www\./,''):article.category||'A moment to yourself';$('#article-dek').textContent=article.excerpt||'';$('#article-dek').hidden=!article.excerpt;$('#article-byline').textContent=[article.author||(!article.url?'Folio':''),article.minutes+' min read',article.url?'Reading view':'Original sample essay'].filter(Boolean).join(' · ');renderBody(article.body,article.url);$('#original').hidden=!article.url;if(article.url)$('#original').href=article.url;updateBookmark();document.title=article.title+' — Folio';window.scrollTo(0,0);$('#article-title').tabIndex=-1;$('#article-title').focus({preventScroll:true});resetScrollArrow();scheduleLineNumbers();scheduleScrollDot();}
 function goHome(nextTab=tab){clearSelectionInk();tab=nextTab;current=null;document.body.classList.remove('focus');document.documentElement.classList.remove('reading');setReaderControls(false);$('#scroll-dot').hidden=true;$('#home').hidden=false;$('#reader').hidden=true;document.title='Folio — A little room to read';renderCards();window.scrollTo(0,0)}
 function extract(html,url){const doc=new DOMParser().parseFromString(html,'text/html');const meta=name=>doc.querySelector('meta[property="'+name+'"],meta[name="'+name+'"]')?.getAttribute('content')?.trim();const title=(meta('og:title')||doc.querySelector('h1')?.textContent||doc.title||'Untitled article').trim().slice(0,300);const author=(meta('author')||doc.querySelector('[rel="author"]')?.textContent||'').trim().slice(0,160);const excerpt=(meta('description')||meta('og:description')||'').slice(0,400);doc.querySelectorAll('script,style,nav,header,footer,aside,form,button,input,iframe,svg,img,picture,source,figcaption,noscript,dialog,[hidden],[aria-hidden="true"],[role="navigation"],[role="dialog"],.advertisement,.ads,.cookie-banner,.newsletter,.related-posts').forEach(x=>x.remove());const candidates=[...doc.querySelectorAll('article,main,[role="main"],.post-content,.entry-content,.article-body,.story-body')];const score=node=>[...node.querySelectorAll('p')].reduce((s,p)=>s+Math.max(0,(p.textContent||'').length-(p.querySelector('a')?.textContent?.length||0)*2),0);let root=candidates.sort((a,b)=>score(b)-score(a))[0];if(!root||score(root)<250){const parentScores=new Map();doc.querySelectorAll('p').forEach(p=>{if(p.textContent.length>70){const par=p.parentElement;parentScores.set(par,(parentScores.get(par)||0)+p.textContent.length)}});root=[...parentScores.entries()].sort((a,b)=>b[1]-a[1])[0]?.[0]||doc.body}const blocks=[];const nodes=root.querySelectorAll('h2,h3,p,blockquote,pre,li');for(const node of nodes){if(node.parentElement?.closest('blockquote,pre,li'))continue;const text=(node.textContent||'').replace(/\s+/g,' ').trim();if(text.length<3||text===title)continue;blocks.push([node.tagName==='LI'?'p':node.tagName.toLowerCase(),node.tagName==='LI'?'• '+text:text])}const words=blocks.filter(b=>b[0]!=='img').map(b=>b[1]).join(' ').split(/\s+/).length;if(words<100)throw Error('There is not enough readable article text on this page. It may require a sign-in or load its content with JavaScript. Try pasting the text instead.');return{id:url,title,author,excerpt,body:blocks,minutes:Math.max(1,Math.ceil(words/230)),url,category:'From the web'}}
 // This function runs only when the reader clicks their saved bookmark on an
@@ -279,14 +271,7 @@ $('#browser-import-open').onclick=()=>$('#browser-import-dialog').showModal();
 $('#browser-import-form').onsubmit=e=>{e.preventDefault();try{const article=normaliseBrowserClip($('#browser-import-text').value.trim());$('#browser-import-error').hidden=true;$('#browser-import-dialog').close();$('#browser-import-form').reset();openArticle(article);}catch(error){$('#browser-import-error').textContent=error.message;$('#browser-import-error').hidden=false;}};
 $('#url-form').onsubmit=async e=>{e.preventDefault();$('#error').hidden=true;$('#read-button').disabled=true;$('#read-button').textContent='Opening…';try{const url=$('#url-input').value.trim();if(!/^https?:\/\//i.test(url))throw Error('Please paste a complete http or https article link.');const response=await fetch('/api/article',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({url}),signal:AbortSignal.timeout(65000)});const result=await response.json();if(!response.ok)throw Error(result.error||'Unable to open the article.');openArticle(result.article||extract(result.html,result.url));}catch(error){$('#error').textContent=error.name==='TimeoutError'?'This article took too long to open. Please try again.':error.message;$('#error').hidden=false;if(/did not allow|browser verification|requires a sign-in|requires a subscription/i.test(error.message))$('#browser-import-open').textContent='Import from your browser';}finally{$('#read-button').disabled=false;$('#read-button').textContent='Read'}};
 $('#paste-form').onsubmit=e=>{e.preventDefault();const text=$('#paste-text').value.trim();if(text.length<50)return;const article={id:'pasted-'+Date.now(),title:$('#paste-title').value.trim(),excerpt:'',author:'Pasted article',category:'Your own words',minutes:Math.max(1,Math.ceil(text.split(/\s+/).length/230)),body:text.split(/\n\s*\n/).map(t=>['p',t.trim()]).filter(t=>t[1])};$('#paste-dialog').close();openArticle(article);};
-$('#back').onclick=()=>goHome();$('#brand').onclick=()=>goHome('discover');$('#nav-discover').onclick=()=>goHome('discover');$('#nav-saved').onclick=()=>goHome('saved');$('#bookmark').onclick=()=>current&&toggleSave(current);$('#paste-open').onclick=()=>$('#paste-dialog').showModal();$('#about-open').onclick=()=>$('#about-dialog').showModal();document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.closest('dialog').close());document.querySelectorAll('dialog').forEach(d=>d.addEventListener('click',e=>{if(e.target===d){const r=d.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)d.close()}}));$('#settings-toggle').onclick=()=>{$('#settings').hidden=!$('#settings').hidden;$('#settings-toggle').setAttribute('aria-expanded',String(!$('#settings').hidden))};$('#font-weight').onchange=e=>{prefs.weight=Number(e.target.value);applyPrefs()};$('#size-down').onclick=()=>{prefs.size-=1;applyPrefs()};$('#size-up').onclick=()=>{prefs.size+=1;applyPrefs()};document.querySelectorAll('button[data-theme]').forEach(b=>b.onclick=()=>{prefs.theme=b.dataset.theme;applyPrefs()});$('#typeface').onchange=e=>{prefs.font=e.target.value;applyPrefs()};document.querySelectorAll('button[data-width]').forEach(b=>b.onclick=()=>{prefs.width=Number(b.dataset.width);applyPrefs()});$('#focus').onclick=()=>{setReaderControls(false);$('#article-title').focus({preventScroll:true})};document.addEventListener('keydown',e=>{if(e.key==='Escape'&&current){setReaderControls(false);$('#settings').hidden=true;$('#settings-toggle').setAttribute('aria-expanded','false');if($('.reader-panel').contains(document.activeElement))$('#article-title').focus({preventScroll:true})}});document.addEventListener('click',e=>{if(current&&!e.target.closest('.reader-rail, .reader-menu-toggle'))setReaderControls(false)});let readerFrame=0;
-function scheduleReaderEdges(){
- if(!current||readerFrame)return;
- readerFrame=requestAnimationFrame(()=>{
-  readerFrame=0;if(!current)return;
-  $('#reader').style.setProperty('--reader-fade-top','0px');scheduleScrollDot();
- });
-}
+$('#back').onclick=()=>goHome();$('#brand').onclick=()=>goHome('discover');$('#nav-discover').onclick=()=>goHome('discover');$('#nav-saved').onclick=()=>goHome('saved');$('#bookmark').onclick=()=>current&&toggleSave(current);$('#paste-open').onclick=()=>$('#paste-dialog').showModal();$('#about-open').onclick=()=>$('#about-dialog').showModal();document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.closest('dialog').close());document.querySelectorAll('dialog').forEach(d=>d.addEventListener('click',e=>{if(e.target===d){const r=d.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)d.close()}}));$('#settings-toggle').onclick=()=>{$('#settings').hidden=!$('#settings').hidden;$('#settings-toggle').setAttribute('aria-expanded',String(!$('#settings').hidden))};$('#font-weight').onchange=e=>{prefs.weight=Number(e.target.value);applyPrefs()};$('#size-down').onclick=()=>{prefs.size-=1;applyPrefs()};$('#size-up').onclick=()=>{prefs.size+=1;applyPrefs()};document.querySelectorAll('button[data-theme]').forEach(b=>b.onclick=()=>{prefs.theme=b.dataset.theme;applyPrefs()});$('#typeface').onchange=e=>{prefs.font=e.target.value;applyPrefs()};document.querySelectorAll('button[data-width]').forEach(b=>b.onclick=()=>{prefs.width=Number(b.dataset.width);applyPrefs()});$('#focus').onclick=()=>{setReaderControls(false);$('#article-title').focus({preventScroll:true})};document.addEventListener('keydown',e=>{if(e.key==='Escape'&&current){setReaderControls(false);$('#settings').hidden=true;$('#settings-toggle').setAttribute('aria-expanded','false');if($('.reader-panel').contains(document.activeElement))$('#article-title').focus({preventScroll:true})}});document.addEventListener('click',e=>{if(current&&!e.target.closest('.reader-rail, .reader-menu-toggle'))setReaderControls(false)});
 let lineNumberFrame=0;
 function readingPageRect(rect,origin){
  return{left:rect.left-origin.left,top:rect.top-origin.top,width:rect.width,height:rect.height};
@@ -325,13 +310,13 @@ function scheduleLineNumbers(){
   root.append(gutter);scheduleSelectionInk();
  });
 }
-const articleResizeObserver=new ResizeObserver(()=>{scheduleLineNumbers();scheduleReaderEdges()});
+const articleResizeObserver=new ResizeObserver(()=>{scheduleLineNumbers();scheduleScrollDot()});
 articleResizeObserver.observe($('#article-body'));
 document.fonts.ready.then(scheduleLineNumbers);
 document.fonts.addEventListener('loadingdone',scheduleLineNumbers);
-window.addEventListener('scroll',scheduleReaderEdges,{passive:true});
+window.addEventListener('scroll',scheduleScrollDot,{passive:true});
 function refreshReaderGeometry(){
- scheduleReaderEdges();scheduleLineNumbers();scheduleSelectionInk();scheduleScrollDot();
+ scheduleLineNumbers();scheduleSelectionInk();scheduleScrollDot();
 }
 window.addEventListener('resize',refreshReaderGeometry);
 let selectionInkFrame=0;
@@ -387,7 +372,7 @@ document.addEventListener('selectionchange',scheduleSelectionInk);
 window.addEventListener('scroll',scheduleSelectionInk,{passive:true});
 window.addEventListener('resize',scheduleSelectionInk);
 window.visualViewport?.addEventListener('resize',refreshReaderGeometry);
-window.visualViewport?.addEventListener('scroll',()=>{scheduleReaderEdges();scheduleSelectionInk()},{passive:true});
+window.visualViewport?.addEventListener('scroll',()=>{scheduleScrollDot();scheduleSelectionInk()},{passive:true});
 document.fonts.addEventListener('loadingdone',scheduleSelectionInk);
 selectionContrast.addEventListener('change',scheduleSelectionInk);
 function setReaderControls(visible){
@@ -442,7 +427,7 @@ function scheduleScrollDot(){
   dot.hidden=metrics.maximum===0;
  });
 }
-window.addEventListener('scroll',scheduleScrollDot,{passive:true});
+
 let scrollDotDrag=null;
 $('#scroll-dot').addEventListener('pointerdown',event=>{
  if(event.button!==0)return;
@@ -623,6 +608,9 @@ document.addEventListener('gesturechange',event=>{
 document.addEventListener('gestureend',event=>{if(event.cancelable)event.preventDefault();safariPinch=null;textPinchRawZoom=textPinchZoom;},{passive:false,capture:true});
 $('#zoom-reset').onclick=()=>setTextPinchZoom(1);
 document.documentElement.classList.add('text-pinch');
+function createAmbientComposition(random=Math.random){
+ return{angle:random()*Math.PI*2,x:(random()-.5)*.24,y:(random()-.5)*.24,warpX:random()*32,warpY:random()*32};
+}
 function ambientGrainMetrics(density,renderScale){
  // The background is a screen surface, independent of document magnification.
  const screenSize=2.8;
@@ -653,6 +641,8 @@ function createAmbientRenderer(){
   const fragment=shader(gl.FRAGMENT_SHADER,`
    precision highp float;
    uniform vec2 resolution;
+   uniform vec4 composition;
+   uniform vec2 shapeSeed;
    uniform vec3 pointerGlow;
    uniform float grainScale;
 
@@ -676,12 +666,14 @@ function createAmbientRenderer(){
    void main(){
     vec2 uv=gl_FragCoord.xy/resolution;
     uv.y=1.0-uv.y;
+    vec2 screenUv=uv;
+    uv=mat2(composition.x,composition.y,-composition.y,composition.x)*(uv-0.5)+0.5+composition.zw;
     const float time=0.0;
     // Evaluate the entire colour field in visible-screen coordinates: pinch
     // zoom and panning affect the document, not the background composition.
     // Warp static colour fields into irregular contours.
-    vec2 warp=vec2(flowNoise(uv*2.6+vec2(time/63.0,-time/87.0)),
-                   flowNoise(uv*2.4+vec2(17.3-time/79.0,8.7+time/58.0)))-0.5;
+    vec2 warp=vec2(flowNoise(uv*2.6+shapeSeed+vec2(time/63.0,-time/87.0)),
+                   flowNoise(uv*2.4+shapeSeed.yx+vec2(17.3-time/79.0,8.7+time/58.0)))-0.5;
     uv+=warp*0.44;
     vec2 drift=vec2(0.08,-0.06);
     vec2 counter=vec2(-0.08,0.06);
@@ -692,7 +684,7 @@ function createAmbientRenderer(){
     colour=layer(colour,shadowColor,field(uv,vec2(0.16,0.12)+drift,vec2(0.95,1.08)+spread));
     colour=layer(colour,lightColor,0.18*field(uv,vec2(0.76,0.18)-counter,vec2(0.9,1.0)));
     colour=layer(colour,shadowColor,0.18*field(uv,vec2(0.66,0.88)+counter,vec2(0.95,1.1)));
-    vec2 lightDistance=(uv-pointerGlow.xy)*vec2(resolution.x/resolution.y,1.0);
+    vec2 lightDistance=(screenUv-pointerGlow.xy)*vec2(resolution.x/resolution.y,1.0);
     float illumination=(1.0-smoothstep(0.0,0.34,length(lightDistance)))*pointerGlow.z;
     colour=mix(colour,vec3(1.0),illumination*0.055);
     // Stationary, zero-mean triangular noise before the final 8-bit write.
@@ -713,7 +705,9 @@ function createAmbientRenderer(){
   buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
   gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);
   const position=gl.getAttribLocation(program,'position');gl.enableVertexAttribArray(position);gl.vertexAttribPointer(position,2,gl.FLOAT,false,0,0);
-  const uniforms=Object.fromEntries(['resolution','pointerGlow','grainScale','grainStrength','baseColor','shadowColor','midColor','lightColor'].map(name=>[name,gl.getUniformLocation(program,name)]));
+  const uniforms=Object.fromEntries(['resolution','composition','shapeSeed','pointerGlow','grainScale','grainStrength','baseColor','shadowColor','midColor','lightColor'].map(name=>[name,gl.getUniformLocation(program,name)]));
+  gl.uniform4f(uniforms.composition,Math.cos(ambientComposition.angle),Math.sin(ambientComposition.angle),ambientComposition.x,ambientComposition.y);
+  gl.uniform2f(uniforms.shapeSeed,ambientComposition.warpX,ambientComposition.warpY);
   function colour(value){
    value=value.trim();
    if(/^#[0-9a-f]{6}$/i.test(value))return[1,3,5].map(i=>parseInt(value.slice(i,i+2),16)/255).concat(1);
@@ -813,6 +807,11 @@ function setAmbientPointer(x,y,visible){
 document.addEventListener('pointermove',event=>setAmbientPointer(event.clientX,event.clientY,event.pointerType!=='touch'),{passive:true});
 document.documentElement.addEventListener('pointerleave',()=>setAmbientPointer(0,0,false),{passive:true});
 window.addEventListener('blur',()=>setAmbientPointer(0,0,false));
+// One fresh composition per page load. Theme changes and zoom retain this seed.
+const ambientComposition=createAmbientComposition();
+document.documentElement.style.setProperty('--ambient-layout-angle',ambientComposition.angle+'rad');
+document.documentElement.style.setProperty('--ambient-layout-x',ambientComposition.x*100+'%');
+document.documentElement.style.setProperty('--ambient-layout-y',ambientComposition.y*100+'%');
 ambientRenderer=createAmbientRenderer();
 if(!ambientRenderer)updateAmbientDither();
 applyPrefs();renderCards();

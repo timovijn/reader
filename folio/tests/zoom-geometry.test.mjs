@@ -53,3 +53,9 @@ assert.equal(grain(32,32).screenSize,normalGrain.screenSize);
 // Rendering below native resolution must preserve the intended on-screen size.
 assert.equal(grain(8,4).cellSize*2,zoomedGrain.cellSize);
 console.log('Passed: constant screen grain size/contrast through zoom and render-scale compensation.');
+const composition=load('createAmbientComposition','ambientGrainMetrics');
+const first=composition(()=>.2),second=composition(()=>.8);
+assert.notEqual(first.angle,second.angle);assert.notEqual(first.warpX,second.warpX);
+assert.ok(first.x>=-.12&&first.x<=.12);assert.ok(second.y>=-.12&&second.y<=.12);
+assert.equal(composition(()=>.2).angle,first.angle);
+console.log('Passed: varied per-load gradient compositions and bounded offsets.');
