@@ -133,14 +133,14 @@ html.reading{scrollbar-width:none}html.reading::-webkit-scrollbar{display:none}
 
 /* Full-viewport mesh, inspired by the olive-grey and warm stone reference.
    Native gradients stay resolution independent; only transforms animate. */
-body{isolation:isolate;--ambient-base:#dddcd1;--ambient-shadow:rgba(91,96,73,.44);--ambient-mid:rgba(154,154,130,.45);--ambient-light:rgba(249,246,232,.83);--paper:#dddcd1;--muted:#606052;--grain-opacity:.075;background:var(--ambient-base)}
-body[data-theme="white"]{--ambient-base:#f5f5ef;--ambient-shadow:rgba(152,160,139,.16);--ambient-mid:rgba(197,195,177,.2);--ambient-light:rgba(255,255,255,.95);--paper:#f5f5ef;--muted:#65665c;--grain-opacity:.055}
-body[data-theme="dark"]{--ambient-base:#25271f;--ambient-shadow:rgba(8,15,9,.62);--ambient-mid:rgba(80,79,56,.32);--ambient-light:rgba(130,128,99,.2);--paper:#25271f;--muted:#b5b5a3;--grain-opacity:.065}
+body{isolation:isolate;--ambient-base:#dddcd1;--ambient-shadow:rgba(91,96,73,.44);--ambient-mid:rgba(154,154,130,.45);--ambient-light:rgba(249,246,232,.83);--paper:#dddcd1;--muted:#606052;--grain-opacity:.032;background:var(--ambient-base)}
+body[data-theme="white"]{--ambient-base:#f5f5ef;--ambient-shadow:rgba(152,160,139,.16);--ambient-mid:rgba(197,195,177,.2);--ambient-light:rgba(255,255,255,.95);--paper:#f5f5ef;--muted:#65665c;--grain-opacity:.026}
+body[data-theme="dark"]{--ambient-base:#25271f;--ambient-shadow:rgba(8,15,9,.62);--ambient-mid:rgba(80,79,56,.32);--ambient-light:rgba(130,128,99,.2);--paper:#25271f;--muted:#b5b5a3;--grain-opacity:.032}
 .ambient-background{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;contain:strict;background:var(--ambient-base)}
 .ambient-field{position:absolute;inset:-24%;background:radial-gradient(ellipse at 12% 10%,var(--ambient-shadow) 0%,transparent 59%),radial-gradient(ellipse at 82% 55%,var(--ambient-mid) 0%,transparent 62%),radial-gradient(ellipse at 18% 87%,var(--ambient-light) 0%,transparent 62%);animation:ambient-drift 160s ease-in-out infinite alternate;will-change:transform}
 .ambient-field::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 76% 18%,var(--ambient-light) 0%,transparent 58%),radial-gradient(ellipse at 66% 88%,var(--ambient-shadow) 0%,transparent 65%);opacity:.45;animation:ambient-counterdrift 210s ease-in-out infinite alternate}
-.ambient-grain{position:absolute;inset:0;opacity:var(--grain-opacity);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='192' height='192' viewBox='0 0 192 192'%3E%3Cfilter id='grain' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Cpath fill='%23000' filter='url(%23grain)' d='M0 0h192v192H0z'/%3E%3C/svg%3E");background-size:192px 192px;mix-blend-mode:multiply}
-body[data-theme="dark"] .ambient-grain{mix-blend-mode:screen}
+.ambient-grain{position:absolute;inset:0;opacity:var(--grain-opacity);background-image:var(--ambient-noise,url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='192' height='192' viewBox='0 0 192 192'%3E%3Cfilter id='grain' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Cpath fill='%23000' filter='url(%23grain)' d='M0 0h192v192H0z'/%3E%3C/svg%3E"));background-size:var(--ambient-noise-size,192px) var(--ambient-noise-size,192px);mix-blend-mode:normal}
+/* Neutral, uncorrelated noise masks colour steps without darkening the paper. */
 @keyframes ambient-drift{0%{transform:translate3d(-3%,-2%,0) rotate(-4deg) scale(1.02)}50%{transform:translate3d(3%,2%,0) rotate(1deg) scale(1.06)}100%{transform:translate3d(-1%,4%,0) rotate(5deg) scale(1.02)}}
 @keyframes ambient-counterdrift{0%{transform:translate3d(3%,1%,0) rotate(0deg)}100%{transform:translate3d(-4%,-3%,0) rotate(-7deg)}}
 .reader-panel{background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:blur(14px)}
@@ -528,5 +528,30 @@ window.addEventListener('pointerdown',event=>{if(event.pointerType!=='touch')wak
 window.addEventListener('wheel',wakeShinkaCursor,{passive:true});
 document.addEventListener('scroll',wakeShinkaCursor,{passive:true,capture:true});
 window.visualViewport?.addEventListener('scroll',wakeShinkaCursor,{passive:true});
+// Fractal SVG noise is correlated and too low in contrast to hide colour bands.
+// Use static, full-range monochrome noise at one sample per physical pixel.
+let ambientNoiseDensity=0;
+function updateAmbientDither(){
+ const density=Math.max(1,window.devicePixelRatio||1);
+ if(density===ambientNoiseDensity)return;
+ try{
+  const canvas=document.createElement('canvas');canvas.width=384;canvas.height=384;
+  const context=canvas.getContext('2d');if(!context)return;
+  const pixels=context.createImageData(canvas.width,canvas.height);
+  let seed=0x64f12a3b;
+  for(let i=0;i<pixels.data.length;i+=4){
+   seed^=seed<<13;seed^=seed>>>17;seed^=seed<<5;
+   const value=seed>>>24;
+   pixels.data[i]=value;pixels.data[i+1]=value;pixels.data[i+2]=value;pixels.data[i+3]=255;
+  }
+  context.putImageData(pixels,0,0);
+  const root=document.documentElement;
+  root.style.setProperty('--ambient-noise','url("'+canvas.toDataURL('image/png')+'")');
+  root.style.setProperty('--ambient-noise-size',canvas.width/density+'px');
+  ambientNoiseDensity=density;
+ }catch{/* Retain the inline grain texture when canvas is unavailable. */}
+}
+window.addEventListener('resize',updateAmbientDither,{passive:true});
+updateAmbientDither();
 applyPrefs();renderCards();
 </script></body></html>
