@@ -60,9 +60,9 @@ body[data-theme="dark"]{--paper:#23231f;--ink:#e5e2d8;--muted:#aaa69b;--line:#49
 .article-body{position:relative}
 .line-numbers{position:absolute;inset:0 auto 0 -34px;width:23px;pointer-events:none;user-select:none;-webkit-user-select:none;direction:ltr}
 .line-number{position:absolute;inset-inline-end:0;color:var(--muted);opacity:.38;font:400 9px/1 var(--font-mono);font-variant-numeric:tabular-nums;text-align:right}
-.reading-target{position:fixed;left:0;top:0;white-space:nowrap;color:var(--muted);opacity:.65;font:400 9px/1 var(--font-mono);font-variant-numeric:tabular-nums;text-align:right}
+.reading-target{position:absolute;left:auto;right:calc(100% + 8px);top:0;white-space:nowrap;color:var(--muted);opacity:.65;font:400 9px/1 var(--font-mono);font-variant-numeric:tabular-nums;text-align:right}
 .reading-target.is-complete{color:var(--ink);opacity:.75}
-@media(max-width:700px){.article{padding-inline:76px 22px}.line-numbers{left:-28px;right:auto;width:20px}.line-number,.reading-target{font-size:8px}.reading-target{left:0}}
+@media(max-width:700px){.article{padding-inline:76px 22px}.line-numbers{left:-28px;right:auto;width:20px}.line-number,.reading-target{font-size:8px}.reading-target{left:auto}}
 @media print,(forced-colors:active){.line-numbers{display:none}}
 
 .browser-import-link{font-size:10px;color:var(--muted);text-decoration:underline;text-underline-offset:4px;padding:0;margin-top:13px}
@@ -81,7 +81,7 @@ body[data-theme="dark"] .companion{opacity:.07}
 @media print,(forced-colors:active){.companion-backdrop{display:none}}
 
 /* Keep native selection/copy intact; draw only its underline in the reader. */
-.selection-ink{position:fixed;inset:0;pointer-events:none;user-select:none;z-index:1;overflow:hidden}
+.selection-ink{position:absolute;top:0;left:0;width:100%;height:0;pointer-events:none;user-select:none;z-index:1;overflow:visible}
 .selection-stroke{position:absolute;height:1px;background:var(--muted);opacity:.75}
 .underline-selection :is(.article,#home,body>footer)::selection,.underline-selection :is(.article,#home,body>footer) *::selection{background-color:transparent;color:inherit;text-shadow:none}
 @media print{.selection-ink{display:none}}
@@ -196,6 +196,16 @@ function scheduleReaderEdges(){
  });
 }
 let lineNumberFrame=0,readerLines=[],readerTarget=null;
+function readingPageRect(rect,origin){
+ return{left:rect.left-origin.left,top:rect.top-origin.top,width:rect.width,height:rect.height};
+}
+function readerViewportMetrics(viewport,fallback){
+ return{pageTop:Number.isFinite(viewport?.pageTop)?viewport.pageTop:fallback.pageTop,pageLeft:Number.isFinite(viewport?.pageLeft)?viewport.pageLeft:fallback.pageLeft,height:viewport?.height>0?viewport.height:fallback.height,width:viewport?.width>0?viewport.width:fallback.width};
+}
+function currentReadingViewport(){
+ const origin=$('#selection-ink').getBoundingClientRect();
+ return readerViewportMetrics(window.visualViewport,{pageTop:-origin.top,pageLeft:-origin.left,height:window.innerHeight,width:window.innerWidth});
+}
 let targetMotionFrame=0,targetRenderedY=null,targetGoalY=0,targetLastTime=0,targetComplete=false;
 const readingProgressMotion=matchMedia('(prefers-reduced-motion: reduce)');
 function smoothReadingPosition(current,target,elapsed){
@@ -208,9 +218,18 @@ function paintReadingTarget(time){
  const elapsed=targetLastTime?Math.min(64,time-targetLastTime):16;targetLastTime=time;
  targetRenderedY=readingProgressMotion.matches?targetGoalY:smoothReadingPosition(targetRenderedY??targetGoalY,targetGoalY,elapsed);
  if(Math.abs(targetGoalY-targetRenderedY)<.1)targetRenderedY=targetGoalY;
- readerTarget.style.transform='translateY('+targetRenderedY+'px)';
+ positionTargetOnPage();
  readerTarget.classList.toggle('is-complete',targetComplete&&Math.abs(targetRenderedY-targetGoalY)<.5);
  if(targetRenderedY!==targetGoalY)targetMotionFrame=requestAnimationFrame(paintReadingTarget);else targetLastTime=0;
+}
+function positionTargetOnPage(){
+ if(!readerTarget?.isConnected||targetRenderedY===null)return;
+ const origin=$('#selection-ink').getBoundingClientRect();
+ const gutter=readingPageRect(readerTarget.parentElement.getBoundingClientRect(),origin);
+ const viewport=currentReadingViewport();
+ // The target is absolute in its gutter. Convert only at the point of drawing;
+ // fixed overlays and client rectangles disagree during zoom in some browsers.
+ readerTarget.style.transform='translateY('+(targetRenderedY+viewport.pageTop-gutter.top)+'px)';
 }
 function readingTargetPosition(lines,articleTop,scrollY,viewportHeight,headerHeight,maxScroll){
  if(!lines.length)return{top:0,height:0,progress:0,line:0};
@@ -225,15 +244,14 @@ function readingTargetPosition(lines,articleTop,scrollY,viewportHeight,headerHei
 }
 function updateReadingTarget(){
  if(!current||!readerTarget||!readerLines.length)return;
- const root=$('#article-body'),rect=root.getBoundingClientRect();
- const position=readingTargetPosition(readerLines,rect.top+window.scrollY,window.scrollY,window.innerHeight,$('.reader-top').getBoundingClientRect().height,Math.max(0,document.documentElement.scrollHeight-window.innerHeight));
- // Smooth viewport coordinates, so normal scrolling doesn't make an absolute
- // marker jump upwards before it catches up with its next document position.
- targetGoalY=rect.top+position.top;targetComplete=position.progress>=1;
- readerTarget.style.left=(readerTarget.parentElement.getBoundingClientRect().left-8-readerTarget.getBoundingClientRect().width)+'px';
+ const origin=$('#selection-ink').getBoundingClientRect();
+ const rect=readingPageRect($('#article-body').getBoundingClientRect(),origin);
+ const viewport=currentReadingViewport();
+ const position=readingTargetPosition(readerLines,rect.top,viewport.pageTop,viewport.height,$('.reader-top').getBoundingClientRect().height,Math.max(0,document.documentElement.scrollHeight-viewport.height));
+ targetGoalY=rect.top+position.top-viewport.pageTop;targetComplete=position.progress>=1;
  readerTarget.style.lineHeight=position.height+'px';
  if(targetRenderedY===null||readingProgressMotion.matches){
-  targetRenderedY=targetGoalY;readerTarget.style.transform='translateY('+targetGoalY+'px)';
+  targetRenderedY=targetGoalY;positionTargetOnPage();
   readerTarget.classList.toggle('is-complete',targetComplete);
  }else if(!targetMotionFrame)targetMotionFrame=requestAnimationFrame(paintReadingTarget);
  $('#progress').setAttribute('aria-valuenow',String(Math.round(position.progress*100)));
@@ -276,7 +294,11 @@ articleResizeObserver.observe($('#article-body'));
 document.fonts.ready.then(scheduleLineNumbers);
 document.fonts.addEventListener('loadingdone',scheduleLineNumbers);
 window.addEventListener('scroll',scheduleReaderEdges,{passive:true});
-window.addEventListener('resize',()=>{scheduleReaderEdges();scheduleLineNumbers()});
+function refreshReaderGeometry(){
+ if(targetMotionFrame)cancelAnimationFrame(targetMotionFrame);targetMotionFrame=0;targetRenderedY=null;targetLastTime=0;
+ scheduleReaderEdges();scheduleLineNumbers();scheduleSelectionInk();
+}
+window.addEventListener('resize',refreshReaderGeometry);
 let selectionInkFrame=0;
 const selectionContrast=matchMedia('(forced-colors: active)');
 function clearSelectionInk(){
@@ -304,7 +326,7 @@ function scheduleSelectionInk(){
   // the home page and in articles. Never suppress a selection we cannot draw.
   if(selectionContrast.matches||!selection||selection.isCollapsed||!selection.rangeCount||!scope||scope.closest('[hidden]')||!scope.contains(selection.focusNode)||element.closest('input,textarea,select,button')){clearSelectionInk();return;}
   try{
-   const rects=[];
+   const rects=[],origin=$('#selection-ink').getBoundingClientRect(),viewport=currentReadingViewport();
    for(let index=0;index<selection.rangeCount;index++){
     const selected=selection.getRangeAt(index);
     const walker=document.createTreeWalker(scope,NodeFilter.SHOW_TEXT);
@@ -314,7 +336,7 @@ function scheduleSelectionInk(){
      const range=document.createRange();range.selectNodeContents(node);
      if(selected.startContainer===node)range.setStart(node,selected.startOffset);
      if(selected.endContainer===node)range.setEnd(node,selected.endOffset);
-     for(const rect of range.getClientRects())if(rect.bottom>=0&&rect.top<=window.innerHeight)rects.push({left:rect.left,top:rect.top,width:rect.width,height:rect.height});
+     for(const rect of range.getClientRects()){const pageRect=readingPageRect(rect,origin);if(pageRect.top+pageRect.height>=viewport.pageTop&&pageRect.top<=viewport.pageTop+viewport.height)rects.push(pageRect);}
     }
    }
    const segments=selectionSegments(rects);
@@ -329,8 +351,8 @@ function scheduleSelectionInk(){
 document.addEventListener('selectionchange',scheduleSelectionInk);
 window.addEventListener('scroll',scheduleSelectionInk,{passive:true});
 window.addEventListener('resize',scheduleSelectionInk);
-window.visualViewport?.addEventListener('resize',scheduleSelectionInk);
-window.visualViewport?.addEventListener('scroll',scheduleSelectionInk);
+window.visualViewport?.addEventListener('resize',refreshReaderGeometry);
+window.visualViewport?.addEventListener('scroll',()=>{scheduleReaderEdges();scheduleSelectionInk()},{passive:true});
 document.fonts.addEventListener('loadingdone',scheduleSelectionInk);
 selectionContrast.addEventListener('change',scheduleSelectionInk);
 // Three independent, bounded random tracks avoid a repeating shared rhythm.
