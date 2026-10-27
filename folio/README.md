@@ -18,7 +18,7 @@ Open http://127.0.0.1:4173. Alternatively run `node scripts/build.mjs`, `node sc
 
 - Server fetch of publicly accessible article HTML with timeout, response-size limit, and restricted URLs/redirects.
 - Server-side article extraction on Vercel/local preview using an HTML5 parser, article-container and paragraph scoring, link-density filtering, metadata and public JSON-LD fallback.
-- Extracted content rebuilt from safe DOM elements, preserving links, emphasis, lists, images and captions without executing publisher scripts or injecting arbitrary HTML.
+- Extracted content rebuilt from safe DOM elements, preserving links, emphasis and lists, while excluding images and their captions without executing publisher scripts or injecting arbitrary HTML.
 - Paste-text fallback for pages that cannot be fetched or extracted.
 - Browser-local collection, three page colours, serif/sans type, adjustable text size and line width.
 - Focus view and reading progress.
@@ -34,7 +34,7 @@ Fonts are self-hosted from `fonts/MartinaPlantijn` (OTF) and `fonts/Shinka` (WOF
 
 ## Boundaries
 
-This is a first version. Extraction will not work with every website, and complex page layouts may yield imperfect results. Paywalls, authentication, bot protection, PDFs and JavaScript-only article bodies are not supported. It does not bypass access controls. The Vercel/local importer preserves links and common inline formatting; saved plain-text articles remain compatible. The source link is retained. Saved articles and preferences remain in localStorage in the current browser; there is no account sync. Images remain remote and contact their source hosts.
+This is a first version. Extraction will not work with every website, and complex page layouts may yield imperfect results. Paywalls, authentication, bot protection, PDFs and JavaScript-only article bodies are not supported. It does not bypass access controls. The Vercel/local importer preserves links and common inline formatting; saved plain-text articles remain compatible. The source link is retained. Saved articles and preferences remain in localStorage in the current browser; there is no account sync. Article images and captions are excluded from imports. Images in previously saved articles are not rendered, and the browser policy blocks external image requests.
 
 ## Deploy to Vercel
 
@@ -51,7 +51,7 @@ The Cloudflare Worker output remains available in `dist/server/index.js`. A Site
 
 ## Verification
 
-`node scripts/test.mjs` checks JavaScript syntax, request routing, response policy, unsafe URL rejection, mocked article fetching, redirect checks, failure handling and response-size limits. It also checks the generated static homepage, both Vercel entry points and configurations, a mocked successful Vercel article request, private DNS rejection and connection pinning. These checks use no network. `tests/importer.test.mjs` adds the WordPress `192.0.78.*` address regression, public IPv4-mapped IPv6, DNS connection failover, gzip/deflate/Brotli responses, HTML5 and structured-data extraction, formatting safety, lists/images, redirects, HTTP failures, and character encodings.
+`node scripts/test.mjs` checks JavaScript syntax, request routing, response policy, unsafe URL rejection, mocked article fetching, redirect checks, failure handling and response-size limits. It also checks the generated static homepage, both Vercel entry points and configurations, a mocked successful Vercel article request, private DNS rejection and connection pinning. These checks use no network. `tests/importer.test.mjs` adds the WordPress `192.0.78.*` address regression, public IPv4-mapped IPv6, DNS connection failover, gzip/deflate/Brotli responses, HTML5 and structured-data extraction, formatting safety, lists/text-only imports, redirects, HTTP failures, and character encodings.
 
 Browser layout, real third-party fetches and a live Vercel deployment have not been verified in this environment.
 

@@ -29,7 +29,7 @@ export async function handleRequest(request, fetchPage = fetch){
    const bytes = Uint8Array.from(atob(fonts[path].data), char => char.charCodeAt(0));
    return new Response(bytes, {headers: {'content-type': fonts[path].type, 'cache-control': 'public, max-age=86400', 'x-content-type-options': 'nosniff'}});
  }
- if(path==='/'&&request.method==='GET') return new Response(page,{headers:{'content-type':'text/html; charset=utf-8','x-content-type-options':'nosniff','referrer-policy':'no-referrer','content-security-policy':"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src https: data:; font-src 'self'; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'self'"}});
+ if(path==='/'&&request.method==='GET') return new Response(page,{headers:{'content-type':'text/html; charset=utf-8','x-content-type-options':'nosniff','referrer-policy':'no-referrer','content-security-policy':"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'self'"}});
  if(path!=='/api/article')return new Response('Not found',{status:404});
  if(request.method!=='POST')return json({error:'Method not allowed'},405);
  if(Number(request.headers.get('content-length'))>4096)return json({error:'Request too large'},413);

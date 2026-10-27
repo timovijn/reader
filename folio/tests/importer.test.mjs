@@ -19,8 +19,8 @@ for(const address of ['192.0.0.1','192.0.2.1','192.168.1.1','169.254.169.254',':
 
 const article=extractArticle(fixture,articleUrl);
 assert.equal(article.title,'A town in motion');assert.equal(article.author,'Fixture Author');assert.equal(article.siteName,'A Literary Review');
-const body=JSON.stringify(article.body);assert.ok(!body.includes('UNWANTED'));assert.ok(!body.includes('unsafe'));assert.ok(body.includes('Next chapter'));assert.ok(body.includes('"tag":"em"'));assert.ok(body.includes('"tag":"strong"'));assert.ok(body.includes('https://clereviewofbooks.com/context'));assert.ok(body.includes('3. A first item.'));assert.ok(body.includes('https://clereviewofbooks.com/photo.jpg'));assert.ok(body.includes('The track'));
-assert.equal(article.body.filter(b=>b[0]==='img').length,1);
+const body=JSON.stringify(article.body);assert.ok(!body.includes('UNWANTED'));assert.ok(!body.includes('unsafe'));assert.ok(body.includes('Next chapter'));assert.ok(body.includes('"tag":"em"'));assert.ok(body.includes('"tag":"strong"'));assert.ok(body.includes('https://clereviewofbooks.com/context'));assert.ok(body.includes('3. A first item.'));assert.ok(!body.includes('https://clereviewofbooks.com/photo.jpg'));assert.ok(!body.includes('The track'));
+assert.equal(article.body.filter(b=>b[0]==='img').length,0);
 
 // Malformed publisher HTML, plain div prose, short essays and inert unsafe markup.
 assert.ok(extractArticle('<h1>A short essay</h1><main><div>'+prose.repeat(2)+'</div></main>',articleUrl).wordCount>50);
@@ -64,7 +64,7 @@ assert.equal((await (await createVercelHandler(async()=>response('<html><h1>Empt
 
 // Decode the actual charset, including publishers still serving Windows-1252.
 const latin=Buffer.from('<html><p>caf\xe9</p></html>','latin1');const decoded=await handleRequest(post(),async()=>response(latin,{headers:{'content-type':'text/html; charset=windows-1252'}}));assert.ok((await decoded.json()).html.includes('café'));
-console.log('Passed: WordPress IP regression, IPv4-mapped IPv6, private networks, HTML/metadata/structured extraction, safe rich text, lists/images, malformed HTML, compression, pinned DNS failover, redirects, status codes and character encodings.');
+console.log('Passed: WordPress IP regression, IPv4-mapped IPv6, private networks, HTML/metadata/structured extraction, safe rich text, lists/text-only imports, malformed HTML, compression, pinned DNS failover, redirects, status codes and character encodings.');
 
 // Theme layout flags are not sidebar/footer content. They often live on the
 // body or on the outer site wrapper, and previously removed the whole article.

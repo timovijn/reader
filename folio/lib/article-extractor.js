@@ -8,7 +8,7 @@ const positive = /(^|[\s_-])(entry-content|post-content|article-body|article-con
 // Match an ancillary component's own name, not layout flags like no-sidebar
 // or has-footer. A page's ancestor must never disappear from a substring hit.
 const negative = /^(nav|menu|sidebar|footer|comments?|related|recommended|newsletter|advertisement|advert|social|share-buttons|cookie|promo|paywall|subscription-wall)(?:[-_]|$)/i;
-const ignored = new Set(['script','style','nav','footer','aside','form','button','input','iframe','svg','noscript','dialog','template','select','canvas']);
+const ignored = new Set(['script','style','nav','footer','aside','form','button','input','iframe','svg','noscript','dialog','template','select','canvas','img','picture','source','figcaption']);
 const blockTags = new Set(['p','h2','h3','h4','h5','h6','blockquote','pre','li','img','figcaption','hr']);
 const inlineTags = { em:'em',i:'em',strong:'strong',b:'strong',code:'code',sup:'sup',sub:'sub',s:'s',del:'s',a:'a',br:'br' };
 
@@ -91,7 +91,7 @@ export function extractArticle(html,url){
     const score=(st.score||st.length*.45)*semantic*(1-Math.min(.95,density))* (tag(node)==='body'?.8:1);
     if(score>best||(score===best&&st.length<(stats.get(root)?.length||Infinity))){best=score;root=node;}
   }
-  const blocks=[];const seenImages=new Set();
+  const blocks=[];
   function inline(node,depth=0){
     if(depth>100||!cleanSet.has(node))return [];
     if(node.nodeName==='#text')return [node.value];
@@ -103,17 +103,9 @@ export function extractArticle(html,url){
     return [{tag:type,children}];
   }
   function textOf(nodes){return nodes.map(n=>typeof n==='string'?n:n.tag==='br'?'\n':textOf(n.children||[])).join('');}
-  function image(node){
-    if(Number(attr(node,'width')||500)<=2||Number(attr(node,'height')||500)<=2)return;
-    const srcset=attr(node,'data-srcset')||attr(node,'srcset');
-    const candidates=[attr(node,'data-src'),attr(node,'data-lazy-src'),srcset.split(',').map(p=>p.trim().split(/\s+/)[0]).filter(Boolean).at(-1),attr(node,'src')];
-    const src=candidates.map(value=>safeUrl(value,base)).find(Boolean);
-    if(src&&!seenImages.has(src)){seenImages.add(src);blocks.push(['img',src,{alt:normalise(attr(node,'alt')).slice(0,500)}]);}
-  }
   function add(node,depth=0){
     if(depth>100||!cleanSet.has(node))return;
     const name=tag(node);
-    if(name==='img'){image(node);return;}
     if(name==='hr'){blocks.push(['p','* * *']);return;}
     if(blockTags.has(name)){
       if(name==='li'&&(node.childNodes||[]).some(n=>['ol','ul'].includes(tag(n)))){
@@ -124,8 +116,6 @@ export function extractArticle(html,url){
       let output=['h4','h5','h6'].includes(name)?'h3':name==='figcaption'?'p':name;
       if(name==='li'){const ordered=tag(node.parentNode)==='ol';const siblings=(node.parentNode?.childNodes||[]).filter(n=>tag(n)==='li');const prefix=ordered?String((Number(attr(node.parentNode,'start'))||1)+siblings.indexOf(node))+'. ':'• ';text=prefix+text;parts.unshift(prefix);output='p';}
       blocks.push([output,text,parts]);
-      // Inline images are emitted once, without duplicating nested text blocks.
-      for(const child of walk(node,n=>cleanSet.has(n)))if(tag(child)==='img')image(child);
       return;
     }
     const children=(node.childNodes||[]).filter(n=>cleanSet.has(n));
