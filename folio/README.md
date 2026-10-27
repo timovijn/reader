@@ -19,7 +19,7 @@ Open http://127.0.0.1:4173. Alternatively run `node scripts/build.mjs`, `node sc
 - Server fetch of publicly accessible article HTML with timeout, response-size limit, and restricted URLs/redirects.
 - Server-side article extraction on Vercel/local preview using an HTML5 parser, article-container and paragraph scoring, link-density filtering, metadata and public JSON-LD fallback.
 - Extracted content rebuilt from safe DOM elements, preserving links, emphasis and lists, while excluding images and their captions without executing publisher scripts or injecting arbitrary HTML.
-- Paste-text fallback for pages that cannot be fetched or extracted.
+- Browser-assisted import via a clipboard bookmarklet for pages that refuse server requests, plus a paste-text fallback.
 - Browser-local collection, three page colours, serif/sans type, adjustable text size and line width.
 - Focus view and reading progress.
 - Three original sample essays.
@@ -62,3 +62,9 @@ The Node transport validates each destination, filters private DNS answers, and 
 The extractor parses HTML without running scripts or loading resources. It chooses prose-heavy semantic containers rather than navigation, comments or related links. Public Article JSON-LD is a fallback when the page has little usable prose; schema explicitly marked as paid is excluded from that fallback. Nothing bypasses a paywall or sign-in. Pages requiring client-side JavaScript or a browser challenge still need the paste-text option.
 
 Third-party HTML parsing code and original licences are in `vendor/`: parse5 7.3.0 (MIT) and entities 6.0.1 (BSD-2-Clause). See `vendor/README.md` for source and local modifications.
+
+## Browser-assisted import
+
+When a publisher returns HTTP 403, the extraction engine has not received the article. Use **Import from an open browser page** to install the **Copy for Folio** bookmarklet. Open an article you can access normally, click that bookmark, then paste the clip into Folio. It captures article text and metadata from the page DOM without images, makes no network requests from the source page, and does not collect cookies, form values, scripts or storage. Query strings and fragments are removed from the source URL. Imported clips stay in the current browser unless the user separately shares them.
+
+The bookmarklet is a user-operated fallback; it does not solve CAPTCHAs, log in, bypass paywalls or guarantee that every page will work. Browser and publisher policies may block bookmarklets; manual text pasting remains available.

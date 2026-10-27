@@ -51,7 +51,7 @@ export async function handleRequest(request, fetchPage = fetch){
  if(!response)throw importFailure('too_many_redirects','This website redirected too many times. Try its final article link.');
  if(!response.ok){
  await response.body?.cancel();
- const errors={401:['sign_in_required','This article requires a sign-in. Open it at the source, then paste text you can access.'],403:['access_denied','This website did not allow Folio to open the article. You can paste the article text instead.'],404:['not_found','This article could not be found. Please check the link.'],429:['rate_limited','This website is limiting requests. Please try again later.']};
+ const errors={401:['sign_in_required','This article requires a sign-in. Open it at the source, then paste text you can access.'],403:['access_denied','This website did not allow Folio to open the article (HTTP 403). Use “Import from an open browser page” below, or paste the article text.'],404:['not_found','This article could not be found. Please check the link.'],429:['rate_limited','This website is limiting requests. Please try again later.']};
  const [code,message]=errors[response.status]||['upstream_error','The website returned an error ('+response.status+'). Please try again later.'];throw importFailure(code,message);
  }
  const type=response.headers.get('content-type')||'';

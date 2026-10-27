@@ -84,3 +84,14 @@ assert.ok(!JSON.stringify(extractArticle(unmarked,articleUrl).body).includes('UN
 const ancillary=fixture.replace('</article>','<div class="newsletter-signup"><p>'+prose.repeat(20)+'</p></div></article>');
 assert.equal(extractArticle(ancillary,articleUrl).wordCount,article.wordCount);
 console.log('Passed: theme layout flags, body/root preservation, outer article wrappers and actual sidebar/newsletter exclusion.');
+
+// Browser clips are imported locally, text-only, without executing pasted HTML.
+const {readFile}=await import('node:fs/promises');const vm=await import('node:vm');
+const client=await readFile(new URL('../worker/page.html',import.meta.url),'utf8');
+const clipFunction=client.slice(client.indexOf('function normaliseBrowserClip('),client.indexOf("\n$('#browser-bookmarklet').href="));
+const normaliseClip=vm.runInNewContext('('+clipFunction+')',{safeHref:value=>{try{const u=new URL(value);return ['https:','http:'].includes(u.protocol)?u.href:null}catch{return null}},Date});
+const clip=normaliseClip(JSON.stringify({format:'folio-browser-clip',version:1,title:'A browser article',url:'https://www.washingtonian.com/article/',author:'Author',body:[['p',prose],['img','https://example.com/image.jpg'],['script','alert(1)'],['p','<script>This stays literal text</script>']]}));
+assert.equal(clip.title,'A browser article');assert.equal(clip.body.length,2);assert.equal(clip.body[0][0],'p');assert.equal(clip.url,'https://www.washingtonian.com/article/');
+assert.throws(()=>normaliseClip('not json'),/Please paste/);assert.throws(()=>normaliseClip('{}'),/not a Folio browser clip/);
+assert.equal(normaliseClip(JSON.stringify({format:'folio-browser-clip',version:1,title:'Test',url:'javascript:alert(1)',body:[['p',prose]]})).url,undefined);
+console.log('Passed: browser-clip format validation, text-only blocks, unsafe URL rejection and local import model.');
