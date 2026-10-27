@@ -530,16 +530,19 @@ async function updateShinkaCursor(){
   }
   if(generation!==shinkaCursorGeneration)return;
   shinkaCursorPalette=shinkaCursorCache.get(key);
-  wakeShinkaCursor();
+  // Loading a font or changing appearance must not reveal an idle pointer.
+  fadeShinkaCursor(0,pointerFadeDuration);
  }catch{/* Keep native cursors if fonts, canvas or custom cursors are unavailable. */}
 }
 shinkaCursorPointer.addEventListener('change',updateShinkaCursor);
 shinkaCursorContrast.addEventListener('change',updateShinkaCursor);
-window.addEventListener('pointermove',event=>{if(event.pointerType!=='touch')wakeShinkaCursor()},{passive:true});
-window.addEventListener('pointerdown',event=>{if(event.pointerType!=='touch')wakeShinkaCursor()},{passive:true});
-window.addEventListener('wheel',wakeShinkaCursor,{passive:true});
-document.addEventListener('scroll',wakeShinkaCursor,{passive:true,capture:true});
-window.visualViewport?.addEventListener('scroll',wakeShinkaCursor,{passive:true});
+let lastCursorPosition=null;
+function handleCursorMovement(event){
+ if(event.pointerType==='touch')return;
+ if(lastCursorPosition&&lastCursorPosition.x===event.clientX&&lastCursorPosition.y===event.clientY)return;
+ lastCursorPosition={x:event.clientX,y:event.clientY};wakeShinkaCursor();
+}
+window.addEventListener('pointermove',handleCursorMovement,{passive:true});
 // Compose gradients and dither in one high-precision pass. A separate CSS grain
 // layer cannot undo quantization that has already happened in gradient textures.
 function textPinchScale(start,factor){

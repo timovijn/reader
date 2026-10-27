@@ -29,3 +29,15 @@ assert.equal(glow,.25);
 context.wakeShinkaCursor();advance(duration/2);assert.equal(glow,.625);
 assert.equal(Number(styles.get('--ambient-pointer-glow')),glow);
 console.log('Passed: shared 1.6-second pointer/glow fades in both directions, idle delay, pointer leave and smooth reversals.');
+let wakes=0;
+const start=source.indexOf('let lastCursorPosition=null;');
+const end=source.indexOf("window.addEventListener('pointermove',handleCursorMovement",start);
+const movementContext={wakeShinkaCursor:()=>wakes++};
+vm.runInNewContext(source.slice(start,end),movementContext);
+movementContext.handleCursorMovement({pointerType:'mouse',clientX:40,clientY:50});
+movementContext.handleCursorMovement({pointerType:'mouse',clientX:40,clientY:50});
+assert.equal(wakes,1); // A synthetic event at the same position cannot wake it.
+movementContext.handleCursorMovement({pointerType:'touch',clientX:100,clientY:100});assert.equal(wakes,1);
+movementContext.handleCursorMovement({pointerType:'mouse',clientX:41,clientY:50});assert.equal(wakes,2);
+assert.ok(!/addEventListener\('(wheel|scroll|pointerdown)',wakeShinkaCursor/.test(source));
+console.log('Passed: movement-only pointer wake, stationary-event filtering and touch exclusion.');
