@@ -47,9 +47,9 @@ assert.equal(ambient({scale:0,width:0,height:0},1200,800,2).width,1200);
 console.log('Passed: native-resolution gradient canvas across page/pinch zoom and viewport panning.');
 const grain=load('ambientGrainMetrics','ambientViewportMetrics');
 const normalGrain=grain(2,2),zoomedGrain=grain(8,8);
-assert.ok(zoomedGrain.screenSize>normalGrain.screenSize);
-assert.ok(zoomedGrain.gain>=normalGrain.gain);
-assert.ok(grain(32,32).screenSize<=4);
+assert.equal(zoomedGrain.screenSize,normalGrain.screenSize);
+assert.equal(zoomedGrain.gain,normalGrain.gain);
+assert.equal(grain(32,32).screenSize,normalGrain.screenSize);
 // Rendering below native resolution must preserve the intended on-screen size.
 assert.equal(grain(8,4).cellSize*2,zoomedGrain.cellSize);
-console.log('Passed: visible grain at zoom, bounded grain size and render-scale compensation.');
+console.log('Passed: constant screen grain size/contrast through zoom and render-scale compensation.');

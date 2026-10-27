@@ -138,6 +138,7 @@ body{isolation:isolate;--ambient-base:#b7b4aa;--ambient-shadow:rgba(68,66,59,.6)
 body[data-theme="white"]{--ink:#252525;--ambient-base:#f5f5ef;--ambient-shadow:rgba(152,160,139,.16);--ambient-mid:rgba(197,195,177,.2);--ambient-light:rgba(255,255,255,.95);--paper:#f5f5ef;--muted:#65665c;--grain-opacity:.055}
 body[data-theme="dark"]{--ink:#e5e2d8;--ambient-base:#25271f;--ambient-shadow:rgba(8,15,9,.62);--ambient-mid:rgba(80,79,56,.32);--ambient-light:rgba(130,128,99,.2);--paper:#25271f;--muted:#b5b5a3;--grain-opacity:.075}
 .ambient-background{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;contain:strict;background:var(--ambient-base)}
+.ambient-background:not([data-renderer="gpu"]){width:var(--ambient-visible-width,100%);height:var(--ambient-visible-height,100%);transform:translate(var(--ambient-visible-left,0px),var(--ambient-visible-top,0px))}
 .ambient-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .ambient-background[data-renderer="gpu"] .ambient-field,.ambient-background[data-renderer="gpu"] .ambient-grain{display:none}
 .ambient-field{position:absolute;inset:-24%;background:radial-gradient(ellipse at 8% 5%,var(--ambient-shadow) 0%,transparent 59%),radial-gradient(ellipse at 90% 42%,var(--ambient-mid) 0%,transparent 62%),radial-gradient(ellipse at 14% 92%,var(--ambient-light) 0%,transparent 62%);animation:ambient-drift 90s ease-in-out infinite alternate;will-change:transform}
@@ -535,10 +536,9 @@ window.visualViewport?.addEventListener('scroll',wakeShinkaCursor,{passive:true}
 // Compose gradients and dither in one high-precision pass. A separate CSS grain
 // layer cannot undo quantization that has already happened in gradient textures.
 function ambientGrainMetrics(density,renderScale){
- // Let the grain grow gently with zoom, but cap it before it becomes blotchy.
- const zoom=Math.max(0,Math.log2(Math.max(1,density)/2));
- const screenSize=Math.min(4,2.4+zoom*.65);
- return{cellSize:screenSize*renderScale/density,screenSize,gain:1+Math.min(.24,zoom*.08)};
+ // The background is a screen surface, independent of document magnification.
+ const screenSize=2.8;
+ return{cellSize:screenSize*renderScale/density,screenSize,gain:1};
 }
 function ambientViewportMetrics(viewport,width,height,dpr){
  return{width:viewport?.width>0?viewport.width:width,height:viewport?.height>0?viewport.height:height,
@@ -564,7 +564,6 @@ function createAmbientRenderer(){
   const fragment=shader(gl.FRAGMENT_SHADER,`
    precision highp float;
    uniform vec2 resolution;
-   uniform vec4 viewBox;
    uniform float grainScale;
    uniform float time;
    uniform float grainStrength;
@@ -587,7 +586,8 @@ function createAmbientRenderer(){
    void main(){
     vec2 uv=gl_FragCoord.xy/resolution;
     uv.y=1.0-uv.y;
-    uv=viewBox.xy+uv*viewBox.zw;
+    // Evaluate the entire colour field in visible-screen coordinates: pinch
+    // zoom and panning affect the document, not the background composition.
     // Warp the colour fields into irregular contours, with independent, slow
     // currents rather than moving a set of circular gradients together.
     vec2 warp=vec2(flowNoise(uv*2.6+vec2(time/63.0,-time/87.0)),
@@ -621,7 +621,7 @@ function createAmbientRenderer(){
   buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
   gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);
   const position=gl.getAttribLocation(program,'position');gl.enableVertexAttribArray(position);gl.vertexAttribPointer(position,2,gl.FLOAT,false,0,0);
-  const uniforms=Object.fromEntries(['resolution','viewBox','grainScale','time','grainStrength','baseColor','shadowColor','midColor','lightColor'].map(name=>[name,gl.getUniformLocation(program,name)]));
+  const uniforms=Object.fromEntries(['resolution','grainScale','time','grainStrength','baseColor','shadowColor','midColor','lightColor'].map(name=>[name,gl.getUniformLocation(program,name)]));
   function colour(value){
    value=value.trim();
    if(/^#[0-9a-f]{6}$/i.test(value))return[1,3,5].map(i=>parseInt(value.slice(i,i+2),16)/255).concat(1);
@@ -643,7 +643,6 @@ function createAmbientRenderer(){
    if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;gl.viewport(0,0,width,height);}
    canvas.style.width=view.width+'px';canvas.style.height=view.height+'px';canvas.style.transform='translate('+view.left+'px,'+view.top+'px)';
    gl.uniform2f(uniforms.resolution,width,height);
-   gl.uniform4f(uniforms.viewBox,view.left/window.innerWidth,view.top/window.innerHeight,view.width/window.innerWidth,view.height/window.innerHeight);
    const grain=ambientGrainMetrics(view.density,scale);
    gl.uniform1f(uniforms.grainScale,grain.cellSize);
    gl.uniform1f(uniforms.grainStrength,themeGrainStrength*grain.gain);
@@ -681,8 +680,12 @@ function createAmbientRenderer(){
 // Keep fallback grain at the same screen-pixel scale as GPU grain.
 let ambientNoiseDensity=0;
 function updateAmbientDither(){
+ const view=ambientViewportMetrics(window.visualViewport,window.innerWidth,window.innerHeight,window.devicePixelRatio);
+ const root=document.documentElement;
+ root.style.setProperty('--ambient-visible-width',view.width+'px');root.style.setProperty('--ambient-visible-height',view.height+'px');
+ root.style.setProperty('--ambient-visible-left',view.left+'px');root.style.setProperty('--ambient-visible-top',view.top+'px');
  if($('.ambient-background').dataset.renderer==='gpu')return;
- const density=ambientViewportMetrics(window.visualViewport,window.innerWidth,window.innerHeight,window.devicePixelRatio).density;
+ const density=view.density;
  if(density===ambientNoiseDensity)return;
  try{
   const canvas=document.createElement('canvas');canvas.width=384;canvas.height=384;
@@ -695,7 +698,6 @@ function updateAmbientDither(){
    pixels.data[i]=value;pixels.data[i+1]=value;pixels.data[i+2]=value;pixels.data[i+3]=255;
   }
   context.putImageData(pixels,0,0);
-  const root=document.documentElement;
   root.style.setProperty('--ambient-noise','url("'+canvas.toDataURL('image/png')+'")');
   root.style.setProperty('--ambient-noise-size',canvas.width*ambientGrainMetrics(density,density).screenSize/density+'px');
   ambientNoiseDensity=density;
@@ -703,6 +705,7 @@ function updateAmbientDither(){
 }
 window.addEventListener('resize',updateAmbientDither,{passive:true});
 window.visualViewport?.addEventListener('resize',updateAmbientDither,{passive:true});
+window.visualViewport?.addEventListener('scroll',updateAmbientDither,{passive:true});
 ambientRenderer=createAmbientRenderer();
 if(!ambientRenderer)updateAmbientDither();
 applyPrefs();renderCards();
