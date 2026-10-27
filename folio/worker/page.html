@@ -132,7 +132,7 @@ body[data-theme="white"]{--ink:#252525;--ambient-base:#f5f5ef;--ambient-shadow:r
 body[data-theme="dark"]{--ink:#e5e2d8;--ambient-base:#25271f;--ambient-shadow:rgba(8,15,9,.62);--ambient-mid:rgba(80,79,56,.32);--ambient-light:rgba(130,128,99,.2);--paper:#25271f;--muted:#b5b5a3;--grain-opacity:.042}
 .ambient-background{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;contain:strict;background:var(--ambient-base)}
 .ambient-background:not([data-renderer="gpu"]){width:var(--ambient-visible-width,100%);height:var(--ambient-visible-height,100%);transform:translate(var(--ambient-visible-left,0px),var(--ambient-visible-top,0px))}
-.ambient-highlight{position:absolute;inset:0;opacity:var(--ambient-pointer-glow,0);background:radial-gradient(circle 260px at var(--ambient-pointer-x,50%) var(--ambient-pointer-y,50%),rgba(255,255,255,.055),transparent);transition:opacity .3s;pointer-events:none}
+.ambient-highlight{position:absolute;inset:0;opacity:var(--ambient-pointer-glow,0);background:radial-gradient(circle 260px at var(--ambient-pointer-x,50%) var(--ambient-pointer-y,50%),rgba(255,255,255,.055),transparent);pointer-events:none}
 .ambient-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .ambient-background[data-renderer="gpu"] .ambient-field,.ambient-background[data-renderer="gpu"] .ambient-grain,.ambient-background[data-renderer="gpu"] .ambient-highlight{display:none}
 .ambient-field{position:absolute;inset:-24%;background:radial-gradient(ellipse at 8% 5%,var(--ambient-shadow) 0%,transparent 59%),radial-gradient(ellipse at 90% 42%,var(--ambient-mid) 0%,transparent 62%),radial-gradient(ellipse at 14% 92%,var(--ambient-light) 0%,transparent 62%)}
@@ -456,7 +456,8 @@ const shinkaCursorPointer=matchMedia('(any-pointer: fine)');
 const shinkaCursorContrast=matchMedia('(forced-colors: active)');
 let shinkaCursorGeneration=0;
 let shinkaCursorPalette=null,shinkaCursorIdleTimer=0,shinkaCursorFadeTimer=0;
-let shinkaCursorOpacity=1,shinkaCursorTarget=null;
+let shinkaCursorOpacity=0,shinkaCursorTarget=null,ambientPointerPresent=false;
+const pointerFadeDuration=1600;
 function shinkaCursorImage(weight,ink,paper,opacity=1){
  const images=[1,2,3].map(density=>{
   const canvas=document.createElement('canvas');canvas.width=28*density;canvas.height=28*density;
@@ -473,6 +474,11 @@ function shinkaCursorImage(weight,ink,paper,opacity=1){
   if(CSS.supports('cursor',image+' 3 3, default'))return image+' 3 3';
  }
  return 'url("'+images[0].url+'") 3 3';
+}
+function syncPointerGlow(){
+ const opacity=ambientPointerPresent?Math.round(shinkaCursorOpacity*32)/32:0;
+ document.documentElement.style.setProperty('--ambient-pointer-glow',String(opacity));
+ ambientRenderer?.setGlow(opacity);
 }
 function fadeShinkaCursor(target,duration){
  if(shinkaCursorTarget===target)return;
@@ -492,7 +498,7 @@ function fadeShinkaCursor(target,duration){
    if(!palette.frames[step])palette.frames[step]=shinkaCursorImage(400,palette.ink,palette.paper,1-step/32);
    cursor=palette.frames[step]+', default';
   }
-  document.documentElement.style.setProperty('--cursor-arrow',cursor);
+  document.documentElement.style.setProperty('--cursor-arrow',cursor);syncPointerGlow();
   if(progress<1)shinkaCursorFadeTimer=setTimeout(fade,16);
  }
  fade();
@@ -500,8 +506,13 @@ function fadeShinkaCursor(target,duration){
 function wakeShinkaCursor(){
  clearTimeout(shinkaCursorIdleTimer);
  if(!shinkaCursorPalette||!shinkaCursorPointer.matches||shinkaCursorContrast.matches)return;
- fadeShinkaCursor(1,320);
- shinkaCursorIdleTimer=setTimeout(()=>fadeShinkaCursor(0,1200),2000);
+ fadeShinkaCursor(1,pointerFadeDuration);
+ shinkaCursorIdleTimer=setTimeout(()=>fadeShinkaCursor(0,pointerFadeDuration),2000);
+}
+function hideShinkaCursor(){
+ clearTimeout(shinkaCursorIdleTimer);
+ if(shinkaCursorPalette)fadeShinkaCursor(0,pointerFadeDuration);
+ else{shinkaCursorOpacity=0;syncPointerGlow();}
 }
 async function updateShinkaCursor(){
  const generation=++shinkaCursorGeneration;
@@ -626,7 +637,7 @@ function createAmbientRenderer(){
  const gl=canvas.getContext('webgl',{alpha:false,antialias:false,depth:false,stencil:false,powerPreference:'low-power'});
  if(!gl)return null;
  let program,buffer,frame=0,stopped=false,themeGrainStrength=.0364;
- const pointer={x:.5,y:.5,targetX:.5,targetY:.5,glow:0,targetGlow:0};
+ const pointer={x:.5,y:.5,targetX:.5,targetY:.5,glow:0};
  const motion=matchMedia('(prefers-reduced-motion: reduce)');
  const contrast=matchMedia('(forced-colors: active)');
  try{
@@ -744,18 +755,17 @@ function createAmbientRenderer(){
    frame=0;if(stopped||document.hidden||contrast.matches)return;
    const amount=motion.matches?1:.2;
    pointer.x+=(pointer.targetX-pointer.x)*amount;pointer.y+=(pointer.targetY-pointer.y)*amount;
-   pointer.glow+=(pointer.targetGlow-pointer.glow)*amount;
-   const moving=Math.abs(pointer.targetX-pointer.x)+Math.abs(pointer.targetY-pointer.y)+Math.abs(pointer.targetGlow-pointer.glow)>.002;
-   if(!moving){pointer.x=pointer.targetX;pointer.y=pointer.targetY;pointer.glow=pointer.targetGlow;}
+   const moving=Math.abs(pointer.targetX-pointer.x)+Math.abs(pointer.targetY-pointer.y)>.002;
+   if(!moving){pointer.x=pointer.targetX;pointer.y=pointer.targetY;}
    draw(performance.now());if(moving)frame=requestAnimationFrame(animate);
   }
   function resume(){if(!frame&&!stopped&&!document.hidden)frame=requestAnimationFrame(animate);}
   function setPointer(x,y,visible){
-   if(!visible){pointer.targetGlow=0;resume();return;}
+   if(!visible)return;
    const view=ambientViewportMetrics(window.visualViewport,window.innerWidth,window.innerHeight,window.devicePixelRatio);
    pointer.targetX=Math.max(0,Math.min(1,(x-view.left)/view.width));pointer.targetY=Math.max(0,Math.min(1,(y-view.top)/view.height));
-   if(pointer.targetGlow===0&&visible){pointer.x=pointer.targetX;pointer.y=pointer.targetY;}
-   pointer.targetGlow=visible?1:0;resume();
+   if(pointer.glow===0&&visible){pointer.x=pointer.targetX;pointer.y=pointer.targetY;}
+   resume();
   }
   canvas.className='ambient-canvas';host.append(canvas);
   canvas.addEventListener('webglcontextlost',()=>{
@@ -766,7 +776,7 @@ function createAmbientRenderer(){
   window.visualViewport?.addEventListener('scroll',resume,{passive:true});
   document.addEventListener('visibilitychange',resume);motion.addEventListener('change',resume);contrast.addEventListener('change',resume);
   updateTheme();host.dataset.renderer='gpu';resume();
-  return{updateTheme,setPointer};
+  return{updateTheme,setPointer,setGlow(value){pointer.glow=value;resume();}};
  }catch{
   stopped=true;cancelAnimationFrame(frame);canvas.remove();
   if(buffer)gl.deleteBuffer(buffer);if(program)gl.deleteProgram(program);
@@ -807,7 +817,8 @@ function setAmbientPointer(x,y,visible){
  const view=ambientViewportMetrics(window.visualViewport,window.innerWidth,window.innerHeight,window.devicePixelRatio);
  const root=document.documentElement;
  if(visible){root.style.setProperty('--ambient-pointer-x',(x-view.left)+'px');root.style.setProperty('--ambient-pointer-y',(y-view.top)+'px');}
- root.style.setProperty('--ambient-pointer-glow',visible?'1':'0');ambientRenderer?.setPointer(x,y,visible);
+ if(visible){ambientPointerPresent=true;ambientRenderer?.setPointer(x,y,true);syncPointerGlow();}
+ else hideShinkaCursor();
 }
 document.addEventListener('pointermove',event=>setAmbientPointer(event.clientX,event.clientY,event.pointerType!=='touch'),{passive:true});
 document.documentElement.addEventListener('pointerleave',()=>setAmbientPointer(0,0,false),{passive:true});
