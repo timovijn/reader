@@ -67,14 +67,15 @@ body[data-theme="dark"]{--paper:#23231f;--ink:#e5e2d8;--muted:#aaa69b;--line:#49
 #browser-import-dialog ol{font-size:11px;color:var(--muted);padding-left:21px;line-height:1.9}#browser-import-dialog li{margin-bottom:10px}
 #browser-import-dialog textarea{height:150px}
 
-/* A quiet, decorative companion, kept outside the reading column. */
-.companion{position:fixed;right:38px;bottom:34px;width:66px;height:66px;border-radius:50%;pointer-events:none;user-select:none;z-index:1;opacity:.9;background:radial-gradient(circle at 27% 28%,rgba(218,197,164,.95),transparent 64%),radial-gradient(circle at 76% 35%,rgba(166,130,102,.93),transparent 65%),radial-gradient(circle at 51% 82%,rgba(205,165,125,.95),transparent 70%),rgba(210,191,165,.45);filter:none;transition:filter var(--companion-duration,14s) ease-in-out}
+/* Independent drift, breath and gradient movement; no blur or scaled bitmap. */
+.companion{position:fixed;right:38px;bottom:34px;width:66px;height:66px;pointer-events:none;user-select:none;z-index:1;opacity:.9}
+.companion-orb{position:absolute;left:50%;top:50%;translate:-50% -50%;width:100%;height:100%;border-radius:50%;background:radial-gradient(circle at 27% 28%,rgba(218,197,164,.95),transparent 64%),radial-gradient(circle at 76% 35%,rgba(166,130,102,.93),transparent 65%),radial-gradient(circle at 51% 82%,rgba(205,165,125,.95),transparent 70%),rgba(210,191,165,.45);background-repeat:no-repeat;background-size:170% 170%,180% 180%,165% 165%;background-position:25% 25%,75% 35%,50% 80%;filter:none}
 body[data-theme="dark"] .companion{opacity:.65}
 .focus .companion{bottom:90px}
 @media(max-width:700px){.companion{right:20px;bottom:28px;width:48px;height:48px;opacity:.85}.focus .companion{bottom:78px}}
-@media(prefers-reduced-motion:reduce){.companion{transition:none;will-change:auto;transform:none!important;filter:none!important}}
+@media(prefers-reduced-motion:reduce){.companion{transform:none!important}.companion-orb{filter:none!important;width:100%!important;height:100%!important}}
 @media print,(forced-colors:active){.companion{display:none}}
-</style></head><body><div class="companion" id="companion" aria-hidden="true"></div><div class="progress" id="progress"></div><header><button class="brand" id="brand" aria-label="Folio home"><svg viewBox="0 0 30 30"><path d="M5 4h17v22H5zM9 8h9M9 12h7M9 16h8M9 20h4M22 7h3v22H8v-3"/></svg>folio<span>_</span></button><nav class="nav"><button id="nav-discover" class="active">Discover</button><button id="nav-saved">My collection <span id="save-count"></span></button><button class="about" id="about-open" aria-label="About Folio">i</button></nav></header>
+</style></head><body><div class="companion" id="companion" aria-hidden="true"><div class="companion-orb" id="companion-orb"></div></div><div class="progress" id="progress"></div><header><button class="brand" id="brand" aria-label="Folio home"><svg viewBox="0 0 30 30"><path d="M5 4h17v22H5zM9 8h9M9 12h7M9 16h8M9 20h4M22 7h3v22H8v-3"/></svg>folio<span>_</span></button><nav class="nav"><button id="nav-discover" class="active">Discover</button><button id="nav-saved">My collection <span id="save-count"></span></button><button class="about" id="about-open" aria-label="About Folio">i</button></nav></header>
 <main class="home" id="home"><section class="intro"><div class="eyebrow"><span class="dot"></span>A quieter corner of the internet</div><h1>A little room<br>to read<span class="cursor" aria-hidden="true">_</span></h1><p>Good stories deserve your full attention.<br>Turn any article into a calm, beautiful reading experience.</p><form class="url-form" id="url-form"><svg viewBox="0 0 24 24"><path d="m10 13 4-4m-6 7-1 1a4 4 0 0 1-6-6l5-5a4 4 0 0 1 6 0m0 12a4 4 0 0 0 6 0l5-5a4 4 0 0 0-6-6l-1 1" transform="translate(1 0) scale(.9)"/></svg><input id="url-input" aria-label="Article URL" type="url" placeholder="Paste an article link here…" required><button class="primary" id="read-button" type="submit">Start reading <span>↗</span></button></form><p class="under-form">Just the words, without the noise. <span style="padding:0 5px">·</span> Or <button id="paste-open">paste article text</button></p><div class="error" id="error" role="alert" hidden></div><button id="browser-import-open" class="browser-import-link">Import from an open browser page ↗</button></section><section class="collection"><div class="section-heading"><h2 id="section-title">A few things worth reading <span>THE FOLIO EDIT</span></h2><span id="section-note">A small selection. A slower pace.</span></div><div class="cards" id="cards"></div><div class="empty" id="empty" hidden><h3>Your next good read belongs here.</h3><p>Open an article and tap the bookmark to add it to your collection.</p></div></section><div class="manifesto"><svg viewBox="0 0 30 30"><path d="M15 24V9m0 9C5 19 4 11 4 5c8 0 12 4 11 13Zm0 3c0-10 4-14 12-14 0 9-4 14-12 14Z"/></svg><p>Less scrolling. More getting lost in a good story.</p><small>MADE FOR THE JOY OF READING</small></div></main>
 <section id="reader" hidden><div class="reader-top"><button class="back" id="back">← <span>Back to your corner</span></button><div class="reader-actions"><button id="bookmark" aria-label="Save article"></button><button id="settings-toggle" aria-expanded="false" aria-controls="settings"><span style="font-family:var(--font-serif);font-size:17px">Aa</span><span class="action-label">Appearance</span></button><button id="focus"><svg viewBox="0 0 24 24"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg><span class="action-label">Focus</span></button><div class="settings" id="settings" hidden><label>Text size</label><div class="setting-row"><button id="size-down" aria-label="Decrease text size">A−</button><button id="size-up" aria-label="Increase text size">A+</button></div><label for="typeface">Typeface</label><select id="typeface"><option value="serif">Martina Plantijn</option><option value="shinka">Shinka</option><option value="shinka-mono">Shinka Mono</option><option value="sans">System Sans</option></select><label for="font-weight">Font weight</label><select id="font-weight"><option value="300">Light</option><option value="400" selected>Regular</option><option value="500">Medium</option><option value="700">Bold</option><option value="900">Black</option></select><label>Page colour</label><div class="setting-row"><button data-theme="paper">Paper</button><button data-theme="white">White</button><button data-theme="dark">Night</button></div><label>Reading width</label><div class="setting-row"><button data-width="660">Narrow</button><button data-width="820">Wide</button></div></div></div></div><article class="article"><div class="eyebrow" id="article-source"></div><h1 id="article-title"></h1><p class="dek" id="article-dek"></p><div class="byline" id="article-byline"></div><div class="article-body" id="article-body"></div><div class="article-end"><span>A moment well spent.</span><a id="original" target="_blank" rel="noopener noreferrer">Read at the source ↗</a></div></article></section><button id="focus-exit" class="focus-exit" hidden>↙ Leave focus view</button><footer><span>Folio · A place for good words.</span><span>No feeds. No noise. Just reading.</span></footer>
 <dialog id="paste-dialog"><button class="dialog-close" data-close aria-label="Close">×</button><h2>Bring your own words.</h2><p>Copy the text from an article you can access, then give it a little room to breathe.</p><form id="paste-form"><label for="paste-title">ARTICLE TITLE</label><input id="paste-title" placeholder="A story worth your time" required maxlength="300"><label for="paste-text">ARTICLE TEXT</label><textarea id="paste-text" placeholder="Paste the article here…" required minlength="50" maxlength="300000"></textarea><button class="primary" type="submit">Open reading view ↗</button></form></dialog><dialog id="browser-import-dialog"><button class="dialog-close" data-close aria-label="Close">×</button><h2>Bring a page into Folio.</h2><p>For websites that refuse direct imports, copy the article from a page you can already read.</p><ol><li>Drag this button to your browser’s bookmarks bar.<br><a class="bookmarklet" id="browser-bookmarklet" href="#" draggable="true">Copy for Folio</a></li><li>Open the article at its source and click that bookmark. It copies the article text, without images, to your clipboard.</li><li>Come back here, paste the copied article below, and open it in Folio.</li></ol><p>Some websites or browsers block bookmarklets. You can still copy the article’s text and use “paste article text”. Nothing is sent from the source page to Folio automatically.</p><form id="browser-import-form"><label for="browser-import-text">COPIED ARTICLE</label><textarea id="browser-import-text" placeholder="Paste the article copied by the bookmark here…" required maxlength="2000000"></textarea><p id="browser-import-error" class="error" role="alert" hidden></p><button class="primary" type="submit">Open reading view ↗</button></form></dialog><dialog id="about-dialog"><button class="dialog-close" data-close aria-label="Close">×</button><div class="eyebrow" style="justify-content:start;margin-bottom:20px">THE IDEA BEHIND FOLIO</div><h2>The internet, at a slower pace.</h2><p>Folio gives good writing a little breathing room. Paste a link, settle into a clean reading view, and make the page feel like your own.</p><p>Article extraction works best on publicly accessible, text-based pages. Paywalls, sign-in screens, bot protection and pages that load their text with JavaScript may prevent extraction. Folio does not bypass these restrictions.</p><p>Your collection and reading preferences stay in this browser. Saved articles don’t sync across devices, and clearing browser data removes them. Opening a link fetches that page through Folio’s server; article images are excluded. The sample essays are original Folio demonstrations.</p></dialog><div class="toast" id="toast" role="status" hidden></div>
@@ -218,30 +219,45 @@ document.fonts.ready.then(scheduleLineNumbers);
 document.fonts.addEventListener('loadingdone',scheduleLineNumbers);
 window.addEventListener('scroll',scheduleReaderEdges,{passive:true});
 window.addEventListener('resize',()=>{scheduleReaderEdges();scheduleLineNumbers()});
-// Each breath has a slightly different pace, depth, drift and colour.
-const companion=$('#companion');
+// Three independent, bounded random tracks avoid a repeating shared rhythm.
+const companion=$('#companion'),companionOrb=$('#companion-orb');
 const companionMotion=matchMedia('(prefers-reduced-motion: reduce)');
-let companionAnimation=null,companionTransform='translate(0px,0px) scale(1)';
-function breatheCompanion(){
- if(companionMotion.matches||document.hidden||companionAnimation)return;
- const duration=6500+Math.random()*3000;
- const drift=()=>((Math.random()-.5)*14).toFixed(2);
- const inhale='translate('+drift()+'px,'+drift()+'px) scale('+(1.17+Math.random()*.07).toFixed(3)+')';
- const rest='translate('+drift()+'px,'+drift()+'px) scale('+(.89+Math.random()*.05).toFixed(3)+')';
- companion.style.setProperty('--companion-duration',duration+'ms');
- companion.style.filter='hue-rotate('+Math.round(Math.random()*12-6)+'deg)';
- const animation=companion.animate([{transform:companionTransform},{transform:inhale,offset:.46+Math.random()*.1},{transform:rest}],{duration,easing:'ease-in-out',fill:'forwards'});
- companionAnimation=animation;
+const companionTracks=[];
+const randomBetween=(min,max)=>min+Math.random()*(max-min);
+let companionInhale=true;
+function advanceCompanion(track){
+ if(companionMotion.matches||document.hidden||track.animation)return;
+ const next=track.next();
+ const animation=track.element.animate([track.current,next.frame],{duration:next.duration,delay:next.delay||0,easing:'cubic-bezier(.45,0,.55,1)',fill:'both'});
+ track.animation=animation;
  animation.finished.then(()=>{
-  if(companionAnimation!==animation)return;
-  companionTransform=rest;companion.style.transform=rest;
-  companionAnimation=null;animation.cancel();breatheCompanion();
+  if(track.animation!==animation)return;
+  track.current=next.frame;
+  for(const [property,value] of Object.entries(track.current))track.element.style[property]=value;
+  track.animation=null;animation.cancel();advanceCompanion(track);
  }).catch(()=>{});
 }
+function companionTrack(element,initial,next){companionTracks.push({element,initial,current:{...initial},next,animation:null});}
+companionTrack(companion,{transform:'translate(0px,0px)'},()=>({
+ frame:{transform:'translate('+randomBetween(-9,9).toFixed(2)+'px,'+randomBetween(-7,7).toFixed(2)+'px)'},
+ duration:randomBetween(4000,9500)
+}));
+companionTrack(companionOrb,{width:'100%',height:'100%'},()=>{
+ const inhale=companionInhale;companionInhale=!companionInhale;
+ const size=(inhale?randomBetween(114,127):randomBetween(89,98)).toFixed(2)+'%';
+ return{frame:{width:size,height:size},duration:inhale?randomBetween(2800,5000):randomBetween(3800,6800),delay:randomBetween(0,inhale?1400:800)};
+});
+companionTrack(companionOrb,{backgroundPosition:'25% 25%,75% 35%,50% 80%',filter:'hue-rotate(0deg)'},()=>{
+ const position=()=>randomBetween(5,95).toFixed(1)+'% '+randomBetween(5,95).toFixed(1)+'%';
+ return{frame:{backgroundPosition:[position(),position(),position()].join(','),filter:'hue-rotate('+randomBetween(-5,5).toFixed(2)+'deg)'},duration:randomBetween(5500,12000)};
+});
 function syncCompanion(){
- if(companionMotion.matches){companionAnimation?.cancel();companionAnimation=null;companionTransform='translate(0px,0px) scale(1)';companion.style.transform=companionTransform;companion.style.filter='none';return;}
- if(document.hidden){companionAnimation?.pause();return;}
- if(companionAnimation)companionAnimation.play();else breatheCompanion();
+ if(companionMotion.matches){
+  companionInhale=true;
+  for(const track of companionTracks){track.animation?.cancel();track.animation=null;track.current={...track.initial};for(const [property,value] of Object.entries(track.initial))track.element.style[property]=value;}
+  return;
+ }
+ for(const track of companionTracks){if(document.hidden)track.animation?.pause();else if(track.animation)track.animation.play();else advanceCompanion(track);}
 }
 companionMotion.addEventListener('change',syncCompanion);
 document.addEventListener('visibilitychange',syncCompanion);
