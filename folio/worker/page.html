@@ -138,6 +138,8 @@ body{isolation:isolate;--ambient-base:#b7b4aa;--ambient-shadow:rgba(68,66,59,.6)
 body[data-theme="white"]{--ink:#252525;--ambient-base:#f5f5ef;--ambient-shadow:rgba(152,160,139,.16);--ambient-mid:rgba(197,195,177,.2);--ambient-light:rgba(255,255,255,.95);--paper:#f5f5ef;--muted:#65665c;--grain-opacity:.026}
 body[data-theme="dark"]{--ink:#e5e2d8;--ambient-base:#25271f;--ambient-shadow:rgba(8,15,9,.62);--ambient-mid:rgba(80,79,56,.32);--ambient-light:rgba(130,128,99,.2);--paper:#25271f;--muted:#b5b5a3;--grain-opacity:.032}
 .ambient-background{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;contain:strict;background:var(--ambient-base)}
+.ambient-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.ambient-background[data-renderer="gpu"] .ambient-field,.ambient-background[data-renderer="gpu"] .ambient-grain{display:none}
 .ambient-field{position:absolute;inset:-24%;background:radial-gradient(ellipse at 8% 5%,var(--ambient-shadow) 0%,transparent 59%),radial-gradient(ellipse at 90% 42%,var(--ambient-mid) 0%,transparent 62%),radial-gradient(ellipse at 14% 92%,var(--ambient-light) 0%,transparent 62%);animation:ambient-drift 160s ease-in-out infinite alternate;will-change:transform}
 .ambient-field::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 76% 18%,var(--ambient-light) 0%,transparent 58%),radial-gradient(ellipse at 66% 88%,var(--ambient-shadow) 0%,transparent 65%);opacity:.18;animation:ambient-counterdrift 210s ease-in-out infinite alternate}
 .ambient-grain{position:absolute;inset:0;opacity:var(--grain-opacity);background-image:var(--ambient-noise,url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='192' height='192' viewBox='0 0 192 192'%3E%3Cfilter id='grain' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Cpath fill='%23000' filter='url(%23grain)' d='M0 0h192v192H0z'/%3E%3C/svg%3E"));background-size:var(--ambient-noise-size,192px) var(--ambient-noise-size,192px);mix-blend-mode:normal}
@@ -158,6 +160,7 @@ body[data-theme="dark"]{--ink:#e5e2d8;--ambient-base:#25271f;--ambient-shadow:rg
 <dialog id="paste-dialog"><button class="dialog-close" data-close aria-label="Close">Close</button><h2>Bring your own words.</h2><p>Copy the text from an article you can access, then give it a little room to breathe.</p><form id="paste-form"><label for="paste-title">ARTICLE TITLE</label><input id="paste-title" placeholder="A story worth your time" required maxlength="300"><label for="paste-text">ARTICLE TEXT</label><textarea id="paste-text" placeholder="Paste the article here…" required minlength="50" maxlength="300000"></textarea><button class="primary" type="submit">Read</button></form></dialog><dialog id="browser-import-dialog"><button class="dialog-close" data-close aria-label="Close">Close</button><h2>Bring a page into Folio.</h2><p>For websites that refuse direct imports, copy the article from a page you can already read.</p><ol><li>Drag this button to your browser’s bookmarks bar.<br><a class="bookmarklet" id="browser-bookmarklet" href="#" draggable="true">Copy for Folio</a></li><li>Open the article at its source and click that bookmark. It copies the article text, without images, to your clipboard.</li><li>Come back here, paste the copied article below, and open it in Folio.</li></ol><p>Some websites or browsers block bookmarklets. You can still copy the article’s text and use “paste article text”. Nothing is sent from the source page to Folio automatically.</p><form id="browser-import-form"><label for="browser-import-text">COPIED ARTICLE</label><textarea id="browser-import-text" placeholder="Paste the article copied by the bookmark here…" required maxlength="2000000"></textarea><p id="browser-import-error" class="error" role="alert" hidden></p><button class="primary" type="submit">Read</button></form></dialog><dialog id="about-dialog"><button class="dialog-close" data-close aria-label="Close">Close</button><div class="eyebrow" style="justify-content:start;margin-bottom:20px">THE IDEA BEHIND FOLIO</div><h2>The internet, at a slower pace.</h2><p>Folio gives good writing a little breathing room. Paste a link, settle into a clean reading view, and make the page feel like your own.</p><p>Article extraction works best on publicly accessible, text-based pages. Paywalls, sign-in screens, bot protection and pages that load their text with JavaScript may prevent extraction. Folio does not bypass these restrictions.</p><p>Your collection and reading preferences stay in this browser. Saved articles don’t sync across devices, and clearing browser data removes them. Opening a link fetches that page through Folio’s server; article images are excluded. The sample essays are original Folio demonstrations.</p></dialog><div class="toast" id="toast" role="status" hidden></div>
 <script>
 const $=s=>document.querySelector(s);
+let ambientRenderer=null;
 const samples=[{id:'folio-spaces',title:'The quiet beauty of spaces that let us breathe',excerpt:'On natural light, well-worn materials, and the art of making a home feel like yourself.',category:'Architecture & living',minutes:4,body:[['p','There is a particular kind of room that asks very little of you. It might have a chair near a window, a table marked by years of use, and a patch of afternoon light that moves, almost imperceptibly, across the floor. Nothing announces itself. And yet you find yourself wanting to stay.'],['p','We often talk about the things we put into our homes. We talk less about the space we leave between them. That space is where a room begins to breathe: where a familiar object can be noticed again, where daylight has something to fall on, where a person can simply sit.'],['h2','A room shaped by living'],['p','The most inviting homes rarely look finished. A book lies open on an armrest. A wooden surface has grown darker where hands meet it. A linen curtain hangs a little unevenly. These details are not failures of design; they are the record of a life taking place.'],['blockquote','A good room leaves enough space for you to become part of it.'],['p','Rather than beginning with a shopping list, perhaps we could begin by paying attention. Where do we sit in the morning? Which corner catches the last light? Which objects do we reach for without thinking? The answers describe a home more honestly than a floor plan.'],['h2','Letting materials grow older'],['p','Stone, wood, linen and clay all make their own agreements with time. They soften, develop colour, carry small imperfections. Choosing them means accepting change as part of the pleasure of a room.'],['p','A home need not be spare to feel calm. It needs a rhythm that suits the people who live in it. Sometimes finding that rhythm means moving a chair towards the window, leaving a wall empty, or putting the objects you love within reach.'],['p','Then, for a moment, stop arranging. Let the afternoon arrive.']]},{id:'folio-walking',title:'In praise of taking the long way home',excerpt:'A gentle reminder that the most interesting route is rarely the most efficient one.',category:'Culture & everyday life',minutes:3,body:[['p','The shortest way home takes seventeen minutes. There is another way, along the water and through a street lined with trees, that takes nearly twice as long. For years I treated the difference as time lost. Lately, I have begun to think of it as time returned.'],['p','Walking without a precise ambition changes the way a place reveals itself. You notice a window you have passed a hundred times, the smell of bread from an open doorway, the small weekly changes in a garden. The familiar becomes a little unfamiliar again.'],['h2','A different measure of distance'],['p','Much of a working day is organised around getting somewhere: the next meeting, the end of a list, the answer to a question. A walk can be a rare stretch of time that has no such demand. Its value does not depend on what you produce at the other end.'],['blockquote','Some journeys are worth making a little longer.'],['p','There is no need to turn this into a practice to perfect. Leave your phone in your pocket. Take a turn you usually pass. If it rains, find a doorway and wait for a minute. The world has plenty to offer when you give it a little room.'],['h2','Coming back to yourself'],['p','By the time I reach my own street, the unresolved questions of the day have usually become quieter. They have not all been answered. But they have found their proper size.'],['p','I still take the short route sometimes. There are groceries to carry, people to meet, and evenings when getting home is the whole point. But when I can, I choose the extra distance. It has become one of the simplest things I do for myself.']]},{id:'folio-attention',title:'The simple pleasure of doing one thing',excerpt:'A cup of coffee. An open book. A small argument for being here, now.',category:'Mindful moments',minutes:3,body:[['p','This morning I made coffee and sat by the window. A book was on the table. My phone was in another room. For the first few minutes, I kept expecting something to happen. Then I realised that something already was.'],['p','Attention is a curious thing. We talk about spending it, paying it, losing it. We rarely talk about enjoying it. Yet there is a distinct pleasure in giving yourself fully to a small task: chopping herbs, reading a few pages, listening to someone finish a story.'],['h2','Enough for a moment'],['p','Doing one thing at a time can feel strangely incomplete. There is always another message to check, something useful to play in the background, a way to make the interval count. But not every interval needs to be filled twice.'],['blockquote','A moment does not have to be productive to be well spent.'],['p','This is less a rule than an invitation. Choose something you already enjoy and let it be the only thing for a little while. Read slowly enough to notice the shape of a sentence. Make lunch without a screen beside the chopping board. Sit with your coffee until the cup is empty.'],['h2','Small, ordinary pleasures'],['p','The point is not to create a more impressive morning. It is to notice the morning you have. Light through a window. A warm cup in your hand. The company of a writer whose words have travelled a long way to reach you.'],['p','After twenty minutes I put the book down. There was work to do. But something about the day had changed: it had begun with an experience I could actually remember.']]}];
 let saved=[],prefs={theme:'paper',font:'shinka-mono',size:18,width:660,weight:400},current=null,tab='discover',saveFailed=false;
 try{const s=JSON.parse(localStorage.getItem('folio-collection')||'[]');if(Array.isArray(s))saved=s.filter(x=>x&&typeof x.id==='string'&&typeof x.title==='string'&&Array.isArray(x.body)).slice(0,100);const p=JSON.parse(localStorage.getItem('folio-preferences')||'{}');if(p&&typeof p==='object')prefs={...prefs,...p};if(localStorage.getItem('folio-design')!=='typewriter-v1'){prefs.font='shinka-mono';prefs.size=18;localStorage.setItem('folio-design','typewriter-v1');}}catch{}
@@ -181,7 +184,7 @@ function applyPrefs(){
  document.documentElement.style.setProperty('--reader-font',typeface.family);
  document.documentElement.style.setProperty('--article-weight',String(prefs.weight));
  if(!['paper','white','dark'].includes(prefs.theme))prefs.theme='paper';
- prefs.size=Math.max(16,Math.min(30,Number(prefs.size)||21));prefs.width=prefs.width===820?820:660;document.body.dataset.theme=prefs.theme;document.body.dataset.font=prefs.font;document.documentElement.style.setProperty('--article-size',prefs.size+'px');document.documentElement.style.setProperty('--article-width',prefs.width+'px');document.querySelectorAll('[data-theme]').forEach(b=>{if(b.tagName==='BUTTON')b.classList.toggle('chosen',b.dataset.theme===prefs.theme)});document.querySelectorAll('button[data-width]').forEach(b=>b.classList.toggle('chosen',Number(b.dataset.width)===prefs.width));try{localStorage.setItem('folio-preferences',JSON.stringify(prefs))}catch{}scheduleLineNumbers();updateShinkaCursor();}
+ prefs.size=Math.max(16,Math.min(30,Number(prefs.size)||21));prefs.width=prefs.width===820?820:660;document.body.dataset.theme=prefs.theme;document.body.dataset.font=prefs.font;document.documentElement.style.setProperty('--article-size',prefs.size+'px');document.documentElement.style.setProperty('--article-width',prefs.width+'px');document.querySelectorAll('[data-theme]').forEach(b=>{if(b.tagName==='BUTTON')b.classList.toggle('chosen',b.dataset.theme===prefs.theme)});document.querySelectorAll('button[data-width]').forEach(b=>b.classList.toggle('chosen',Number(b.dataset.width)===prefs.width));try{localStorage.setItem('folio-preferences',JSON.stringify(prefs))}catch{}scheduleLineNumbers();updateShinkaCursor();ambientRenderer?.updateTheme();}
 function isSaved(id){return saved.some(x=>x.id===id)}
 function toggleSave(article){const before=[...saved];if(isSaved(article.id))saved=saved.filter(x=>x.id!==article.id);else saved.unshift(article);if(!persist()){saved=before;return}renderCards();updateBookmark();notify(isSaved(article.id)?'A good read, saved for later.':'Removed from your collection.');}
 function updateBookmark(){const b=$('#bookmark');const yes=current&&isSaved(current.id);b.textContent=yes?'Saved':'Save';b.setAttribute('aria-label',yes?'Remove from collection':'Save article');b.setAttribute('aria-pressed',String(!!yes));}
@@ -529,10 +532,113 @@ window.addEventListener('pointerdown',event=>{if(event.pointerType!=='touch')wak
 window.addEventListener('wheel',wakeShinkaCursor,{passive:true});
 document.addEventListener('scroll',wakeShinkaCursor,{passive:true,capture:true});
 window.visualViewport?.addEventListener('scroll',wakeShinkaCursor,{passive:true});
+// Compose gradients and dither in one high-precision pass. A separate CSS grain
+// layer cannot undo quantization that has already happened in gradient textures.
+function createAmbientRenderer(){
+ const host=$('.ambient-background'),canvas=document.createElement('canvas');
+ const gl=canvas.getContext('webgl',{alpha:false,antialias:false,depth:false,stencil:false,powerPreference:'low-power'});
+ if(!gl)return null;
+ let program,buffer,frame=0,stopped=false,lastDraw=-Infinity;
+ const motion=matchMedia('(prefers-reduced-motion: reduce)');
+ const contrast=matchMedia('(forced-colors: active)');
+ try{
+  const precision=gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER,gl.HIGH_FLOAT);
+  if(!precision||precision.precision<16)throw Error('High precision unavailable');
+  function shader(type,source){
+   const shader=gl.createShader(type);gl.shaderSource(shader,source);gl.compileShader(shader);
+   if(!gl.getShaderParameter(shader,gl.COMPILE_STATUS)){gl.deleteShader(shader);throw Error('Gradient shader unavailable');}
+   return shader;
+  }
+  const vertex=shader(gl.VERTEX_SHADER,'attribute vec2 position; void main(){gl_Position=vec4(position,0.0,1.0);}');
+  const fragment=shader(gl.FRAGMENT_SHADER,`
+   precision highp float;
+   uniform vec2 resolution;
+   uniform float time;
+   uniform vec4 baseColor,shadowColor,midColor,lightColor;
+   float field(vec2 uv,vec2 centre,vec2 radius){
+    return 1.0-smoothstep(0.0,1.0,length((uv-centre)/radius));
+   }
+   float random(vec2 pixel){
+    vec3 p=fract(vec3(pixel.xyx)*0.1031);
+    p+=dot(p,p.yzx+33.33);
+    return fract((p.x+p.y)*p.z);
+   }
+   vec3 layer(vec3 colour,vec4 paint,float weight){return mix(colour,paint.rgb,paint.a*weight);}
+   void main(){
+    vec2 uv=gl_FragCoord.xy/resolution;
+    uv.y=1.0-uv.y;
+    vec2 drift=vec2(sin(time/74.0),sin(time/93.0))*0.045;
+    vec3 colour=baseColor.rgb;
+    colour=layer(colour,lightColor,field(uv,vec2(0.14,0.92)-drift,vec2(0.9,1.1)));
+    colour=layer(colour,midColor,field(uv,vec2(0.9,0.42)+drift,vec2(0.9,1.0)));
+    colour=layer(colour,shadowColor,field(uv,vec2(0.02,0.0)+drift,vec2(1.12,1.3)));
+    colour=layer(colour,lightColor,0.18*field(uv,vec2(0.76,0.18)-drift,vec2(0.9,1.0)));
+    colour=layer(colour,shadowColor,0.18*field(uv,vec2(0.66,0.88)+drift,vec2(0.95,1.1)));
+    // Stationary, zero-mean triangular noise before the final 8-bit write.
+    // The same monochrome offset preserves the palette and avoids colour specks.
+    float dither=(random(gl_FragCoord.xy)+random(gl_FragCoord.xy+vec2(139.7,73.1))-1.0)*1.5/255.0;
+    gl_FragColor=vec4(clamp(colour+dither,0.0,1.0),1.0);
+   }
+  `);
+  program=gl.createProgram();gl.attachShader(program,vertex);gl.attachShader(program,fragment);gl.linkProgram(program);
+  gl.deleteShader(vertex);gl.deleteShader(fragment);
+  if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw Error('Gradient program unavailable');
+  gl.useProgram(program);gl.disable(gl.DITHER);
+  buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);
+  const position=gl.getAttribLocation(program,'position');gl.enableVertexAttribArray(position);gl.vertexAttribPointer(position,2,gl.FLOAT,false,0,0);
+  const uniforms=Object.fromEntries(['resolution','time','baseColor','shadowColor','midColor','lightColor'].map(name=>[name,gl.getUniformLocation(program,name)]));
+  function colour(value){
+   value=value.trim();
+   if(/^#[0-9a-f]{6}$/i.test(value))return[1,3,5].map(i=>parseInt(value.slice(i,i+2),16)/255).concat(1);
+   const numbers=value.match(/[\d.]+/g)?.map(Number)||[];
+   return[numbers[0]/255,numbers[1]/255,numbers[2]/255,numbers[3]??1];
+  }
+  function updateTheme(){
+   if(stopped)return;
+   const styles=getComputedStyle(document.body);
+   for(const [uniform,variable] of [['baseColor','base'],['shadowColor','shadow'],['midColor','mid'],['lightColor','light']])gl.uniform4fv(uniforms[uniform],colour(styles.getPropertyValue('--ambient-'+variable)));
+   draw(performance.now());
+  }
+  function draw(now){
+   if(stopped||document.hidden||contrast.matches)return;
+   const dpr=Math.max(1,window.devicePixelRatio||1);
+   const scale=Math.min(dpr,Math.sqrt(12000000/Math.max(1,window.innerWidth*window.innerHeight)));
+   const width=Math.max(1,Math.round(window.innerWidth*scale)),height=Math.max(1,Math.round(window.innerHeight*scale));
+   if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;gl.viewport(0,0,width,height);}
+   gl.uniform2f(uniforms.resolution,width,height);gl.uniform1f(uniforms.time,motion.matches?0:now/1000);
+   gl.drawArrays(gl.TRIANGLES,0,6);lastDraw=now;
+  }
+  function animate(now){
+   frame=0;if(stopped||document.hidden||motion.matches||contrast.matches)return;
+   // Movement is very slow; 20 fps avoids redrawing at the display refresh rate.
+   if(now-lastDraw>=50)draw(now);
+   frame=requestAnimationFrame(animate);
+  }
+  function resume(){
+   cancelAnimationFrame(frame);frame=0;if(stopped)return;
+   draw(performance.now());
+   if(!document.hidden&&!motion.matches&&!contrast.matches)frame=requestAnimationFrame(animate);
+  }
+  canvas.className='ambient-canvas';host.append(canvas);
+  canvas.addEventListener('webglcontextlost',()=>{
+   stopped=true;cancelAnimationFrame(frame);canvas.remove();delete host.dataset.renderer;updateAmbientDither();
+  });
+  window.addEventListener('resize',resume,{passive:true});
+  document.addEventListener('visibilitychange',resume);motion.addEventListener('change',resume);contrast.addEventListener('change',resume);
+  updateTheme();host.dataset.renderer='gpu';resume();
+  return{updateTheme};
+ }catch{
+  stopped=true;cancelAnimationFrame(frame);canvas.remove();
+  if(buffer)gl.deleteBuffer(buffer);if(program)gl.deleteProgram(program);
+  return null;
+ }
+}
 // Fractal SVG noise is correlated and too low in contrast to hide colour bands.
 // Use static, full-range monochrome noise at one sample per physical pixel.
 let ambientNoiseDensity=0;
 function updateAmbientDither(){
+ if($('.ambient-background').dataset.renderer==='gpu')return;
  const density=Math.max(1,window.devicePixelRatio||1);
  if(density===ambientNoiseDensity)return;
  try{
@@ -553,6 +659,7 @@ function updateAmbientDither(){
  }catch{/* Retain the inline grain texture when canvas is unavailable. */}
 }
 window.addEventListener('resize',updateAmbientDither,{passive:true});
-updateAmbientDither();
+ambientRenderer=createAmbientRenderer();
+if(!ambientRenderer)updateAmbientDither();
 applyPrefs();renderCards();
 </script></body></html>
