@@ -59,3 +59,18 @@ assert.notEqual(first.angle,second.angle);assert.notEqual(first.warpX,second.war
 assert.ok(first.x>=-.12&&first.x<=.12);assert.ok(second.y>=-.12&&second.y<=.12);
 assert.equal(composition(()=>.2).angle,first.angle);
 console.log('Passed: varied per-load gradient compositions and bounded offsets.');
+const baseline=load('textRectBaseline','lineNumberTop');
+const numberTop=load('lineNumberTop','scheduleLineNumbers',{textRectBaseline:baseline});
+// The number's baseline stays level with the text as font size/descenders grow.
+assert.equal(baseline(40,18,14,4),54);
+assert.equal(numberTop(54,7,2),47);
+assert.equal(baseline(40,36,28,8),68);
+assert.equal(numberTop(68,7,2),61);
+for(const scale of [.65,1,1.25,2,4]){
+ const textBaseline=baseline(123.5,22*scale,17*scale,5*scale);
+ assert.equal(numberTop(textBaseline,7,2)+7,textBaseline);
+}
+// Font boxes with extra leading retain the correct baseline rather than
+// aligning to descender space at the bottom of their bounding rectangles.
+assert.equal(baseline(0,24,14,4),17);
+console.log('Passed: line-number baseline alignment across text zoom, fractional positions and font leading.');

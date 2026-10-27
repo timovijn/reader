@@ -52,7 +52,7 @@ body[data-theme="dark"]{--paper:#23231f;--ink:#e5e2d8;--muted:#aaa69b;--line:#49
 .article{max-width:calc(var(--article-width) + 16px);padding-left:40px;padding-right:24px}
 .article-body{position:relative}
 .line-numbers{position:absolute;inset:0 auto 0 -34px;width:23px;pointer-events:none;user-select:none;-webkit-user-select:none;direction:ltr;opacity:var(--pointer-ink-opacity,0)}
-.line-number{position:absolute;inset-inline-end:0;transform:translateY(-100%);color:var(--muted);opacity:.38;font:400 9px/1 var(--font-mono);font-variant-numeric:tabular-nums;text-align:right}
+.line-number{position:absolute;inset-inline-end:0;color:var(--muted);opacity:.38;font:400 9px/1 var(--font-mono);font-variant-numeric:tabular-nums;text-align:right}
 
 
 @media(max-width:700px){.article{padding-inline:44px 22px}.line-numbers{left:-28px;right:auto;width:20px}}
@@ -283,18 +283,42 @@ function currentReadingViewport(){
  const origin=$('#selection-ink').getBoundingClientRect();
  return readerViewportMetrics(window.visualViewport,{pageTop:-origin.top,pageLeft:-origin.left,height:window.innerHeight,width:window.innerWidth});
 }
-function scheduleLineNumbers(){
- if(!current||lineNumberFrame)return;
- lineNumberFrame=requestAnimationFrame(()=>{
+function textRectBaseline(top,height,ascent,descent){
+ return top+(height-ascent-descent)/2+ascent;
+}
+function lineNumberTop(baseline,ascent,descent){
+ return baseline-textRectBaseline(0,9,ascent,descent);
+}
+function scheduleLineNumbers(immediate=false){
+ if(!current)return;
+ if(immediate===true){cancelAnimationFrame(lineNumberFrame);lineNumberFrame=0;measureLineNumbers();return;}
+ if(lineNumberFrame)return;
+ lineNumberFrame=requestAnimationFrame(measureLineNumbers);
+}
+function measureLineNumbers(){
   lineNumberFrame=0;if(!current)return;
   const root=$('#article-body');root.querySelector('.line-numbers')?.remove();
   const origin=root.getBoundingClientRect().top;
+  const context=document.createElement('canvas').getContext('2d'),fontMetrics=new Map();
+  function metrics(font,size){
+   if(!fontMetrics.has(font)){
+    let ascent=size*.8,descent=size*.2;
+    if(context){context.font=font;const measured=context.measureText('Hg');
+     ascent=measured.fontBoundingBoxAscent??measured.actualBoundingBoxAscent??ascent;
+     descent=measured.fontBoundingBoxDescent??measured.actualBoundingBoxDescent??descent;
+    }
+    fontMetrics.set(font,{ascent,descent});
+   }
+   return fontMetrics.get(font);
+  }
   const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
   const range=document.createRange();const rects=[];
   while(walker.nextNode()){
    const node=walker.currentNode;if(!node.textContent.trim())continue;
+   const style=getComputedStyle(node.parentElement),size=parseFloat(style.fontSize);
+   const metric=metrics(style.fontStyle+' '+style.fontWeight+' '+style.fontSize+' '+style.fontFamily,size);
    range.selectNodeContents(node);
-   for(const rect of range.getClientRects())if(rect.width>0&&rect.height>0)rects.push({top:rect.top-origin,height:rect.height,center:rect.top-origin+rect.height/2});
+   for(const rect of range.getClientRects())if(rect.width>0&&rect.height>0)rects.push({top:rect.top-origin,height:rect.height,center:rect.top-origin+rect.height/2,baseline:textRectBaseline(rect.top-origin,rect.height,metric.ascent,metric.descent)});
   }
   rects.sort((a,b)=>a.center-b.center);
   const lines=[];
@@ -306,11 +330,11 @@ function scheduleLineNumbers(){
    else lines.push({...rect});
   }
   const gutter=document.createElement('div');gutter.className='line-numbers';gutter.setAttribute('aria-hidden','true');
-  // Anchor the small number's bottom to the measured text rectangle's bottom;
-  // a full-height line box would vertically centre the digits instead.
-  lines.forEach((line,index)=>{const number=document.createElement('span');number.className='line-number';number.textContent=String(index+1);number.style.top=(line.top+line.height)+'px';gutter.append(number)});
+  const digitMetrics=metrics('400 9px "Shinka Mono"',9);
+  // Align baselines rather than the bottoms of font boxes, whose descender
+  // space grows with zoom. The tiny digits retain their own fixed line height.
+  lines.forEach((line,index)=>{const number=document.createElement('span');number.className='line-number';number.textContent=String(index+1);number.style.top=lineNumberTop(line.baseline,digitMetrics.ascent,digitMetrics.descent)+'px';gutter.append(number)});
   root.append(gutter);scheduleSelectionInk();
- });
 }
 const articleResizeObserver=new ResizeObserver(()=>{scheduleLineNumbers();scheduleScrollDot()});
 articleResizeObserver.observe($('#article-body'));
@@ -587,7 +611,7 @@ function setTextPinchZoom(value,x=window.innerWidth/2,y=window.innerHeight/2){
   document.documentElement.style.setProperty('--text-zoom',String(textPinchZoom));
   const after=range?range.getBoundingClientRect().top:anchor?.getBoundingClientRect().top;
   if(Number.isFinite(after))window.scrollBy({top:after-before,behavior:'instant'});
-  clearSelectionInk();refreshReaderGeometry();
+  clearSelectionInk();scheduleLineNumbers(true);scheduleSelectionInk();scheduleScrollDot();
  });
 }
 document.addEventListener('wheel',event=>{

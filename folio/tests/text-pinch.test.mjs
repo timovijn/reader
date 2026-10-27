@@ -11,7 +11,8 @@ const context={
   documentElement:{style:{setProperty:(k,v)=>styles.set(k,v)},classList:{add:name=>classes.add(name)}},elementFromPoint:()=>null},
  window:{innerWidth:1000,innerHeight:800,scrollBy:()=>{}},
  requestAnimationFrame:callback=>{frames.push(callback);return frames.length;},
- $:selector=>selector==='#zoom-reset'?reset:selector==='#zoom-feedback'?feedback:scope,current:{},clearSelectionInk:()=>{},refreshReaderGeometry:()=>geometryUpdates++,
+ $:selector=>selector==='#zoom-reset'?reset:selector==='#zoom-feedback'?feedback:scope,current:{},clearSelectionInk:()=>{},
+ scheduleLineNumbers:immediate=>{assert.equal(immediate,true);geometryUpdates++;},scheduleSelectionInk:()=>{},scheduleScrollDot:()=>{},
  setTimeout:(callback,delay)=>{timers.set(++nextTimer,{callback,delay});return nextTimer;},clearTimeout:id=>timers.delete(id)
 };
 vm.runInNewContext(source.slice(source.indexOf('function textPinchScale('),source.indexOf('function ambientGrainMetrics(')),context);
