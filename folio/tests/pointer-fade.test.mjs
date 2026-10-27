@@ -20,14 +20,16 @@ function advance(milliseconds){
 const duration=context.pointerFadeDuration;
 assert.equal(duration,1600);
 context.wakeShinkaCursor();advance(duration/2);
-assert.equal(glow,.5);assert.equal(styles.get('--cursor-arrow'),'alpha:0.5, default');
+assert.equal(glow,.5);assert.equal(styles.get('--cursor-arrow'),'alpha:0.5, default');assert.equal(styles.get('--pointer-ink-opacity'),'0.5');
 advance(duration/2);assert.equal(glow,1);assert.equal(styles.get('--cursor-arrow'),'full, default');
 advance(2000-duration);advance(duration/2);assert.equal(glow,.5);
 advance(duration/2);assert.equal(glow,0);assert.equal(styles.get('--cursor-arrow'),'none');
+assert.equal(styles.get('--pointer-ink-opacity'),'0');
 context.wakeShinkaCursor();advance(duration/2);context.hideShinkaCursor();advance(duration/2);
 assert.equal(glow,.25);
 context.wakeShinkaCursor();advance(duration/2);assert.equal(glow,.625);
 assert.equal(Number(styles.get('--ambient-pointer-glow')),glow);
+assert.equal(Number(styles.get('--pointer-ink-opacity')),glow);
 console.log('Passed: shared 1.6-second pointer/glow fades in both directions, idle delay, pointer leave and smooth reversals.');
 let wakes=0;
 const start=source.indexOf('let lastCursorPosition=null;');

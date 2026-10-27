@@ -51,8 +51,8 @@ body[data-theme="dark"]{--paper:#23231f;--ink:#e5e2d8;--muted:#aaa69b;--line:#49
 
 .article{max-width:calc(var(--article-width) + 16px);padding-left:40px;padding-right:24px}
 .article-body{position:relative}
-.line-numbers{position:absolute;inset:0 auto 0 -34px;width:23px;pointer-events:none;user-select:none;-webkit-user-select:none;direction:ltr}
-.line-number{position:absolute;inset-inline-end:0;color:var(--muted);opacity:.38;font:400 9px/1 var(--font-mono);font-variant-numeric:tabular-nums;text-align:right}
+.line-numbers{position:absolute;inset:0 auto 0 -34px;width:23px;pointer-events:none;user-select:none;-webkit-user-select:none;direction:ltr;opacity:var(--pointer-ink-opacity,0)}
+.line-number{position:absolute;inset-inline-end:0;transform:translateY(-100%);color:var(--muted);opacity:.38;font:400 9px/1 var(--font-mono);font-variant-numeric:tabular-nums;text-align:right}
 
 
 @media(max-width:700px){.article{padding-inline:44px 22px}.line-numbers{left:-28px;right:auto;width:20px}}
@@ -306,7 +306,9 @@ function scheduleLineNumbers(){
    else lines.push({...rect});
   }
   const gutter=document.createElement('div');gutter.className='line-numbers';gutter.setAttribute('aria-hidden','true');
-  lines.forEach((line,index)=>{const number=document.createElement('span');number.className='line-number';number.textContent=String(index+1);number.style.top=line.top+'px';number.style.lineHeight=line.height+'px';gutter.append(number)});
+  // Anchor the small number's bottom to the measured text rectangle's bottom;
+  // a full-height line box would vertically centre the digits instead.
+  lines.forEach((line,index)=>{const number=document.createElement('span');number.className='line-number';number.textContent=String(index+1);number.style.top=(line.top+line.height)+'px';gutter.append(number)});
   root.append(gutter);scheduleSelectionInk();
  });
 }
@@ -478,6 +480,7 @@ function shinkaCursorImage(weight,ink,paper,opacity=1){
 function syncPointerGlow(){
  const opacity=ambientPointerPresent?Math.round(shinkaCursorOpacity*32)/32:0;
  document.documentElement.style.setProperty('--ambient-pointer-glow',String(opacity));
+ document.documentElement.style.setProperty('--pointer-ink-opacity',String(opacity));
  ambientRenderer?.setGlow(opacity);
 }
 function fadeShinkaCursor(target,duration){
