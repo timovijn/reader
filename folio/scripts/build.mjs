@@ -1,5 +1,5 @@
 import {fileURLToPath} from 'node:url';
-import {readFile,mkdir,writeFile,copyFile} from 'node:fs/promises';
+import {readFile,readdir,mkdir,writeFile,copyFile} from 'node:fs/promises';
 // Resolve inputs from this script, so builds work from either Vercel root.
 process.chdir(fileURLToPath(new URL('..', import.meta.url)));
 await mkdir('dist/server',{recursive:true});await mkdir('dist/.openai',{recursive:true});
@@ -7,12 +7,15 @@ await mkdir('dist/public',{recursive:true});
 const html=await readFile('worker/page.html','utf8');
 await mkdir('dist/public/fonts',{recursive:true});
 const fonts = {};
-for (const style of ['Light', 'LightItalic', 'Regular', 'Italic', 'Medium', 'MediumItalic', 'Bold', 'BoldItalic', 'Black', 'BlackItalic']) {
-  const name = `MartinaPlantijn-${style}.otf`;
-  const bytes = await readFile(`fonts/${name}`);
-  if (bytes.subarray(0,4).toString() !== 'OTTO') throw new Error(`Invalid OpenType font: ${name}`);
-  await writeFile(`dist/public/fonts/${name}`, bytes);
-  fonts[`/fonts/${name}`] = bytes.toString('base64');
+for (const family of ['MartinaPlantijn', 'Shinka']) {
+  for (const name of await readdir(`fonts/${family}`)) {
+    if (!/\.(otf|woff2)$/.test(name)) continue;
+    const bytes = await readFile(`fonts/${family}/${name}`);
+    const signature = name.endsWith('.woff2') ? 'wOF2' : 'OTTO';
+    if (bytes.subarray(0,4).toString() !== signature) throw new Error(`Invalid font: ${name}`);
+    await writeFile(`dist/public/fonts/${name}`, bytes);
+    fonts[`/fonts/${name}`] = { data: bytes.toString('base64'), type: name.endsWith('.woff2') ? 'font/woff2' : 'font/otf' };
+  }
 }
 const worker=(await readFile('worker/index.js','utf8'))
   .replace('"__FOLIO_HTML__"',JSON.stringify(html))
