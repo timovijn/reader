@@ -663,30 +663,35 @@ function createAmbientRenderer(){
                mix(random(cell+vec2(0.0,1.0)),random(cell+vec2(1.0,1.0)),f.x),f.y);
    }
    vec3 layer(vec3 colour,vec4 paint,float weight){return mix(colour,paint.rgb,paint.a*weight);}
+   vec2 gradientCoordinates(vec2 point){
+    point=mat2(composition.x,composition.y,-composition.y,composition.x)*(point-0.5)+0.5+composition.zw;
+    vec2 warp=vec2(flowNoise(point*2.6+shapeSeed),flowNoise(point*2.4+shapeSeed.yx+vec2(17.3,8.7)))-0.5;
+    return point+warp*0.44;
+   }
    void main(){
     vec2 uv=gl_FragCoord.xy/resolution;
     uv.y=1.0-uv.y;
-    vec2 screenUv=uv;
-    uv=mat2(composition.x,composition.y,-composition.y,composition.x)*(uv-0.5)+0.5+composition.zw;
-    const float time=0.0;
     // Evaluate the entire colour field in visible-screen coordinates: pinch
     // zoom and panning affect the document, not the background composition.
-    // Warp static colour fields into irregular contours.
-    vec2 warp=vec2(flowNoise(uv*2.6+shapeSeed+vec2(time/63.0,-time/87.0)),
-                   flowNoise(uv*2.4+shapeSeed.yx+vec2(17.3-time/79.0,8.7+time/58.0)))-0.5;
-    uv+=warp*0.44;
+    uv=gradientCoordinates(uv);
     vec2 drift=vec2(0.08,-0.06);
     vec2 counter=vec2(-0.08,0.06);
-    vec2 spread=vec2(sin(time/33.0),cos(time/41.0))*0.075;
+    vec2 spread=vec2(0.0,0.075);
     vec3 colour=baseColor.rgb;
     colour=layer(colour,lightColor,field(uv,vec2(0.24,0.8)-drift,vec2(0.82,0.98)+spread));
     colour=layer(colour,midColor,field(uv,vec2(0.9,0.42)+counter,vec2(0.9,1.0)-spread));
     colour=layer(colour,shadowColor,field(uv,vec2(0.16,0.12)+drift,vec2(0.95,1.08)+spread));
     colour=layer(colour,lightColor,0.18*field(uv,vec2(0.76,0.18)-counter,vec2(0.9,1.0)));
     colour=layer(colour,shadowColor,0.18*field(uv,vec2(0.66,0.88)+counter,vec2(0.95,1.1)));
-    vec2 lightDistance=(screenUv-pointerGlow.xy)*vec2(resolution.x/resolution.y,1.0);
-    float illumination=(1.0-smoothstep(0.0,0.34,length(lightDistance)))*pointerGlow.z;
-    colour=mix(colour,vec3(1.0),illumination*0.055);
+    // Let the same irregular field shape the glow. Moving across the page
+    // reveals different contours and intensities without animating the mesh.
+    vec2 lightCentre=gradientCoordinates(pointerGlow.xy);
+    vec2 lightDistance=(uv-lightCentre)*vec2(resolution.x/resolution.y,1.0);
+    float radius=0.28+0.12*flowNoise(lightCentre*2.0+shapeSeed);
+    float texture=0.75+0.35*flowNoise(uv*3.5+shapeSeed.yx);
+    float luminance=dot(colour,vec3(0.2126,0.7152,0.0722));
+    float illumination=(1.0-smoothstep(0.0,radius,length(lightDistance)))*pointerGlow.z*texture;
+    colour=mix(colour,vec3(1.0),illumination*(0.04+0.02*(1.0-luminance)));
     // Stationary, zero-mean triangular noise before the final 8-bit write.
     // The same monochrome offset preserves the palette and avoids colour specks.
     float dither=(random(gl_FragCoord.xy)+random(gl_FragCoord.xy+vec2(139.7,73.1))-1.0)*1.5/255.0;
