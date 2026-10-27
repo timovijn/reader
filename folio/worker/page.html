@@ -140,8 +140,8 @@ body[data-theme="dark"]{--ink:#e5e2d8;--ambient-base:#25271f;--ambient-shadow:rg
 .ambient-background{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;contain:strict;background:var(--ambient-base)}
 .ambient-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .ambient-background[data-renderer="gpu"] .ambient-field,.ambient-background[data-renderer="gpu"] .ambient-grain{display:none}
-.ambient-field{position:absolute;inset:-24%;background:radial-gradient(ellipse at 8% 5%,var(--ambient-shadow) 0%,transparent 59%),radial-gradient(ellipse at 90% 42%,var(--ambient-mid) 0%,transparent 62%),radial-gradient(ellipse at 14% 92%,var(--ambient-light) 0%,transparent 62%);animation:ambient-drift 160s ease-in-out infinite alternate;will-change:transform}
-.ambient-field::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 76% 18%,var(--ambient-light) 0%,transparent 58%),radial-gradient(ellipse at 66% 88%,var(--ambient-shadow) 0%,transparent 65%);opacity:.18;animation:ambient-counterdrift 210s ease-in-out infinite alternate}
+.ambient-field{position:absolute;inset:-24%;background:radial-gradient(ellipse at 8% 5%,var(--ambient-shadow) 0%,transparent 59%),radial-gradient(ellipse at 90% 42%,var(--ambient-mid) 0%,transparent 62%),radial-gradient(ellipse at 14% 92%,var(--ambient-light) 0%,transparent 62%);animation:ambient-drift 90s ease-in-out infinite alternate;will-change:transform}
+.ambient-field::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 76% 18%,var(--ambient-light) 0%,transparent 58%),radial-gradient(ellipse at 66% 88%,var(--ambient-shadow) 0%,transparent 65%);opacity:.18;animation:ambient-counterdrift 127s ease-in-out infinite alternate}
 .ambient-grain{position:absolute;inset:0;opacity:var(--grain-opacity);background-image:var(--ambient-noise,url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='192' height='192' viewBox='0 0 192 192'%3E%3Cfilter id='grain' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Cpath fill='%23000' filter='url(%23grain)' d='M0 0h192v192H0z'/%3E%3C/svg%3E"));background-size:var(--ambient-noise-size,192px) var(--ambient-noise-size,192px);mix-blend-mode:normal}
 /* Neutral, uncorrelated noise masks colour steps without darkening the paper. */
 @keyframes ambient-drift{0%{transform:translate3d(-3%,-2%,0) rotate(-4deg) scale(1.02)}50%{transform:translate3d(3%,2%,0) rotate(1deg) scale(1.06)}100%{transform:translate3d(-1%,4%,0) rotate(5deg) scale(1.02)}}
@@ -576,15 +576,16 @@ function createAmbientRenderer(){
     uv.y=1.0-uv.y;
     // Warp the colour fields into irregular contours, with independent, slow
     // currents rather than moving a set of circular gradients together.
-    vec2 warp=vec2(flowNoise(uv*2.6+vec2(time/210.0,-time/287.0)),
-                   flowNoise(uv*2.4+vec2(17.3-time/263.0,8.7+time/193.0)))-0.5;
-    uv+=warp*0.32;
-    vec2 drift=vec2(sin(time/74.0),sin(time/93.0))*0.055;
-    vec2 counter=vec2(sin(time/113.0+2.1),cos(time/81.0+1.3))*0.065;
+    vec2 warp=vec2(flowNoise(uv*2.6+vec2(time/63.0,-time/87.0)),
+                   flowNoise(uv*2.4+vec2(17.3-time/79.0,8.7+time/58.0)))-0.5;
+    uv+=warp*0.44;
+    vec2 drift=vec2(sin(time/24.0),sin(time/31.0))*0.15;
+    vec2 counter=vec2(sin(time/37.0+2.1),cos(time/27.0+1.3))*0.17;
+    vec2 spread=vec2(sin(time/33.0),cos(time/41.0))*0.075;
     vec3 colour=baseColor.rgb;
-    colour=layer(colour,lightColor,field(uv,vec2(0.14,0.92)-drift,vec2(0.9,1.1)));
-    colour=layer(colour,midColor,field(uv,vec2(0.9,0.42)+counter,vec2(0.9,1.0)));
-    colour=layer(colour,shadowColor,field(uv,vec2(0.02,0.0)+drift,vec2(1.12,1.3)));
+    colour=layer(colour,lightColor,field(uv,vec2(0.14,0.92)-drift,vec2(0.9,1.1)+spread));
+    colour=layer(colour,midColor,field(uv,vec2(0.9,0.42)+counter,vec2(0.9,1.0)-spread));
+    colour=layer(colour,shadowColor,field(uv,vec2(0.02,0.0)+drift,vec2(1.12,1.3)+spread));
     colour=layer(colour,lightColor,0.18*field(uv,vec2(0.76,0.18)-counter,vec2(0.9,1.0)));
     colour=layer(colour,shadowColor,0.18*field(uv,vec2(0.66,0.88)+counter,vec2(0.95,1.1)));
     // Stationary, zero-mean triangular noise before the final 8-bit write.
