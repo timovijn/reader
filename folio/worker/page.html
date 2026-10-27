@@ -51,11 +51,11 @@ body[data-theme="dark"]{--paper:#23231f;--ink:#e5e2d8;--muted:#aaa69b;--line:#49
 
 .article{max-width:calc(var(--article-width) + 16px);padding-left:40px;padding-right:24px}
 .article-body{position:relative}
-.line-numbers{position:absolute;inset:0 auto 0 -34px;width:23px;pointer-events:none;user-select:none;-webkit-user-select:none;direction:ltr;opacity:var(--pointer-ink-opacity,0)}
-.line-number{position:absolute;inset-inline-end:0;color:var(--muted);opacity:.38;font:400 9px/1 var(--font-mono);font-variant-numeric:tabular-nums;text-align:right}
+.line-numbers{position:absolute;inset:0 calc(100% + 11px) 0 auto;width:calc(23px * var(--text-zoom,1));pointer-events:none;user-select:none;-webkit-user-select:none;direction:ltr;opacity:var(--pointer-ink-opacity,0)}
+.line-number{position:absolute;inset-inline-end:0;color:var(--muted);opacity:.38;font:400 calc(9px * var(--text-zoom,1))/1 var(--font-mono);font-variant-numeric:tabular-nums;text-align:right}
 
 
-@media(max-width:700px){.article{padding-inline:44px 22px}.line-numbers{left:-28px;right:auto;width:20px}}
+@media(max-width:700px){.article{padding-inline:44px 22px}.line-numbers{left:auto;right:calc(100% + 8px);width:calc(20px * var(--text-zoom,1))}}
 @media print,(forced-colors:active){.line-numbers{display:none}}
 
 .browser-import-link{font-size:10px;color:var(--muted);text-decoration:underline;text-underline-offset:4px;padding:0;margin-top:13px}
@@ -286,8 +286,8 @@ function currentReadingViewport(){
 function textRectBaseline(top,height,ascent,descent){
  return top+(height-ascent-descent)/2+ascent;
 }
-function lineNumberTop(baseline,ascent,descent){
- return baseline-textRectBaseline(0,9,ascent,descent);
+function lineNumberTop(baseline,ascent,descent,size=9){
+ return baseline-textRectBaseline(0,size,ascent,descent);
 }
 function scheduleLineNumbers(immediate=false){
  if(!current)return;
@@ -330,10 +330,11 @@ function measureLineNumbers(){
    else lines.push({...rect});
   }
   const gutter=document.createElement('div');gutter.className='line-numbers';gutter.setAttribute('aria-hidden','true');
-  const digitMetrics=metrics('400 9px "Shinka Mono"',9);
+  const digitSize=9*(parseFloat(getComputedStyle(root).getPropertyValue('--text-zoom'))||1);
+  const digitMetrics=metrics('400 '+digitSize+'px "Shinka Mono"',digitSize);
   // Align baselines rather than the bottoms of font boxes, whose descender
-  // space grows with zoom. The tiny digits retain their own fixed line height.
-  lines.forEach((line,index)=>{const number=document.createElement('span');number.className='line-number';number.textContent=String(index+1);number.style.top=lineNumberTop(line.baseline,digitMetrics.ascent,digitMetrics.descent)+'px';gutter.append(number)});
+  // space grows with zoom. Measure the digits at their matching zoomed size.
+  lines.forEach((line,index)=>{const number=document.createElement('span');number.className='line-number';number.textContent=String(index+1);number.style.top=lineNumberTop(line.baseline,digitMetrics.ascent,digitMetrics.descent,digitSize)+'px';gutter.append(number)});
   root.append(gutter);scheduleSelectionInk();
 }
 const articleResizeObserver=new ResizeObserver(()=>{scheduleLineNumbers();scheduleScrollDot()});

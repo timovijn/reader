@@ -69,6 +69,7 @@ assert.equal(numberTop(68,7,2),61);
 for(const scale of [.65,1,1.25,2,4]){
  const textBaseline=baseline(123.5,22*scale,17*scale,5*scale);
  assert.equal(numberTop(textBaseline,7,2)+7,textBaseline);
+ assert.equal(numberTop(textBaseline,7*scale,2*scale,9*scale)+7*scale,textBaseline);
 }
 // Font boxes with extra leading retain the correct baseline rather than
 // aligning to descender space at the bottom of their bounding rectangles.
