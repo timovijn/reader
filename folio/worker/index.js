@@ -1,4 +1,5 @@
 const page = "__FOLIO_HTML__";
+const fonts = "__FOLIO_FONTS__";
 const json = (data,status=200) => Response.json(data,{status,headers:{'cache-control':'no-store','x-content-type-options':'nosniff'}});
 export function validateUrl(value) {
  const url=new URL(value); const host=url.hostname.toLowerCase().replace(/\.$/,'');
@@ -7,6 +8,10 @@ export function validateUrl(value) {
 }
 export async function handleRequest(request, fetchPage = fetch){
  const path=new URL(request.url).pathname;
+ if (request.method === 'GET' && Object.hasOwn(fonts, path)) {
+   const bytes = Uint8Array.from(atob(fonts[path]), char => char.charCodeAt(0));
+   return new Response(bytes, {headers: {'content-type': 'font/otf', 'cache-control': 'public, max-age=86400', 'x-content-type-options': 'nosniff'}});
+ }
  if(path==='/'&&request.method==='GET') return new Response(page,{headers:{'content-type':'text/html; charset=utf-8','x-content-type-options':'nosniff','referrer-policy':'no-referrer','content-security-policy':"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src https: data:; font-src 'self'; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'self'"}});
  if(path!=='/api/article')return new Response('Not found',{status:404});
  if(request.method!=='POST')return json({error:'Method not allowed'},405);

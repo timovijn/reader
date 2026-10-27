@@ -24,6 +24,10 @@ Open http://127.0.0.1:4173. Alternatively run `node scripts/build.mjs`, `node sc
 - Focus view and reading progress.
 - Three original sample essays with custom vector illustrations.
 
+## Typography
+
+Martina Plantijn is the preferred serif family for the wordmark, headings, article text and editorial accents. Interface controls retain the system sans-serif, and readers can still choose Sans in Appearance. The supplied Regular, Italic, Bold and Bold Italic OTF files are self-hosted with explicit weight/style declarations and `font-display: swap`. The build copies these four fonts to `dist/public/fonts` for Vercel and includes them in the Worker bundle for local preview and Cloudflare. Georgia and Times New Roman remain loading fallbacks; visitors do not need the font installed. The other supplied weights are retained as source assets but are not shipped because the current design does not use them.
+
 ## Boundaries
 
 This is a first version. Extraction will not work with every website, and complex page layouts may yield imperfect results. Paywalls, authentication, bot protection, PDFs and JavaScript-only article bodies are not supported. It does not bypass access controls. Inline links and rich formatting are flattened to plain text; the source link is retained. Saved articles and preferences remain in localStorage in the current browser; there is no account sync. Images remain remote and contact their source hosts.
