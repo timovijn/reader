@@ -1,6 +1,8 @@
+import {fileURLToPath} from 'node:url';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import vm from 'node:vm';
+process.chdir(fileURLToPath(new URL('..', import.meta.url)));
 const source=await readFile('dist/server/index.js','utf8');
 const {default:worker,validateUrl}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
 const html=await readFile('worker/page.html','utf8');new vm.Script(html.match(/<script>([\s\S]*)<\/script>/)[1]);
@@ -23,3 +25,26 @@ try{
  let redirects=0;globalThis.fetch=async()=>{redirects++;return new Response(null,{status:302,headers:{location:'https://example.com/again'}})};assert.equal((await worker.fetch(post('https://example.com'))).status,422);assert.equal(redirects,5);
 }finally{globalThis.fetch=realFetch}
 console.log('Passed: client script syntax, app response and CSP, URL restrictions, methods, malformed input, article fetch, redirect validation and limit, blocked responses, non-HTML pages, oversized pages.');
+
+// Exercise the actual Vercel entry points without making network requests.
+const {isPublicAddress,createPublicFetch,createVercelHandler} = await import('../lib/vercel-article.js');
+for(const ip of ['127.0.0.1','10.0.0.1','169.254.169.254','172.16.1.1','192.168.0.1','100.64.1.1','0.0.0.0','224.0.0.1','::1','fc00::1','fe80::1','::ffff:127.0.0.1','2001:db8::1'])assert.equal(isPublicAddress(ip),false,ip);
+for(const ip of ['93.184.216.34','1.1.1.1','2606:4700:4700::1111'])assert.equal(isPublicAddress(ip),true,ip);
+const rejectedFetch=createPublicFetch(async()=>[{address:'127.0.0.1',family:4}]);
+await assert.rejects(()=>rejectedFetch('https://example.com'),/public website/);
+const {EventEmitter}=await import('node:events');const {Readable}=await import('node:stream');let pinned=false;
+const transport={request(url, options, onResponse){
+ assert.equal(url.hostname,'example.com');assert.equal(options.headers['Accept-Encoding'],'identity');
+ options.lookup(url.hostname,{},(error,address,family)=>{assert.equal(error,null);assert.equal(address,'93.184.216.34');assert.equal(family,4);pinned=true});
+ const request=new EventEmitter();request.end=()=>{const response=Readable.from([Buffer.from('<article><p>Vercel article fixture</p></article>')]);response.statusCode=200;response.headers={'content-type':'text/html'};onResponse(response)};return request;
+}};
+const publicFetch=createPublicFetch(async()=>[{address:'93.184.216.34',family:4}],{http:transport,https:transport});
+const vercelResponse=await createVercelHandler(publicFetch).fetch(post('https://example.com/article'));
+assert.equal(vercelResponse.status,200);assert.match((await vercelResponse.json()).html,/Vercel article fixture/);assert.equal(pinned,true);
+const rootApi=(await import('../../api/article.js')).default;const nestedApi=(await import('../api/article.js')).default;
+for(const handler of [rootApi,nestedApi])assert.equal((await handler.fetch(new Request('https://folio.example/api/article'))).status,405);
+assert.equal(await readFile('dist/public/index.html','utf8'),html);
+for(const [configPath,output] of [['../../vercel.json','folio/dist/public'],['../vercel.json','dist/public']]){
+ const config=JSON.parse(await readFile(new URL(configPath,import.meta.url),'utf8'));assert.equal(config.outputDirectory,output);assert.equal(config.functions['api/article.js'].maxDuration,60);assert.equal(config.framework,null);
+}
+console.log('Passed: static homepage, both Vercel entry points/configurations, API success response, private DNS rejection and pinned public DNS connection.');

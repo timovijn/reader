@@ -1,0 +1,11 @@
+{
+  "name": "folio-reader-workspace",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build": "node folio/scripts/build.mjs",
+    "test": "node folio/scripts/test.mjs",
+    "dev": "node folio/scripts/preview.mjs"
+  }
+}

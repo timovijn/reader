@@ -5,7 +5,7 @@ export function validateUrl(value) {
  if(!['https:','http:'].includes(url.protocol)||url.username||url.password||(url.port&&!['80','443'].includes(url.port))||!host.includes('.')||host.includes(':')||host.startsWith('[')||/^\d+(\.\d+){3}$/.test(host)||/(^|\.)(localhost|local|internal|test|invalid|home|lan|arpa)$/.test(host)) throw Error('Please use a public http or https article URL.');
  return url;
 }
-export default {async fetch(request){
+export async function handleRequest(request, fetchPage = fetch){
  const path=new URL(request.url).pathname;
  if(path==='/'&&request.method==='GET') return new Response(page,{headers:{'content-type':'text/html; charset=utf-8','x-content-type-options':'nosniff','referrer-policy':'no-referrer','content-security-policy':"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src https: data:; font-src 'self'; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'self'"}});
  if(path!=='/api/article')return new Response('Not found',{status:404});
@@ -15,7 +15,7 @@ export default {async fetch(request){
  const input=await request.text();if(input.length>4096)return json({error:'Request too large'},413);
  let url=validateUrl(JSON.parse(input).url);let response;
  for(let i=0;i<5;i++){
- response=await fetch(url,{redirect:'manual',signal:AbortSignal.timeout(12000),headers:{'User-Agent':'FolioReader/1.0 (article reading view)','Accept':'text/html,application/xhtml+xml'}});
+ response=await fetchPage(url,{redirect:'manual',signal:AbortSignal.timeout(12000),headers:{'User-Agent':'FolioReader/1.0 (article reading view)','Accept':'text/html,application/xhtml+xml'}});
  if(response.status>=300&&response.status<400){const location=response.headers.get('location');await response.body?.cancel();if(!location)throw Error('The article redirected without a destination.');url=validateUrl(new URL(location,url).href);continue;}break;
  }
  if(!response||!response.ok)throw Error('This website did not allow Folio to open the article. You can paste the article text instead.');
@@ -25,4 +25,5 @@ export default {async fetch(request){
  const bytes=new Uint8Array(size);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}
  return json({html:new TextDecoder().decode(bytes),url:url.href});
  }catch(error){return json({error:error.name==='TimeoutError'?'The website took too long to respond. Please try again.':error.message||'Unable to open this article.'},422);}
-}};
+}
+export default { fetch(request) { return handleRequest(request); } };
