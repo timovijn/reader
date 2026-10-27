@@ -55,6 +55,21 @@ assert.ok(!JSON.stringify(newYorkerArticle.body).includes('UNWANTED'));
 assert.equal(extractArticle(newYorkerFixture,articleUrl).body.length,1);
 assert.equal(extractArticle(newYorkerFixture,'https://newyorker.com.example.org/article').body.length,1);
 
+// Times preloaded data contains JSON-like data, not executable extraction code.
+const nytUrl='https://www.nytimes.com/2026/10/27/business/fixture.html';
+const nytContent=[{__typename:'ParagraphBlock',content:[{__typename:'TextInline',text:prose.repeat(6),formats:[]},{__typename:'TextInline',text:'A word: undefined, and braces { inside a string }.',formats:[{__typename:'LinkFormat',url:'javascript:alert(1)'}]}]},{__typename:'ImageBlock',media:{caption:'UNWANTED CAPTION'}},{__typename:'Dropzone',text:'UNWANTED AD'},{__typename:'ParagraphBlock',content:[{__typename:'TextInline',text:prose,formats:[{__typename:'LinkFormat',url:'/context'}]}]}];
+const nytData={loaderData:{data:{article:{url:nytUrl,sprinkledBody:{content:nytContent}}}},errors:null};
+const nytState=JSON.stringify(nytData).replace('"errors":null','"errors":undefined');
+const nytPage=state=>`<article><p>${prose}</p></article><script>window.__preloadedData = ${state}; throw new Error('must never execute');</script>`;
+const nytArticle=extractArticle(nytPage(nytState),nytUrl);
+assert.equal(nytArticle.extraction.method,'publisher-data');assert.equal(nytArticle.body.length,2);
+assert.ok(nytArticle.body[0][1].includes('undefined, and braces { inside a string }'));
+assert.ok(JSON.stringify(nytArticle.body).includes('https://www.nytimes.com/context'));
+assert.ok(!JSON.stringify(nytArticle.body).includes('javascript:'));assert.ok(!JSON.stringify(nytArticle.body).includes('UNWANTED'));
+assert.equal(extractArticle(nytPage(nytState),articleUrl).extraction.method,'html');
+assert.equal(extractArticle(nytPage(nytState),nytUrl.replace('fixture.html','other.html')).extraction.method,'html');
+assert.equal(extractArticle(nytPage('{broken:true}'),nytUrl).extraction.method,'html');
+
 // Simulate actual Node request streams, including compression and failed IPs.
 function transport({encoding='',failFirst=false,addresses=[]}={}){
  let attempts=0;

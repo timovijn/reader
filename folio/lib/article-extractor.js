@@ -1,5 +1,6 @@
 import { parse } from '../vendor/parse5/dist/index.js';
 import { importFailure } from '../worker/index.js';
+import { nytArticleBlocks } from './nyt-extractor.js';
 
 const normalise = value => String(value||'').replace(/\s+/g,' ').trim();
 const attr = (node,name) => node.attrs?.find(item=>item.name===name)?.value || '';
@@ -154,6 +155,10 @@ export function extractArticle(html,url){
         blocks.length=0;for(const part of parts)blocks.push(['p',part]);method='structured-data';
       }
     }
+  }
+  const publisherBlocks=nytArticleBlocks(all,base);
+  if(publisherBlocks.reduce((sum,block)=>sum+block[1].length,0)>Math.max(180,characterCount()*1.5)){
+    blocks.length=0;blocks.push(...publisherBlocks);method='publisher-data';
   }
   if(characterCount()<180){
     const text=normalise(rawText(body)).slice(0,12000);
