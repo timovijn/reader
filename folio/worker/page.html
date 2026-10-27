@@ -68,11 +68,11 @@ body[data-theme="dark"]{--paper:#23231f;--ink:#e5e2d8;--muted:#aaa69b;--line:#49
 #browser-import-dialog textarea{height:150px}
 
 /* A quiet, decorative companion, kept outside the reading column. */
-.companion{position:fixed;right:38px;bottom:34px;width:66px;height:66px;border-radius:50%;pointer-events:none;user-select:none;z-index:1;opacity:.9;background:radial-gradient(circle at 27% 28%,rgba(218,197,164,.95),transparent 64%),radial-gradient(circle at 76% 35%,rgba(166,130,102,.93),transparent 65%),radial-gradient(circle at 51% 82%,rgba(205,165,125,.95),transparent 70%),rgba(210,191,165,.45);filter:blur(.6px);transition:filter var(--companion-duration,14s) ease-in-out;will-change:transform}
+.companion{position:fixed;right:38px;bottom:34px;width:66px;height:66px;border-radius:50%;pointer-events:none;user-select:none;z-index:1;opacity:.9;background:radial-gradient(circle at 27% 28%,rgba(218,197,164,.95),transparent 64%),radial-gradient(circle at 76% 35%,rgba(166,130,102,.93),transparent 65%),radial-gradient(circle at 51% 82%,rgba(205,165,125,.95),transparent 70%),rgba(210,191,165,.45);filter:none;transition:filter var(--companion-duration,14s) ease-in-out}
 body[data-theme="dark"] .companion{opacity:.65}
 .focus .companion{bottom:90px}
 @media(max-width:700px){.companion{right:20px;bottom:28px;width:48px;height:48px;opacity:.85}.focus .companion{bottom:78px}}
-@media(prefers-reduced-motion:reduce){.companion{transition:none;will-change:auto;transform:none!important;filter:blur(.6px)!important}}
+@media(prefers-reduced-motion:reduce){.companion{transition:none;will-change:auto;transform:none!important;filter:none!important}}
 @media print,(forced-colors:active){.companion{display:none}}
 </style></head><body><div class="companion" id="companion" aria-hidden="true"></div><div class="progress" id="progress"></div><header><button class="brand" id="brand" aria-label="Folio home"><svg viewBox="0 0 30 30"><path d="M5 4h17v22H5zM9 8h9M9 12h7M9 16h8M9 20h4M22 7h3v22H8v-3"/></svg>folio<span>_</span></button><nav class="nav"><button id="nav-discover" class="active">Discover</button><button id="nav-saved">My collection <span id="save-count"></span></button><button class="about" id="about-open" aria-label="About Folio">i</button></nav></header>
 <main class="home" id="home"><section class="intro"><div class="eyebrow"><span class="dot"></span>A quieter corner of the internet</div><h1>A little room<br>to read<span class="cursor" aria-hidden="true">_</span></h1><p>Good stories deserve your full attention.<br>Turn any article into a calm, beautiful reading experience.</p><form class="url-form" id="url-form"><svg viewBox="0 0 24 24"><path d="m10 13 4-4m-6 7-1 1a4 4 0 0 1-6-6l5-5a4 4 0 0 1 6 0m0 12a4 4 0 0 0 6 0l5-5a4 4 0 0 0-6-6l-1 1" transform="translate(1 0) scale(.9)"/></svg><input id="url-input" aria-label="Article URL" type="url" placeholder="Paste an article link here…" required><button class="primary" id="read-button" type="submit">Start reading <span>↗</span></button></form><p class="under-form">Just the words, without the noise. <span style="padding:0 5px">·</span> Or <button id="paste-open">paste article text</button></p><div class="error" id="error" role="alert" hidden></div><button id="browser-import-open" class="browser-import-link">Import from an open browser page ↗</button></section><section class="collection"><div class="section-heading"><h2 id="section-title">A few things worth reading <span>THE FOLIO EDIT</span></h2><span id="section-note">A small selection. A slower pace.</span></div><div class="cards" id="cards"></div><div class="empty" id="empty" hidden><h3>Your next good read belongs here.</h3><p>Open an article and tap the bookmark to add it to your collection.</p></div></section><div class="manifesto"><svg viewBox="0 0 30 30"><path d="M15 24V9m0 9C5 19 4 11 4 5c8 0 12 4 11 13Zm0 3c0-10 4-14 12-14 0 9-4 14-12 14Z"/></svg><p>Less scrolling. More getting lost in a good story.</p><small>MADE FOR THE JOY OF READING</small></div></main>
@@ -229,7 +229,7 @@ function breatheCompanion(){
  const inhale='translate('+drift()+'px,'+drift()+'px) scale('+(1.17+Math.random()*.07).toFixed(3)+')';
  const rest='translate('+drift()+'px,'+drift()+'px) scale('+(.89+Math.random()*.05).toFixed(3)+')';
  companion.style.setProperty('--companion-duration',duration+'ms');
- companion.style.filter='blur(.6px) hue-rotate('+Math.round(Math.random()*12-6)+'deg)';
+ companion.style.filter='hue-rotate('+Math.round(Math.random()*12-6)+'deg)';
  const animation=companion.animate([{transform:companionTransform},{transform:inhale,offset:.46+Math.random()*.1},{transform:rest}],{duration,easing:'ease-in-out',fill:'forwards'});
  companionAnimation=animation;
  animation.finished.then(()=>{
@@ -239,7 +239,7 @@ function breatheCompanion(){
  }).catch(()=>{});
 }
 function syncCompanion(){
- if(companionMotion.matches){companionAnimation?.cancel();companionAnimation=null;companionTransform='translate(0px,0px) scale(1)';companion.style.transform=companionTransform;companion.style.filter='blur(.6px)';return;}
+ if(companionMotion.matches){companionAnimation?.cancel();companionAnimation=null;companionTransform='translate(0px,0px) scale(1)';companion.style.transform=companionTransform;companion.style.filter='none';return;}
  if(document.hidden){companionAnimation?.pause();return;}
  if(companionAnimation)companionAnimation.play();else breatheCompanion();
 }
