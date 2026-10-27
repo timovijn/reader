@@ -20,9 +20,8 @@ Open http://127.0.0.1:4173. Alternatively run `node scripts/build.mjs`, `node sc
 - Server-side article extraction on Vercel/local preview using an HTML5 parser, article-container and paragraph scoring, link-density filtering, metadata, public JSON-LD and common embedded application data.
 - Extracted content rebuilt from safe DOM elements, preserving links, emphasis and lists, while excluding images and their captions without executing publisher scripts or injecting arbitrary HTML.
 - Browser-assisted import via a clipboard bookmarklet for pages that refuse server requests, plus a paste-text fallback.
-- Browser-local collection, three page colours, serif/sans type, adjustable text size and line width.
+- My collection as the single home view, with browser-local saving, three page colours, serif/sans type, adjustable text size and line width.
 - Focus view, subtle line numbers and underline-only text selection.
-- Three original sample essays.
 
 ## Typography
 
