@@ -155,9 +155,18 @@ body[data-theme="dark"]{--ink:#e5e2d8;--ambient-base:#25271f;--ambient-shadow:rg
 @media(forced-colors:active){.ambient-background{display:none}.reader-panel{background:Canvas;backdrop-filter:none}}
 @media(any-pointer:fine){html,body,body *{cursor:var(--cursor-arrow,default)!important}}
 @media(forced-colors:active){html,body,body *{cursor:default!important}}
+/* Folio handles pinch as text resizing, so the browser never magnifies the
+   background. Browser keyboard/menu zoom remains available. */
+html.text-pinch{touch-action:pan-x pan-y}
+.article-body{font-size:calc(var(--article-size) * var(--text-zoom,1))}
+.article h1{font-size:calc(clamp(29px,3.7vw,42px) * var(--text-zoom,1))}
+.article .dek{font-size:calc(19px * var(--text-zoom,1))}
+.article .byline,.article .eyebrow,.article-end{font-size:calc(10px * var(--text-zoom,1))}
+body:not(.focus) .home,body:not(.focus)>header{zoom:var(--text-zoom,1)}
+@media(max-width:700px){.article-body{font-size:calc((var(--article-size) - 1px) * var(--text-zoom,1))}.article h1{font-size:calc(30px * var(--text-zoom,1))}.article .dek{font-size:calc(17px * var(--text-zoom,1))}}
 </style></head><body><div class="ambient-background" aria-hidden="true"><div class="ambient-field"></div><div class="ambient-grain"></div></div><div class="selection-ink" id="selection-ink" aria-hidden="true"></div><header><button class="brand" id="brand" aria-label="Folio home">folio</button><nav class="nav"><button id="nav-discover" class="active">Discover</button><button id="nav-saved">My collection <span id="save-count"></span></button><button class="about" id="about-open" aria-label="About Folio">About</button></nav></header>
 <main class="home" id="home"><section class="intro"><h1>A little room to read</h1><p>Paste a link. Settle into the words.</p><form class="url-form" id="url-form"><input id="url-input" aria-label="Article URL" type="url" placeholder="Paste an article link here…" required><button class="primary" id="read-button" type="submit">Read</button></form><p class="under-form"><button id="paste-open">Paste text</button></p><div class="error" id="error" role="alert" hidden></div><button id="browser-import-open" class="browser-import-link">Import from your browser</button></section><section class="collection"><div class="section-heading"><h2 id="section-title">On the reading desk</h2><span id="section-note">A small selection. A slower pace.</span></div><div class="cards" id="cards"></div><div class="empty" id="empty" hidden><h3>Your next good read belongs here.</h3><p>Open an article and choose Save to keep it here.</p></div></section></main>
-<section id="reader" hidden><button id="reader-menu-toggle" class="reader-menu-toggle" aria-label="Show reading controls" aria-expanded="false" aria-controls="reader-panel">Menu</button><div class="reader-rail"><nav id="reader-panel" class="reader-panel" aria-label="Reading controls" inert><button class="back" id="back">Back</button><div class="reader-actions"><button id="bookmark" aria-label="Save article"></button><button id="settings-toggle" aria-expanded="false" aria-controls="settings"><span class="action-label">Appearance</span></button><button id="focus"><span class="action-label">Hide controls</span></button><div class="settings" id="settings" hidden><label>Text size</label><div class="setting-row"><button id="size-down" aria-label="Decrease text size">Smaller</button><button id="size-up" aria-label="Increase text size">Larger</button></div><label for="typeface">Typeface</label><select id="typeface"><option value="serif">Martina Plantijn</option><option value="shinka">Shinka</option><option value="shinka-mono">Shinka Mono</option><option value="sans">System Sans</option></select><label for="font-weight">Font weight</label><select id="font-weight"><option value="300">Light</option><option value="400" selected>Regular</option><option value="500">Medium</option><option value="700">Bold</option><option value="900">Black</option></select><label>Page colour</label><div class="setting-row"><button data-theme="paper">Paper</button><button data-theme="white">White</button><button data-theme="dark">Night</button></div><label>Reading width</label><div class="setting-row"><button data-width="660">Narrow</button><button data-width="820">Wide</button></div></div></div></nav></div><article class="article"><div class="eyebrow" id="article-source"></div><h1 id="article-title"></h1><p class="dek" id="article-dek"></p><div class="byline" id="article-byline"></div><div class="article-body" id="article-body"></div><div class="article-end"><a id="original" target="_blank" rel="noopener noreferrer">Read at the source</a></div></article></section><button id="scroll-dot" class="scroll-dot" role="slider" aria-label="Reading position" aria-orientation="vertical" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><span class="scroll-arrow" aria-hidden="true">→</span></button>
+<section id="reader" hidden><button id="reader-menu-toggle" class="reader-menu-toggle" aria-label="Show reading controls" aria-expanded="false" aria-controls="reader-panel">Menu</button><div class="reader-rail"><nav id="reader-panel" class="reader-panel" aria-label="Reading controls" inert><button class="back" id="back">Back</button><div class="reader-actions"><button id="bookmark" aria-label="Save article"></button><button id="settings-toggle" aria-expanded="false" aria-controls="settings"><span class="action-label">Appearance</span></button><button id="focus"><span class="action-label">Hide controls</span></button><div class="settings" id="settings" hidden><label>Text size</label><div class="setting-row"><button id="size-down" aria-label="Decrease text size">Smaller</button><button id="size-up" aria-label="Increase text size">Larger</button><button id="zoom-reset">Reset zoom</button></div><label for="typeface">Typeface</label><select id="typeface"><option value="serif">Martina Plantijn</option><option value="shinka">Shinka</option><option value="shinka-mono">Shinka Mono</option><option value="sans">System Sans</option></select><label for="font-weight">Font weight</label><select id="font-weight"><option value="300">Light</option><option value="400" selected>Regular</option><option value="500">Medium</option><option value="700">Bold</option><option value="900">Black</option></select><label>Page colour</label><div class="setting-row"><button data-theme="paper">Paper</button><button data-theme="white">White</button><button data-theme="dark">Night</button></div><label>Reading width</label><div class="setting-row"><button data-width="660">Narrow</button><button data-width="820">Wide</button></div></div></div></nav></div><article class="article"><div class="eyebrow" id="article-source"></div><h1 id="article-title"></h1><p class="dek" id="article-dek"></p><div class="byline" id="article-byline"></div><div class="article-body" id="article-body"></div><div class="article-end"><a id="original" target="_blank" rel="noopener noreferrer">Read at the source</a></div></article></section><button id="scroll-dot" class="scroll-dot" role="slider" aria-label="Reading position" aria-orientation="vertical" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><span class="scroll-arrow" aria-hidden="true">→</span></button>
 <dialog id="paste-dialog"><button class="dialog-close" data-close aria-label="Close">Close</button><h2>Bring your own words.</h2><p>Copy the text from an article you can access, then give it a little room to breathe.</p><form id="paste-form"><label for="paste-title">ARTICLE TITLE</label><input id="paste-title" placeholder="A story worth your time" required maxlength="300"><label for="paste-text">ARTICLE TEXT</label><textarea id="paste-text" placeholder="Paste the article here…" required minlength="50" maxlength="300000"></textarea><button class="primary" type="submit">Read</button></form></dialog><dialog id="browser-import-dialog"><button class="dialog-close" data-close aria-label="Close">Close</button><h2>Bring a page into Folio.</h2><p>For websites that refuse direct imports, copy the article from a page you can already read.</p><ol><li>Drag this button to your browser’s bookmarks bar.<br><a class="bookmarklet" id="browser-bookmarklet" href="#" draggable="true">Copy for Folio</a></li><li>Open the article at its source and click that bookmark. It copies the article text, without images, to your clipboard.</li><li>Come back here, paste the copied article below, and open it in Folio.</li></ol><p>Some websites or browsers block bookmarklets. You can still copy the article’s text and use “paste article text”. Nothing is sent from the source page to Folio automatically.</p><form id="browser-import-form"><label for="browser-import-text">COPIED ARTICLE</label><textarea id="browser-import-text" placeholder="Paste the article copied by the bookmark here…" required maxlength="2000000"></textarea><p id="browser-import-error" class="error" role="alert" hidden></p><button class="primary" type="submit">Read</button></form></dialog><dialog id="about-dialog"><button class="dialog-close" data-close aria-label="Close">Close</button><div class="eyebrow" style="justify-content:start;margin-bottom:20px">THE IDEA BEHIND FOLIO</div><h2>The internet, at a slower pace.</h2><p>Folio gives good writing a little breathing room. Paste a link, settle into a clean reading view, and make the page feel like your own.</p><p>Article extraction works best on publicly accessible, text-based pages. Paywalls, sign-in screens, bot protection and pages that load their text with JavaScript may prevent extraction. Folio does not bypass these restrictions.</p><p>Your collection and reading preferences stay in this browser. Saved articles don’t sync across devices, and clearing browser data removes them. Opening a link fetches that page through Folio’s server; article images are excluded. The sample essays are original Folio demonstrations.</p></dialog><div class="toast" id="toast" role="status" hidden></div>
 <script>
 const $=s=>document.querySelector(s);
@@ -535,6 +544,68 @@ document.addEventListener('scroll',wakeShinkaCursor,{passive:true,capture:true})
 window.visualViewport?.addEventListener('scroll',wakeShinkaCursor,{passive:true});
 // Compose gradients and dither in one high-precision pass. A separate CSS grain
 // layer cannot undo quantization that has already happened in gradient textures.
+function textPinchScale(start,factor){
+ const value=start*factor;
+ return Number.isFinite(value)?Math.max(.65,Math.min(4,value)):start;
+}
+let textPinchZoom=1,textPinchFrame=0,textPinchPoint={x:0,y:0},touchPinch=null,safariPinch=null;
+function setTextPinchZoom(value,x=window.innerWidth/2,y=window.innerHeight/2){
+ textPinchZoom=textPinchScale(1,value);textPinchPoint={x:Number.isFinite(x)?x:window.innerWidth/2,y:Number.isFinite(y)?y:window.innerHeight/2};
+ if(textPinchFrame)return;
+ textPinchFrame=requestAnimationFrame(()=>{
+  textPinchFrame=0;
+  const {x,y}=textPinchPoint;
+  let range=null,anchor=document.elementFromPoint(x,y),before=0;
+  const scope=current?$('.article'):$('#home');
+  try{
+   const caret=document.caretPositionFromPoint?.(x,y);
+   if(caret&&scope.contains(caret.offsetNode)){
+    range=document.createRange();range.setStart(caret.offsetNode,caret.offset);range.collapse(true);
+   }else if(document.caretRangeFromPoint){
+    const candidate=document.caretRangeFromPoint(x,y);if(candidate&&scope.contains(candidate.startContainer))range=candidate;
+   }
+  }catch{/* Fall back to the paragraph under the gesture. */}
+  if(!range){anchor=anchor?.closest('.article-body p,.article h1,.article .dek,.card,.intro h1');before=anchor?.getBoundingClientRect().top||0;}
+  else before=range.getBoundingClientRect().top;
+  document.documentElement.style.setProperty('--text-zoom',String(textPinchZoom));
+  const after=range?range.getBoundingClientRect().top:anchor?.getBoundingClientRect().top;
+  if(Number.isFinite(after))window.scrollBy({top:after-before,behavior:'instant'});
+  clearSelectionInk();refreshReaderGeometry();
+ });
+}
+document.addEventListener('wheel',event=>{
+ if(!event.ctrlKey||!event.cancelable)return;
+ event.preventDefault();if(safariPinch||touchPinch)return;
+ const units=event.deltaMode===1?16:event.deltaMode===2?window.innerHeight:1;
+ setTextPinchZoom(textPinchScale(textPinchZoom,Math.exp(-event.deltaY*units*.008)),event.clientX,event.clientY);
+},{passive:false,capture:true});
+function touchPinchGeometry(touches){
+ const a=touches[0],b=touches[1];
+ return{distance:Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY),x:(a.clientX+b.clientX)/2,y:(a.clientY+b.clientY)/2};
+}
+document.addEventListener('touchstart',event=>{
+ if(event.touches.length!==2)return;
+ if(event.cancelable)event.preventDefault();
+ touchPinch={...touchPinchGeometry(event.touches),zoom:textPinchZoom};
+},{passive:false,capture:true});
+document.addEventListener('touchmove',event=>{
+ if(!touchPinch||event.touches.length!==2)return;
+ if(event.cancelable)event.preventDefault();
+ const point=touchPinchGeometry(event.touches);
+ if(touchPinch.distance>0)setTextPinchZoom(textPinchScale(touchPinch.zoom,point.distance/touchPinch.distance),point.x,point.y);
+},{passive:false,capture:true});
+for(const name of ['touchend','touchcancel'])document.addEventListener(name,event=>{if(event.touches.length<2)touchPinch=null;},{passive:true});
+document.addEventListener('gesturestart',event=>{
+ if(event.cancelable)event.preventDefault();
+ if(!touchPinch)safariPinch={zoom:textPinchZoom};
+},{passive:false,capture:true});
+document.addEventListener('gesturechange',event=>{
+ if(event.cancelable)event.preventDefault();
+ if(safariPinch&&!touchPinch)setTextPinchZoom(textPinchScale(safariPinch.zoom,event.scale),event.clientX,event.clientY);
+},{passive:false,capture:true});
+document.addEventListener('gestureend',event=>{if(event.cancelable)event.preventDefault();safariPinch=null;},{passive:false,capture:true});
+$('#zoom-reset').onclick=()=>setTextPinchZoom(1);
+document.documentElement.classList.add('text-pinch');
 function ambientGrainMetrics(density,renderScale){
  // The background is a screen surface, independent of document magnification.
  const screenSize=2.8;

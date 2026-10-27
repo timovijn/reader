@@ -51,3 +51,4 @@ console.log('Passed: static homepage, both Vercel entry points/configurations, A
 await import('../tests/importer.test.mjs');
 await import('../tests/embedded-articles.test.mjs');
 await import('../tests/zoom-geometry.test.mjs');
+await import('../tests/text-pinch.test.mjs');
