@@ -34,7 +34,7 @@ const down=turn(up.angle,up.direction,40);assert.equal(down.angle,450);assert.eq
 assert.equal(turn(down.angle,down.direction,.2).angle,450);
 assert.equal(turn(down.angle,down.direction,-.2).direction,1);
 console.log('Passed: directional arrow half-turns, continued scrolling and subpixel jitter.');
-const ambient=load('ambientViewportMetrics','ambientFlowPoint');
+const ambient=load('ambientViewportMetrics','createAmbientRenderer');
 const normal=ambient({width:1200,height:800,scale:1},1200,800,2);
 const pinch=ambient({width:300,height:200,scale:4,offsetLeft:160,offsetTop:90},1200,800,2);
 assert.equal(normal.width*normal.density,pinch.width*pinch.density);
@@ -53,12 +53,3 @@ assert.equal(grain(32,32).screenSize,normalGrain.screenSize);
 // Rendering below native resolution must preserve the intended on-screen size.
 assert.equal(grain(8,4).cellSize*2,zoomedGrain.cellSize);
 console.log('Passed: constant screen grain size/contrast through zoom and render-scale compensation.');
-const flow=load('ambientFlowPoint','createAmbientRenderer');
-const a=flow(0,42,18),b=flow(6,42,18);
-assert.ok(Math.hypot(a[0]-b[0],a[1]-b[1])>.02);
-for(let time=0;time<200;time+=.5)for(const coordinate of flow(time,42,18))assert.ok(coordinate>=-.35&&coordinate<=.35);
-const boundary=(Math.ceil(42*.371)-42*.371)*18;
-const left=flow(boundary-.001,42,18),right=flow(boundary+.001,42,18);
-assert.ok(Math.hypot(left[0]-right[0],left[1]-right[1])<.001);
-assert.notEqual(flow(6,42,18)[0],flow(6,59,26)[0]);
-console.log('Passed: visible flow displacement, continuous random target transitions, bounded positions and independent paths.');
