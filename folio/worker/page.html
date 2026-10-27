@@ -552,7 +552,7 @@ function createAmbientRenderer(){
   const vertex=shader(gl.VERTEX_SHADER,'attribute vec2 position; void main(){gl_Position=vec4(position,0.0,1.0);}');
   const fragment=shader(gl.FRAGMENT_SHADER,`
    precision highp float;
-   uniform vec2 resolution;
+   uniform vec2 resolution,cssResolution;
    uniform float time;
    uniform float grainStrength;
    uniform vec4 baseColor,shadowColor,midColor,lightColor;
@@ -592,7 +592,10 @@ function createAmbientRenderer(){
     float dither=(random(gl_FragCoord.xy)+random(gl_FragCoord.xy+vec2(139.7,73.1))-1.0)*1.5/255.0;
     // Visible film grain is separate from the anti-banding dither, and remains
     // fixed to the screen so the slowly flowing colour never looks like static.
-    float grain=(random(gl_FragCoord.xy+vec2(42.3,91.7))+random(gl_FragCoord.xy+vec2(217.1,14.3))-1.0)*grainStrength;
+    // Size the visible texture in CSS pixels, so Retina displays do not make
+    // it disappear at 100%. Interpolation keeps the flecks soft, not square.
+    vec2 grainPoint=(gl_FragCoord.xy/resolution)*cssResolution/1.1;
+    float grain=(flowNoise(grainPoint+vec2(42.3,91.7))-0.5)*grainStrength;
     gl_FragColor=vec4(clamp(colour+dither+grain,0.0,1.0),1.0);
    }
   `);
@@ -603,7 +606,7 @@ function createAmbientRenderer(){
   buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
   gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);
   const position=gl.getAttribLocation(program,'position');gl.enableVertexAttribArray(position);gl.vertexAttribPointer(position,2,gl.FLOAT,false,0,0);
-  const uniforms=Object.fromEntries(['resolution','time','grainStrength','baseColor','shadowColor','midColor','lightColor'].map(name=>[name,gl.getUniformLocation(program,name)]));
+  const uniforms=Object.fromEntries(['resolution','cssResolution','time','grainStrength','baseColor','shadowColor','midColor','lightColor'].map(name=>[name,gl.getUniformLocation(program,name)]));
   function colour(value){
    value=value.trim();
    if(/^#[0-9a-f]{6}$/i.test(value))return[1,3,5].map(i=>parseInt(value.slice(i,i+2),16)/255).concat(1);
@@ -613,7 +616,7 @@ function createAmbientRenderer(){
   function updateTheme(){
    if(stopped)return;
    const styles=getComputedStyle(document.body);
-   gl.uniform1f(uniforms.grainStrength,document.body.dataset.theme==='dark'?.018:.024);
+   gl.uniform1f(uniforms.grainStrength,document.body.dataset.theme==='dark' ? .055 : .065);
    for(const [uniform,variable] of [['baseColor','base'],['shadowColor','shadow'],['midColor','mid'],['lightColor','light']])gl.uniform4fv(uniforms[uniform],colour(styles.getPropertyValue('--ambient-'+variable)));
    draw(performance.now());
   }
@@ -623,7 +626,7 @@ function createAmbientRenderer(){
    const scale=Math.min(dpr,Math.sqrt(12000000/Math.max(1,window.innerWidth*window.innerHeight)));
    const width=Math.max(1,Math.round(window.innerWidth*scale)),height=Math.max(1,Math.round(window.innerHeight*scale));
    if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;gl.viewport(0,0,width,height);}
-   gl.uniform2f(uniforms.resolution,width,height);gl.uniform1f(uniforms.time,motion.matches?0:now/1000);
+   gl.uniform2f(uniforms.resolution,width,height);gl.uniform2f(uniforms.cssResolution,window.innerWidth,window.innerHeight);gl.uniform1f(uniforms.time,motion.matches?0:now/1000);
    gl.drawArrays(gl.TRIANGLES,0,6);lastDraw=now;
   }
   function animate(now){
@@ -652,7 +655,7 @@ function createAmbientRenderer(){
  }
 }
 // Fractal SVG noise is correlated and too low in contrast to hide colour bands.
-// Use static, full-range monochrome noise at one sample per physical pixel.
+// Use a static monochrome texture with the same CSS-pixel scale as GPU grain.
 let ambientNoiseDensity=0;
 function updateAmbientDither(){
  if($('.ambient-background').dataset.renderer==='gpu')return;
@@ -671,7 +674,7 @@ function updateAmbientDither(){
   context.putImageData(pixels,0,0);
   const root=document.documentElement;
   root.style.setProperty('--ambient-noise','url("'+canvas.toDataURL('image/png')+'")');
-  root.style.setProperty('--ambient-noise-size',canvas.width/density+'px');
+  root.style.setProperty('--ambient-noise-size',canvas.width*1.1+'px');
   ambientNoiseDensity=density;
  }catch{/* Retain the inline grain texture when canvas is unavailable. */}
 }
