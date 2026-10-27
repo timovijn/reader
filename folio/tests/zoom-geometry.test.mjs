@@ -12,3 +12,15 @@ const viewport=metrics({pageTop:1200,pageLeft:140,height:400,width:350,scale:2,o
 assert.equal(viewport.pageTop,1200);assert.equal(viewport.height,400);assert.equal(viewport.width,350);
 const fallback=metrics(undefined,{pageTop:900,pageLeft:40,height:800,width:700});assert.equal(fallback.pageTop,900);assert.equal(fallback.height,800);
 console.log('Passed: zoom/pan coordinate invariance, visual viewport sizing and fallback metrics.');
+const dotStart=source.indexOf('function scrollDotMetrics(');
+const dotEnd=source.indexOf('\nlet scrollDotFrame=',dotStart);
+const dot=vm.runInNewContext('('+source.slice(dotStart,dotEnd)+')');
+assert.equal(dot(0,3000,1000).y,24);
+assert.equal(dot(1000,3000,1000).y,500);
+assert.equal(dot(2000,3000,1000).y,976);
+assert.equal(dot(-100,3000,1000).progress,0);
+assert.equal(dot(4000,3000,1000).progress,1);
+assert.equal(dot(0,600,1000).maximum,0);
+assert.equal(dot(0,600,1000).progress,0);
+assert.equal(dot(0,3000,400).travel,352);
+console.log('Passed: scroll-dot start/middle/end, overscroll clamping, short articles and resized viewport geometry.');
