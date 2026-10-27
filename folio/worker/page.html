@@ -82,6 +82,16 @@ body{-webkit-user-select:none;user-select:none}
 .article,.article *{-webkit-user-select:text;user-select:text}
 input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:text}
 .line-numbers,.line-numbers *,.selection-ink,.selection-ink *{-webkit-user-select:none;user-select:none}
+
+@media(any-pointer:fine){
+ html,body{cursor:var(--cursor-arrow,default)}
+ a,button,select,label[for],summary{cursor:var(--cursor-link,pointer)}
+ .article,.article *{cursor:text}
+ .article a{cursor:var(--cursor-link,pointer)}
+ input,textarea,[contenteditable="true"]{cursor:text}
+ button:disabled{cursor:wait}
+}
+@media(forced-colors:active){html,body{cursor:default}a,button,select,label[for],summary,.article a{cursor:pointer}button:disabled{cursor:wait}}
 </style></head><body><div class="selection-ink" id="selection-ink" aria-hidden="true"></div><header><button class="brand" id="brand" aria-label="Folio home"><svg viewBox="0 0 30 30"><path d="M5 4h17v22H5zM9 8h9M9 12h7M9 16h8M9 20h4M22 7h3v22H8v-3"/></svg>folio<span>_</span></button><nav class="nav"><button id="nav-discover" class="active">Discover</button><button id="nav-saved">My collection <span id="save-count"></span></button><button class="about" id="about-open" aria-label="About Folio">i</button></nav></header>
 <main class="home" id="home"><section class="intro"><div class="eyebrow"><span class="dot"></span>A quieter corner of the internet</div><h1>A little room<br>to read<span class="cursor" aria-hidden="true">_</span></h1><p>Good stories deserve your full attention.<br>Turn any article into a calm, beautiful reading experience.</p><form class="url-form" id="url-form"><svg viewBox="0 0 24 24"><path d="m10 13 4-4m-6 7-1 1a4 4 0 0 1-6-6l5-5a4 4 0 0 1 6 0m0 12a4 4 0 0 0 6 0l5-5a4 4 0 0 0-6-6l-1 1" transform="translate(1 0) scale(.9)"/></svg><input id="url-input" aria-label="Article URL" type="url" placeholder="Paste an article link here…" required><button class="primary" id="read-button" type="submit">Start reading <span>↗</span></button></form><p class="under-form">Just the words, without the noise. <span style="padding:0 5px">·</span> Or <button id="paste-open">paste article text</button></p><div class="error" id="error" role="alert" hidden></div><button id="browser-import-open" class="browser-import-link">Import from an open browser page ↗</button></section><section class="collection"><div class="section-heading"><h2 id="section-title">A few things worth reading <span>THE FOLIO EDIT</span></h2><span id="section-note">A small selection. A slower pace.</span></div><div class="cards" id="cards"></div><div class="empty" id="empty" hidden><h3>Your next good read belongs here.</h3><p>Open an article and tap the bookmark to add it to your collection.</p></div></section><div class="manifesto"><svg viewBox="0 0 30 30"><path d="M15 24V9m0 9C5 19 4 11 4 5c8 0 12 4 11 13Zm0 3c0-10 4-14 12-14 0 9-4 14-12 14Z"/></svg><p>Less scrolling. More getting lost in a good story.</p><small>MADE FOR THE JOY OF READING</small></div></main>
 <section id="reader" hidden><div class="reader-top"><button class="back" id="back">← <span>Back to your corner</span></button><div class="reader-actions"><button id="bookmark" aria-label="Save article"></button><button id="settings-toggle" aria-expanded="false" aria-controls="settings"><span style="font-family:var(--font-serif);font-size:17px">Aa</span><span class="action-label">Appearance</span></button><button id="focus"><svg viewBox="0 0 24 24"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg><span class="action-label">Focus</span></button><div class="settings" id="settings" hidden><label>Text size</label><div class="setting-row"><button id="size-down" aria-label="Decrease text size">A−</button><button id="size-up" aria-label="Increase text size">A+</button></div><label for="typeface">Typeface</label><select id="typeface"><option value="serif">Martina Plantijn</option><option value="shinka">Shinka</option><option value="shinka-mono">Shinka Mono</option><option value="sans">System Sans</option></select><label for="font-weight">Font weight</label><select id="font-weight"><option value="300">Light</option><option value="400" selected>Regular</option><option value="500">Medium</option><option value="700">Bold</option><option value="900">Black</option></select><label>Page colour</label><div class="setting-row"><button data-theme="paper">Paper</button><button data-theme="white">White</button><button data-theme="dark">Night</button></div><label>Reading width</label><div class="setting-row"><button data-width="660">Narrow</button><button data-width="820">Wide</button></div></div></div></div><article class="article"><div class="eyebrow" id="article-source"></div><h1 id="article-title"></h1><p class="dek" id="article-dek"></p><div class="byline" id="article-byline"></div><div class="article-body" id="article-body"></div><div class="article-end"><span>A moment well spent.</span><a id="original" target="_blank" rel="noopener noreferrer">Read at the source ↗</a></div></article></section><button id="focus-exit" class="focus-exit" hidden>↙ Leave focus view</button><footer><span>Folio · A place for good words.</span><span>No feeds. No noise. Just reading.</span></footer>
@@ -114,7 +124,7 @@ function applyPrefs(){
  document.documentElement.style.setProperty('--reader-font',typeface.family);
  document.documentElement.style.setProperty('--article-weight',String(prefs.weight));
  if(!['paper','white','dark'].includes(prefs.theme))prefs.theme='paper';
- prefs.size=Math.max(16,Math.min(30,Number(prefs.size)||21));prefs.width=prefs.width===820?820:660;document.body.dataset.theme=prefs.theme;document.body.dataset.font=prefs.font;document.documentElement.style.setProperty('--article-size',prefs.size+'px');document.documentElement.style.setProperty('--article-width',prefs.width+'px');document.querySelectorAll('[data-theme]').forEach(b=>{if(b.tagName==='BUTTON')b.classList.toggle('chosen',b.dataset.theme===prefs.theme)});document.querySelectorAll('button[data-width]').forEach(b=>b.classList.toggle('chosen',Number(b.dataset.width)===prefs.width));try{localStorage.setItem('folio-preferences',JSON.stringify(prefs))}catch{}scheduleLineNumbers();}
+ prefs.size=Math.max(16,Math.min(30,Number(prefs.size)||21));prefs.width=prefs.width===820?820:660;document.body.dataset.theme=prefs.theme;document.body.dataset.font=prefs.font;document.documentElement.style.setProperty('--article-size',prefs.size+'px');document.documentElement.style.setProperty('--article-width',prefs.width+'px');document.querySelectorAll('[data-theme]').forEach(b=>{if(b.tagName==='BUTTON')b.classList.toggle('chosen',b.dataset.theme===prefs.theme)});document.querySelectorAll('button[data-width]').forEach(b=>b.classList.toggle('chosen',Number(b.dataset.width)===prefs.width));try{localStorage.setItem('folio-preferences',JSON.stringify(prefs))}catch{}scheduleLineNumbers();updateShinkaCursor();}
 function isSaved(id){return saved.some(x=>x.id===id)}
 function toggleSave(article){const before=[...saved];if(isSaved(article.id))saved=saved.filter(x=>x.id!==article.id);else saved.unshift(article);if(!persist()){saved=before;return}renderCards();updateBookmark();notify(isSaved(article.id)?'A good read, saved for later.':'Removed from your collection.');}
 function updateBookmark(){const b=$('#bookmark');const yes=current&&isSaved(current.id);b.innerHTML=bookmarkIcon+'<span class="action-label">'+(yes?'Saved':'Save')+'</span>';b.querySelector('svg').classList.toggle('saved',!!yes);b.setAttribute('aria-label',yes?'Remove from collection':'Save article');b.setAttribute('aria-pressed',String(!!yes));}
@@ -293,5 +303,47 @@ window.visualViewport?.addEventListener('resize',refreshReaderGeometry);
 window.visualViewport?.addEventListener('scroll',()=>{scheduleReaderEdges();scheduleSelectionInk()},{passive:true});
 document.fonts.addEventListener('loadingdone',scheduleSelectionInk);
 selectionContrast.addEventListener('change',scheduleSelectionInk);
+// Render the actual Shinka Mono arrow glyph into native cursor images. The
+// browser handles cursor movement; density variants keep the glyph sharp.
+const shinkaCursorCache=new Map();
+const shinkaCursorPointer=matchMedia('(any-pointer: fine)');
+const shinkaCursorContrast=matchMedia('(forced-colors: active)');
+let shinkaCursorGeneration=0;
+function shinkaCursorImage(weight,ink,paper){
+ const images=[1,2,3].map(density=>{
+  const canvas=document.createElement('canvas');canvas.width=32*density;canvas.height=32*density;
+  const context=canvas.getContext('2d');if(!context)throw Error('Cursor canvas unavailable');
+  context.scale(density,density);context.font=weight+' 28px "Shinka Mono"';context.textBaseline='alphabetic';
+  const metrics=context.measureText('↖');
+  const x=3+(metrics.actualBoundingBoxLeft||0),y=3+(metrics.actualBoundingBoxAscent||22);
+  context.strokeStyle=paper;context.lineWidth=1.5;context.lineJoin='round';context.strokeText('↖',x,y);
+  context.fillStyle=ink;context.fillText('↖',x,y);
+  return{url:canvas.toDataURL('image/png'),density};
+ });
+ for(const name of ['image-set','-webkit-image-set']){
+  const image=name+'('+images.map(item=>'url("'+item.url+'") '+item.density+'x').join(',')+')';
+  if(CSS.supports('cursor',image+' 3 3, default'))return image+' 3 3';
+ }
+ return 'url("'+images[0].url+'") 3 3';
+}
+async function updateShinkaCursor(){
+ const generation=++shinkaCursorGeneration;
+ if(!shinkaCursorPointer.matches||shinkaCursorContrast.matches){document.documentElement.style.removeProperty('--cursor-arrow');document.documentElement.style.removeProperty('--cursor-link');return;}
+ const styles=getComputedStyle(document.body),ink=styles.getPropertyValue('--ink').trim(),paper=styles.getPropertyValue('--paper').trim();
+ const key=ink+'|'+paper;
+ try{
+  if(!shinkaCursorCache.has(key)){
+   const faces=await Promise.all([document.fonts.load('400 28px "Shinka Mono"','↖'),document.fonts.load('700 28px "Shinka Mono"','↖')]);
+   if(faces.some(face=>!face.length))return;
+   shinkaCursorCache.set(key,{normal:shinkaCursorImage(400,ink,paper),link:shinkaCursorImage(700,ink,paper)});
+  }
+  if(generation!==shinkaCursorGeneration)return;
+  const cursors=shinkaCursorCache.get(key);
+  document.documentElement.style.setProperty('--cursor-arrow',cursors.normal+', default');
+  document.documentElement.style.setProperty('--cursor-link',cursors.link+', pointer');
+ }catch{/* Keep native cursors if fonts, canvas or custom cursors are unavailable. */}
+}
+shinkaCursorPointer.addEventListener('change',updateShinkaCursor);
+shinkaCursorContrast.addEventListener('change',updateShinkaCursor);
 applyPrefs();renderCards();
 </script></body></html>
