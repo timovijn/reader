@@ -534,6 +534,11 @@ document.addEventListener('scroll',wakeShinkaCursor,{passive:true,capture:true})
 window.visualViewport?.addEventListener('scroll',wakeShinkaCursor,{passive:true});
 // Compose gradients and dither in one high-precision pass. A separate CSS grain
 // layer cannot undo quantization that has already happened in gradient textures.
+function ambientViewportMetrics(viewport,width,height,dpr){
+ return{width:viewport?.width>0?viewport.width:width,height:viewport?.height>0?viewport.height:height,
+  left:Math.max(0,viewport?.offsetLeft||0),top:Math.max(0,viewport?.offsetTop||0),
+  density:Math.max(1,dpr||1)*(viewport?.scale>0?viewport.scale:1)};
+}
 function createAmbientRenderer(){
  const host=$('.ambient-background'),canvas=document.createElement('canvas');
  const gl=canvas.getContext('webgl',{alpha:false,antialias:false,depth:false,stencil:false,powerPreference:'low-power'});
@@ -552,7 +557,9 @@ function createAmbientRenderer(){
   const vertex=shader(gl.VERTEX_SHADER,'attribute vec2 position; void main(){gl_Position=vec4(position,0.0,1.0);}');
   const fragment=shader(gl.FRAGMENT_SHADER,`
    precision highp float;
-   uniform vec2 resolution,cssResolution;
+   uniform vec2 resolution;
+   uniform vec4 viewBox;
+   uniform float grainScale;
    uniform float time;
    uniform float grainStrength;
    uniform vec4 baseColor,shadowColor,midColor,lightColor;
@@ -574,6 +581,7 @@ function createAmbientRenderer(){
    void main(){
     vec2 uv=gl_FragCoord.xy/resolution;
     uv.y=1.0-uv.y;
+    uv=viewBox.xy+uv*viewBox.zw;
     // Warp the colour fields into irregular contours, with independent, slow
     // currents rather than moving a set of circular gradients together.
     vec2 warp=vec2(flowNoise(uv*2.6+vec2(time/63.0,-time/87.0)),
@@ -593,9 +601,9 @@ function createAmbientRenderer(){
     float dither=(random(gl_FragCoord.xy)+random(gl_FragCoord.xy+vec2(139.7,73.1))-1.0)*1.5/255.0;
     // Visible film grain is separate from the anti-banding dither, and remains
     // fixed to the screen so the slowly flowing colour never looks like static.
-    // Size the visible texture in CSS pixels, so Retina displays do not make
-    // it disappear at 100%. Interpolation keeps the flecks soft, not square.
-    vec2 grainPoint=(gl_FragCoord.xy/resolution)*cssResolution/1.1;
+    // Keep the visible texture at a constant screen-pixel size, independently
+    // of page/pinch zoom. The canvas covers only the visible viewport.
+    vec2 grainPoint=gl_FragCoord.xy/grainScale;
     float grain=(flowNoise(grainPoint+vec2(42.3,91.7))-0.5)*grainStrength;
     gl_FragColor=vec4(clamp(colour+dither+grain,0.0,1.0),1.0);
    }
@@ -607,7 +615,7 @@ function createAmbientRenderer(){
   buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
   gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);
   const position=gl.getAttribLocation(program,'position');gl.enableVertexAttribArray(position);gl.vertexAttribPointer(position,2,gl.FLOAT,false,0,0);
-  const uniforms=Object.fromEntries(['resolution','cssResolution','time','grainStrength','baseColor','shadowColor','midColor','lightColor'].map(name=>[name,gl.getUniformLocation(program,name)]));
+  const uniforms=Object.fromEntries(['resolution','viewBox','grainScale','time','grainStrength','baseColor','shadowColor','midColor','lightColor'].map(name=>[name,gl.getUniformLocation(program,name)]));
   function colour(value){
    value=value.trim();
    if(/^#[0-9a-f]{6}$/i.test(value))return[1,3,5].map(i=>parseInt(value.slice(i,i+2),16)/255).concat(1);
@@ -623,11 +631,15 @@ function createAmbientRenderer(){
   }
   function draw(now){
    if(stopped||document.hidden||contrast.matches)return;
-   const dpr=Math.max(1,window.devicePixelRatio||1);
-   const scale=Math.min(dpr,Math.sqrt(12000000/Math.max(1,window.innerWidth*window.innerHeight)));
-   const width=Math.max(1,Math.round(window.innerWidth*scale)),height=Math.max(1,Math.round(window.innerHeight*scale));
+   const view=ambientViewportMetrics(window.visualViewport,window.innerWidth,window.innerHeight,window.devicePixelRatio);
+   const scale=Math.min(view.density,Math.sqrt(12000000/Math.max(1,view.width*view.height)));
+   const width=Math.max(1,Math.round(view.width*scale)),height=Math.max(1,Math.round(view.height*scale));
    if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;gl.viewport(0,0,width,height);}
-   gl.uniform2f(uniforms.resolution,width,height);gl.uniform2f(uniforms.cssResolution,window.innerWidth,window.innerHeight);gl.uniform1f(uniforms.time,motion.matches?0:now/1000);
+   canvas.style.width=view.width+'px';canvas.style.height=view.height+'px';canvas.style.transform='translate('+view.left+'px,'+view.top+'px)';
+   gl.uniform2f(uniforms.resolution,width,height);
+   gl.uniform4f(uniforms.viewBox,view.left/window.innerWidth,view.top/window.innerHeight,view.width/window.innerWidth,view.height/window.innerHeight);
+   gl.uniform1f(uniforms.grainScale,2*scale/view.density);
+   gl.uniform1f(uniforms.time,motion.matches?0:now/1000);
    gl.drawArrays(gl.TRIANGLES,0,6);lastDraw=now;
   }
   function animate(now){
@@ -646,6 +658,8 @@ function createAmbientRenderer(){
    stopped=true;cancelAnimationFrame(frame);canvas.remove();delete host.dataset.renderer;updateAmbientDither();
   });
   window.addEventListener('resize',resume,{passive:true});
+  window.visualViewport?.addEventListener('resize',resume,{passive:true});
+  window.visualViewport?.addEventListener('scroll',resume,{passive:true});
   document.addEventListener('visibilitychange',resume);motion.addEventListener('change',resume);contrast.addEventListener('change',resume);
   updateTheme();host.dataset.renderer='gpu';resume();
   return{updateTheme};
@@ -656,11 +670,11 @@ function createAmbientRenderer(){
  }
 }
 // Fractal SVG noise is correlated and too low in contrast to hide colour bands.
-// Use a static monochrome texture with the same CSS-pixel scale as GPU grain.
+// Keep fallback grain at the same screen-pixel scale as GPU grain.
 let ambientNoiseDensity=0;
 function updateAmbientDither(){
  if($('.ambient-background').dataset.renderer==='gpu')return;
- const density=Math.max(1,window.devicePixelRatio||1);
+ const density=ambientViewportMetrics(window.visualViewport,window.innerWidth,window.innerHeight,window.devicePixelRatio).density;
  if(density===ambientNoiseDensity)return;
  try{
   const canvas=document.createElement('canvas');canvas.width=384;canvas.height=384;
@@ -675,11 +689,12 @@ function updateAmbientDither(){
   context.putImageData(pixels,0,0);
   const root=document.documentElement;
   root.style.setProperty('--ambient-noise','url("'+canvas.toDataURL('image/png')+'")');
-  root.style.setProperty('--ambient-noise-size',canvas.width*1.1+'px');
+  root.style.setProperty('--ambient-noise-size',canvas.width*2/density+'px');
   ambientNoiseDensity=density;
  }catch{/* Retain the inline grain texture when canvas is unavailable. */}
 }
 window.addEventListener('resize',updateAmbientDither,{passive:true});
+window.visualViewport?.addEventListener('resize',updateAmbientDither,{passive:true});
 ambientRenderer=createAmbientRenderer();
 if(!ambientRenderer)updateAmbientDither();
 applyPrefs();renderCards();

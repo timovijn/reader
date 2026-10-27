@@ -34,3 +34,14 @@ const down=turn(up.angle,up.direction,40);assert.equal(down.angle,450);assert.eq
 assert.equal(turn(down.angle,down.direction,.2).angle,450);
 assert.equal(turn(down.angle,down.direction,-.2).direction,1);
 console.log('Passed: directional arrow half-turns, continued scrolling and subpixel jitter.');
+const ambient=load('ambientViewportMetrics','createAmbientRenderer');
+const normal=ambient({width:1200,height:800,scale:1},1200,800,2);
+const pinch=ambient({width:300,height:200,scale:4,offsetLeft:160,offsetTop:90},1200,800,2);
+assert.equal(normal.width*normal.density,pinch.width*pinch.density);
+assert.equal(normal.height*normal.density,pinch.height*pinch.density);
+assert.equal(pinch.left,160);assert.equal(pinch.top,90);
+const pageZoom=ambient(undefined,300,200,8);
+assert.equal(pageZoom.width*pageZoom.density,normal.width*normal.density);
+assert.equal(ambient(undefined,1200,800,2).density,2);
+assert.equal(ambient({scale:0,width:0,height:0},1200,800,2).width,1200);
+console.log('Passed: native-resolution gradient canvas across page/pinch zoom and viewport panning.');
