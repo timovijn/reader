@@ -70,10 +70,10 @@ body[data-theme="dark"]{--paper:#23231f;--ink:#e5e2d8;--muted:#aaa69b;--line:#49
 /* Independent drift, breath and gradient movement; no blur or scaled bitmap. */
 body{isolation:isolate}
 .companion-backdrop{position:fixed;inset:0;overflow:hidden;pointer-events:none;user-select:none;z-index:-1}
-.companion{position:absolute;left:50%;top:50%;translate:-50% -50%;width:min(82vmin,880px);aspect-ratio:1;pointer-events:none;user-select:none;opacity:.14}
-.companion-orb{position:absolute;left:50%;top:50%;translate:-50% -50%;width:100%;height:100%;border-radius:50%;background:radial-gradient(circle at 27% 28%,rgba(242,224,193,.98),transparent 64%),radial-gradient(circle at 76% 35%,rgba(120,82,56,.96),transparent 65%),radial-gradient(circle at 51% 82%,rgba(205,156,111,.96),transparent 70%),rgba(210,191,165,.45);background-repeat:no-repeat;background-size:170% 170%,180% 180%,165% 165%;background-position:25% 25%,75% 35%,50% 80%;filter:none}
-body[data-theme="dark"] .companion{opacity:.12}
-@media(max-width:700px){.companion{width:94vmin;opacity:.12}}
+.companion{position:absolute;left:50%;top:50%;translate:-50% -50%;width:min(82vmin,880px);aspect-ratio:1;pointer-events:none;user-select:none;opacity:.075}
+.companion-orb{position:absolute;left:50%;top:50%;translate:-50% -50%;width:100%;height:100%;border-radius:50%;background:radial-gradient(circle at 27% 28%,rgba(242,224,193,.98),transparent 64%),radial-gradient(circle at 76% 35%,rgba(174,145,119,.9),transparent 65%),radial-gradient(circle at 51% 82%,rgba(205,156,111,.96),transparent 70%),rgba(210,191,165,.45);background-repeat:no-repeat;background-size:170% 170%,180% 180%,165% 165%;background-position:25% 25%,75% 35%,50% 80%;filter:none}
+body[data-theme="dark"] .companion{opacity:.07}
+@media(max-width:700px){.companion{width:94vmin;opacity:.065}}
 @media(prefers-reduced-motion:reduce){.companion{transform:none!important}.companion-orb{filter:none!important;width:100%!important;height:100%!important}}
 @media print,(forced-colors:active){.companion-backdrop{display:none}}
 </style></head><body><div class="companion-backdrop" aria-hidden="true"><div class="companion" id="companion"><div class="companion-orb" id="companion-orb"></div></div></div><div class="progress" id="progress"></div><header><button class="brand" id="brand" aria-label="Folio home"><svg viewBox="0 0 30 30"><path d="M5 4h17v22H5zM9 8h9M9 12h7M9 16h8M9 20h4M22 7h3v22H8v-3"/></svg>folio<span>_</span></button><nav class="nav"><button id="nav-discover" class="active">Discover</button><button id="nav-saved">My collection <span id="save-count"></span></button><button class="about" id="about-open" aria-label="About Folio">i</button></nav></header>
@@ -240,17 +240,17 @@ function advanceCompanion(track){
 }
 function companionTrack(element,initial,next){companionTracks.push({element,initial,current:{...initial},next,animation:null});}
 companionTrack(companion,{transform:'translate(0px,0px)'},()=>({
- frame:{transform:'translate('+randomBetween(-26,26).toFixed(2)+'px,'+randomBetween(-20,20).toFixed(2)+'px)'},
- duration:randomBetween(4000,9500)
+ frame:{transform:'translate('+randomBetween(-12,12).toFixed(2)+'px,'+randomBetween(-9,9).toFixed(2)+'px)'},
+ duration:randomBetween(8000,14000)
 }));
 companionTrack(companionOrb,{width:'100%',height:'100%'},()=>{
  const inhale=companionInhale;companionInhale=!companionInhale;
- const size=(inhale?randomBetween(114,127):randomBetween(89,98)).toFixed(2)+'%';
- return{frame:{width:size,height:size},duration:inhale?randomBetween(2800,5000):randomBetween(3800,6800),delay:randomBetween(0,inhale?1400:800)};
+ const size=(inhale?randomBetween(102,105):randomBetween(98,100)).toFixed(2)+'%';
+ return{frame:{width:size,height:size},duration:inhale?randomBetween(5000,8000):randomBetween(6500,10000),delay:randomBetween(0,inhale?1400:800)};
 });
 companionTrack(companionOrb,{backgroundPosition:'25% 25%,75% 35%,50% 80%',filter:'hue-rotate(0deg)'},()=>{
  const position=()=>randomBetween(5,95).toFixed(1)+'% '+randomBetween(5,95).toFixed(1)+'%';
- return{frame:{backgroundPosition:[position(),position(),position()].join(','),filter:'hue-rotate('+randomBetween(-5,5).toFixed(2)+'deg)'},duration:randomBetween(5500,12000)};
+ return{frame:{backgroundPosition:[position(),position(),position()].join(','),filter:'hue-rotate('+randomBetween(-5,5).toFixed(2)+'deg)'},duration:randomBetween(10000,18000)};
 });
 function syncCompanion(){
  if(companionMotion.matches){
