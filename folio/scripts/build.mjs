@@ -7,7 +7,7 @@ await mkdir('dist/public',{recursive:true});
 const html=await readFile('worker/page.html','utf8');
 await mkdir('dist/public/fonts',{recursive:true});
 const fonts = {};
-for (const style of ['Regular', 'Italic', 'Bold', 'BoldItalic']) {
+for (const style of ['Light', 'LightItalic', 'Regular', 'Italic', 'Medium', 'MediumItalic', 'Bold', 'BoldItalic', 'Black', 'BlackItalic']) {
   const name = `MartinaPlantijn-${style}.otf`;
   const bytes = await readFile(`fonts/${name}`);
   if (bytes.subarray(0,4).toString() !== 'OTTO') throw new Error(`Invalid OpenType font: ${name}`);

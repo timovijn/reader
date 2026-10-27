@@ -26,7 +26,7 @@ Open http://127.0.0.1:4173. Alternatively run `node scripts/build.mjs`, `node sc
 
 ## Typography
 
-Martina Plantijn is the preferred serif family for the wordmark, headings, article text and editorial accents. Interface controls retain the system sans-serif, and readers can still choose Sans in Appearance. The supplied Regular, Italic, Bold and Bold Italic OTF files are self-hosted with explicit weight/style declarations and `font-display: swap`. The build copies these four fonts to `dist/public/fonts` for Vercel and includes them in the Worker bundle for local preview and Cloudflare. Georgia and Times New Roman remain loading fallbacks; visitors do not need the font installed. The other supplied weights are retained as source assets but are not shipped because the current design does not use them.
+Martina Plantijn is the preferred serif family for the wordmark, headings, article text and editorial accents. Interface controls retain the system sans-serif, and readers can still choose Sans in Appearance. All ten supplied OTF files (Light, Regular, Medium, Bold and Black, plus their italics) are self-hosted with explicit weight/style declarations and `font-display: swap`. The build copies these fonts to `dist/public/fonts` for Vercel and includes them in the Worker bundle for local preview and Cloudflare. Georgia and Times New Roman remain loading fallbacks; visitors do not need the font installed. Appearance includes a Font weight selector that changes article titles, introductory text and body copy. The choice is saved in this browser, with Regular as the default.
 
 ## Boundaries
 
