@@ -5,7 +5,9 @@ const normalise = value => String(value||'').replace(/\s+/g,' ').trim();
 const attr = (node,name) => node.attrs?.find(item=>item.name===name)?.value || '';
 const tag = node => node.tagName || '';
 const positive = /(^|[\s_-])(entry-content|post-content|article-body|article-content|story-body|story-content|body-copy|content-body|post-body|articlebody)([\s_-]|$)/i;
-const negative = /(^|[\s_-])(nav|menu|sidebar|footer|comments?|related|recommended|newsletter|advertisement|advert|social|share-buttons|cookie|promo|paywall|subscription-wall)([\s_-]|$)/i;
+// Match an ancillary component's own name, not layout flags like no-sidebar
+// or has-footer. A page's ancestor must never disappear from a substring hit.
+const negative = /^(nav|menu|sidebar|footer|comments?|related|recommended|newsletter|advertisement|advert|social|share-buttons|cookie|promo|paywall|subscription-wall)(?:[-_]|$)/i;
 const ignored = new Set(['script','style','nav','footer','aside','form','button','input','iframe','svg','noscript','dialog','template','select','canvas']);
 const blockTags = new Set(['p','h2','h3','h4','h5','h6','blockquote','pre','li','img','figcaption','hr']);
 const inlineTags = { em:'em',i:'em',strong:'strong',b:'strong',code:'code',sup:'sup',sub:'sub',s:'s',del:'s',a:'a',br:'br' };
@@ -14,13 +16,15 @@ function safeUrl(value,base){
   if(!value)return null;
   try{const url=new URL(value,base);return ['https:','http:'].includes(url.protocol)&&!url.username&&!url.password?url.href:null;}catch{return null;}
 }
-function excluded(node){
+function excluded(node,articleAncestors){
   const name=tag(node);if(ignored.has(name))return true;
+  if(name==='body')return false;
   if(attr(node,'aria-hidden')==='true'||node.attrs?.some(a=>a.name==='hidden'))return true;
   if(/display\s*:\s*none|visibility\s*:\s*hidden/i.test(attr(node,'style')))return true;
   if(['navigation','dialog','complementary'].includes(attr(node,'role')))return true;
   const label=attr(node,'class')+' '+attr(node,'id');
-  return negative.test(label)&&!positive.test(label);
+  if(['main','article'].includes(name)||attr(node,'role')==='main'||attr(node,'itemprop')==='articleBody'||articleAncestors?.has(node))return false;
+  return label.split(/\s+/).some(token=>negative.test(token))&&!positive.test(label);
 }
 function walk(root,filter=()=>true){
   const result=[];const stack=[root];while(stack.length){const node=stack.pop();if(!filter(node))continue;result.push(node);if(result.length>80000)throw importFailure('page_too_complex','This page is too complex to extract. Try pasting the article text.');const children=node.childNodes||[];for(let i=children.length-1;i>=0;i--)stack.push(children[i]);}return result;
@@ -58,7 +62,15 @@ export function extractArticle(html,url){
   const siteName=normalise(metadata['og:site_name']||schema.publisher?.name||new URL(base).hostname.replace(/^www\./,'')).slice(0,150);
   const body=all.find(n=>tag(n)==='body')||doc;
   if(/^(just a moment[.!…]*|access denied|verify (?:that )?you are human|attention required(?:!|.*cloudflare)?)$/i.test(title))throw importFailure('bot_protection','This website requires browser verification. Open it at the source, then paste the article text.');
-  const clean=walk(body,n=>!excluded(n));const cleanSet=new Set(clean);
+  // Preserve outer layout containers around explicitly marked article prose.
+  // Filtering remains strict for sibling comments, menus and recommendations.
+  const articleAncestors=new WeakSet();
+  for(const node of all){
+    if(!['main','article'].includes(tag(node))&&attr(node,'role')!=='main'&&attr(node,'itemprop')!=='articleBody'&&!positive.test(attr(node,'class')+' '+attr(node,'id')))continue;
+    let parent=node.parentNode;
+    while(parent&&!articleAncestors.has(parent)){articleAncestors.add(parent);parent=parent.parentNode;}
+  }
+  const clean=walk(body,n=>!excluded(n,articleAncestors));const cleanSet=new Set(clean);
   const stats=new WeakMap();
   for(let i=clean.length-1;i>=0;i--){const node=clean[i];if(node.nodeName==='#text'){const length=normalise(node.value).length;stats.set(node,{length,links:0,paragraphs:0,score:0});continue;}
     const children=(node.childNodes||[]).filter(n=>cleanSet.has(n));
@@ -139,7 +151,9 @@ export function extractArticle(html,url){
     const text=normalise(rawText(body)).slice(0,12000);
     const blocked=/verify you are human|checking your browser|just a moment|enable javascript and cookies|captcha|access denied/i.test(text);
     const restricted=/subscribe to (continue|read)|sign in to (continue|read)|already a subscriber|subscription required/i.test(text);
-    throw importFailure(blocked?'bot_protection':restricted?'sign_in_required':'no_article',blocked?'This website requires browser verification. Open it at the source, then paste the article text.':restricted?'This article requires a subscription or sign-in. Paste text you can access from the source.':'Folio could not find enough article text on this page. It may load with JavaScript; try pasting its text.');
+    const error=importFailure(blocked?'bot_protection':restricted?'sign_in_required':'no_article',blocked?'This website requires browser verification. Open it at the source, then paste the article text.':restricted?'This article requires a subscription or sign-in. Paste text you can access from the source.':'Folio could not find enough article text on this page. It may load with JavaScript; try pasting its text.');
+    error.diagnostics={paragraphsFound:all.filter(n=>tag(n)==='p').length,paragraphsKept:clean.filter(n=>tag(n)==='p').length,cleanTextCharacters:stats.get(body)?.length||0,extractedCharacters:characterCount(),candidateCount:candidates.length};
+    throw error;
   }
   const text=blocks.filter(b=>b[0]!=='img').map(b=>b[1]).join(' ');
   const wordCount=text.split(/\s+/).filter(Boolean).length;

@@ -111,6 +111,7 @@ export function createVercelHandler(fetchPage = createPublicFetch()) {
     try {
       return Response.json({article:extractArticle(result.html,result.url),url:result.url}, {headers:{'cache-control':'no-store','x-content-type-options':'nosniff'}});
     } catch(error) {
+      if(error.diagnostics)console.warn('Folio extraction failed',{host:new URL(result.url).hostname,code:error.code,...error.diagnostics});
       return Response.json({error:error.message,code:error.code||'extraction_failed'}, {status:422,headers:{'cache-control':'no-store'}});
     }
   } };

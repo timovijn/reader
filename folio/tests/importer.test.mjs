@@ -65,3 +65,22 @@ assert.equal((await (await createVercelHandler(async()=>response('<html><h1>Empt
 // Decode the actual charset, including publishers still serving Windows-1252.
 const latin=Buffer.from('<html><p>caf\xe9</p></html>','latin1');const decoded=await handleRequest(post(),async()=>response(latin,{headers:{'content-type':'text/html; charset=windows-1252'}}));assert.ok((await decoded.json()).html.includes('café'));
 console.log('Passed: WordPress IP regression, IPv4-mapped IPv6, private networks, HTML/metadata/structured extraction, safe rich text, lists/images, malformed HTML, compression, pinned DNS failover, redirects, status codes and character encodings.');
+
+// Theme layout flags are not sidebar/footer content. They often live on the
+// body or on the outer site wrapper, and previously removed the whole article.
+for(const classes of ['no-sidebar','has-sidebar','right-sidebar','single single-post no-sidebar footer-light','has-footer with-comments']){
+ const themed=fixture.replace('<body>',`<body class="${classes}">`);
+ const imported=extractArticle(themed,articleUrl);
+ assert.equal(imported.title,article.title);assert.equal(imported.wordCount,article.wordCount);
+ assert.ok(!JSON.stringify(imported.body).includes('UNWANTED'));
+}
+for(const wrapper of ['<div class="no-sidebar">','<div class="sidebar-layout">','<div id="footer-light" class="theme-layout">']){
+ const wrapped=fixture.replace('<body>',`<body>${wrapper}`).replace('</body>','</div></body>');
+ assert.equal(extractArticle(wrapped,articleUrl).wordCount,article.wordCount);
+}
+const unmarked='<body class="no-sidebar"><div class="layout-sidebar"><p>'+prose.repeat(3)+'</p></div><div class="sidebar"><p>UNWANTED SIDEBAR '+prose.repeat(5)+'</p></div></body>';
+assert.ok(!JSON.stringify(extractArticle(unmarked,articleUrl).body).includes('UNWANTED SIDEBAR'));
+// Real ancillary components are still removed, including prefixed class names.
+const ancillary=fixture.replace('</article>','<div class="newsletter-signup"><p>'+prose.repeat(20)+'</p></div></article>');
+assert.equal(extractArticle(ancillary,articleUrl).wordCount,article.wordCount);
+console.log('Passed: theme layout flags, body/root preservation, outer article wrappers and actual sidebar/newsletter exclusion.');
