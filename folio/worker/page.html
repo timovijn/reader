@@ -134,9 +134,9 @@ html.reading{scrollbar-width:none}html.reading::-webkit-scrollbar{display:none}
 /* Full-viewport mesh. Reference samples: shadow #44423b, mid #737063,
    centre #9a9688, highlight #bfbcb4. Lift shadows for readable dark text.
    Native gradients stay resolution independent; only transforms animate. */
-body{isolation:isolate;--ambient-base:#b7b4aa;--ambient-shadow:rgba(68,66,59,.6);--ambient-mid:rgba(115,112,99,.24);--ambient-light:rgba(191,188,180,.92);--paper:#b7b4aa;--ink:#24231e;--muted:#414037;--grain-opacity:.075;background:var(--ambient-base)}
-body[data-theme="white"]{--ink:#252525;--ambient-base:#f5f5ef;--ambient-shadow:rgba(152,160,139,.16);--ambient-mid:rgba(197,195,177,.2);--ambient-light:rgba(255,255,255,.95);--paper:#f5f5ef;--muted:#65665c;--grain-opacity:.055}
-body[data-theme="dark"]{--ink:#e5e2d8;--ambient-base:#25271f;--ambient-shadow:rgba(8,15,9,.62);--ambient-mid:rgba(80,79,56,.32);--ambient-light:rgba(130,128,99,.2);--paper:#25271f;--muted:#b5b5a3;--grain-opacity:.075}
+body{isolation:isolate;--ambient-base:#b7b4aa;--ambient-shadow:rgba(68,66,59,.6);--ambient-mid:rgba(115,112,99,.24);--ambient-light:rgba(191,188,180,.92);--paper:#b7b4aa;--ink:#24231e;--muted:#414037;--grain-opacity:.06;background:var(--ambient-base)}
+body[data-theme="white"]{--ink:#252525;--ambient-base:#f5f5ef;--ambient-shadow:rgba(152,160,139,.16);--ambient-mid:rgba(197,195,177,.2);--ambient-light:rgba(255,255,255,.95);--paper:#f5f5ef;--muted:#65665c;--grain-opacity:.044}
+body[data-theme="dark"]{--ink:#e5e2d8;--ambient-base:#25271f;--ambient-shadow:rgba(8,15,9,.62);--ambient-mid:rgba(80,79,56,.32);--ambient-light:rgba(130,128,99,.2);--paper:#25271f;--muted:#b5b5a3;--grain-opacity:.06}
 .ambient-background{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;contain:strict;background:var(--ambient-base)}
 .ambient-background:not([data-renderer="gpu"]){width:var(--ambient-visible-width,100%);height:var(--ambient-visible-height,100%);transform:translate(var(--ambient-visible-left,0px),var(--ambient-visible-top,0px))}
 .ambient-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
@@ -620,7 +620,7 @@ function createAmbientRenderer(){
  const host=$('.ambient-background'),canvas=document.createElement('canvas');
  const gl=canvas.getContext('webgl',{alpha:false,antialias:false,depth:false,stencil:false,powerPreference:'low-power'});
  if(!gl)return null;
- let program,buffer,frame=0,stopped=false,lastDraw=-Infinity,themeGrainStrength=.065;
+ let program,buffer,frame=0,stopped=false,lastDraw=-Infinity,themeGrainStrength=.052;
  const motion=matchMedia('(prefers-reduced-motion: reduce)');
  const contrast=matchMedia('(forced-colors: active)');
  try{
@@ -702,7 +702,7 @@ function createAmbientRenderer(){
   function updateTheme(){
    if(stopped)return;
    const styles=getComputedStyle(document.body);
-   themeGrainStrength=document.body.dataset.theme==='dark' ? .055 : .065;
+   themeGrainStrength=document.body.dataset.theme==='dark' ? .044 : .052;
    for(const [uniform,variable] of [['baseColor','base'],['shadowColor','shadow'],['midColor','mid'],['lightColor','light']])gl.uniform4fv(uniforms[uniform],colour(styles.getPropertyValue('--ambient-'+variable)));
    draw(performance.now());
   }
