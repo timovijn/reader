@@ -68,7 +68,7 @@ body[data-theme="dark"]{--paper:#23231f;--ink:#e5e2d8;--muted:#aaa69b;--line:#49
 #browser-import-dialog textarea{height:150px}
 
 /* A quiet, decorative companion, kept outside the reading column. */
-.companion{position:fixed;right:38px;bottom:34px;width:66px;height:66px;border-radius:50%;pointer-events:none;user-select:none;z-index:1;opacity:.9;background:radial-gradient(circle at 27% 28%,rgba(155,201,175,.95),transparent 64%),radial-gradient(circle at 76% 35%,rgba(186,158,218,.93),transparent 65%),radial-gradient(circle at 51% 82%,rgba(235,186,151,.95),transparent 70%),rgba(210,214,206,.45);filter:blur(.6px);transition:filter var(--companion-duration,14s) ease-in-out;will-change:transform}
+.companion{position:fixed;right:38px;bottom:34px;width:66px;height:66px;border-radius:50%;pointer-events:none;user-select:none;z-index:1;opacity:.9;background:radial-gradient(circle at 27% 28%,rgba(218,197,164,.95),transparent 64%),radial-gradient(circle at 76% 35%,rgba(166,130,102,.93),transparent 65%),radial-gradient(circle at 51% 82%,rgba(205,165,125,.95),transparent 70%),rgba(210,191,165,.45);filter:blur(.6px);transition:filter var(--companion-duration,14s) ease-in-out;will-change:transform}
 body[data-theme="dark"] .companion{opacity:.65}
 .focus .companion{bottom:90px}
 @media(max-width:700px){.companion{right:20px;bottom:28px;width:48px;height:48px;opacity:.85}.focus .companion{bottom:78px}}
@@ -229,7 +229,7 @@ function breatheCompanion(){
  const inhale='translate('+drift()+'px,'+drift()+'px) scale('+(1.17+Math.random()*.07).toFixed(3)+')';
  const rest='translate('+drift()+'px,'+drift()+'px) scale('+(.89+Math.random()*.05).toFixed(3)+')';
  companion.style.setProperty('--companion-duration',duration+'ms');
- companion.style.filter='blur(.6px) hue-rotate('+Math.round(Math.random()*70-35)+'deg)';
+ companion.style.filter='blur(.6px) hue-rotate('+Math.round(Math.random()*12-6)+'deg)';
  const animation=companion.animate([{transform:companionTransform},{transform:inhale,offset:.46+Math.random()*.1},{transform:rest}],{duration,easing:'ease-in-out',fill:'forwards'});
  companionAnimation=animation;
  animation.finished.then(()=>{
