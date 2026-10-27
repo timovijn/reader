@@ -1,6 +1,6 @@
 # Folio
 
-A quiet web article reader with warm paper tones, editorial typography, and an uncluttered reading view.
+A quiet web article reader with a minimal typewriter interface, Shinka Mono typography, warm paper tones and a numbered reading list.
 
 ## Run locally
 
@@ -26,7 +26,7 @@ Open http://127.0.0.1:4173. Alternatively run `node scripts/build.mjs`, `node sc
 
 ## Typography
 
-The reader offers Martina Plantijn, Shinka, Shinka Mono, and System Sans under Appearance → Typeface. The selection applies to article titles, introductory text and body copy, and is remembered in this browser. The rest of the interface keeps its existing typography.
+Shinka Mono is the default for the interface and article reading view. On the first visit to the typewriter design, existing reading preferences switch to Mono at 18px; subsequent choices remain saved. The reader also offers Martina Plantijn, Shinka, Shinka Mono, and System Sans under Appearance → Typeface. The selection applies to article titles, introductory text and body copy, and is remembered in this browser. The rest of the interface keeps its existing typography.
 
 The font-weight selector lists each family's supplied weights: Martina Plantijn has Light through Black; Shinka adds Thin; Shinka Mono offers Thin through Bold. Switching families selects the closest available weight when necessary. Every supplied weight has its matching italic face.
 
