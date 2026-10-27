@@ -30,8 +30,30 @@ assert.ok(!JSON.stringify(hostile).includes('javascript:'));assert.ok(!JSON.stri
 
 const structured=extractArticle(`<html><head><script type="application/ld+json">${JSON.stringify({'@graph':[{'@type':'NewsArticle',headline:'Public structured story',author:{name:'Writer'},articleBody:prose.repeat(2),isAccessibleForFree:true}]})}</script></head><body><div id="app"></div></body></html>`,articleUrl);
 assert.equal(structured.extraction.method,'structured-data');assert.equal(structured.author,'Writer');
+// A readable introduction must not prevent a longer public metadata fallback.
+const publicBody=prose.repeat(12);
+const publicPreview=extractArticle(`<script type="application/ld+json">${JSON.stringify({'@type':'Article',articleBody:publicBody,isAccessibleForFree:true})}</script><article><p>${prose}</p></article>`,articleUrl);
+assert.equal(publicPreview.extraction.method,'structured-data');assert.ok(publicPreview.wordCount>400);
+const paidMetadata={'@type':'Article',isAccessibleForFree:false,wordCount:'2,000',articleBody:publicBody};
+assert.throws(()=>extractArticle(`<script type="application/ld+json">${JSON.stringify(paidMetadata)}</script><article><p>${prose}</p></article>`,articleUrl),e=>e.code==='incomplete_article');
+// Full article HTML remains importable even when the publisher labels it paid.
+assert.ok(extractArticle(`<script type="application/ld+json">${JSON.stringify({...paidMetadata,wordCount:800})}</script><article>${paras.repeat(4)}</article>`,articleUrl).wordCount>700);
+// Do not guess that a short essay is incomplete without length evidence.
+assert.ok(extractArticle(`<script type="application/ld+json">${JSON.stringify({'@type':'Article',isAccessibleForFree:false})}</script><article><p>${prose}</p></article>`,articleUrl).wordCount>20);
 assert.throws(()=>extractArticle(`<script type="application/ld+json">${JSON.stringify({'@type':'Article',articleBody:prose.repeat(2),isAccessibleForFree:false})}</script><p>Subscribe to continue</p>`,articleUrl),e=>e.code==='sign_in_required');
 assert.throws(()=>extractArticle('<title>Just a moment</title><main>Verify you are human</main>',articleUrl),e=>e.code==='bot_protection');
+
+// New Yorker labels real prose paragraphs `paywall`, including drop caps,
+// across several body containers. This is distinct from its paywall interface.
+const newYorkerUrl='https://www.newyorker.com/magazine/2026/11/02/fixture';
+const newYorkerFixture=`<article><div class="article__body"><p>${prose}</p><p class="paywall">Second paragraph. ${prose}<em>Preserved emphasis.</em></p></div><aside class="paywall-bar"><p>${'UNWANTED SUBSCRIPTION '.repeat(40)}</p></aside><div class="article__body"><p class="has-dropcap body paywall">Final paragraph. ${prose}</p><p class="paywall" hidden>UNWANTED HIDDEN TEXT</p></div></article><p class="paywall">${'UNWANTED OUTSIDE BODY '.repeat(40)}</p>`;
+const newYorkerArticle=extractArticle(newYorkerFixture,newYorkerUrl);
+assert.equal(newYorkerArticle.extraction.method,'html');assert.equal(newYorkerArticle.body.length,3);
+assert.ok(newYorkerArticle.body[2][1].startsWith('Final paragraph.'));
+assert.ok(JSON.stringify(newYorkerArticle.body).includes('"tag":"em"'));
+assert.ok(!JSON.stringify(newYorkerArticle.body).includes('UNWANTED'));
+assert.equal(extractArticle(newYorkerFixture,articleUrl).body.length,1);
+assert.equal(extractArticle(newYorkerFixture,'https://newyorker.com.example.org/article').body.length,1);
 
 // Simulate actual Node request streams, including compression and failed IPs.
 function transport({encoding='',failFirst=false,addresses=[]}={}){

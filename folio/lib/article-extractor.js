@@ -16,7 +16,7 @@ function safeUrl(value,base){
   if(!value)return null;
   try{const url=new URL(value,base);return ['https:','http:'].includes(url.protocol)&&!url.username&&!url.password?url.href:null;}catch{return null;}
 }
-function excluded(node,articleAncestors){
+function excluded(node,articleAncestors,publisherProse){
   const name=tag(node);if(ignored.has(name))return true;
   if(name==='body')return false;
   if(attr(node,'aria-hidden')==='true'||node.attrs?.some(a=>a.name==='hidden'))return true;
@@ -24,6 +24,7 @@ function excluded(node,articleAncestors){
   if(['navigation','dialog','complementary'].includes(attr(node,'role')))return true;
   const label=attr(node,'class')+' '+attr(node,'id');
   if(['main','article'].includes(name)||attr(node,'role')==='main'||attr(node,'itemprop')==='articleBody'||articleAncestors?.has(node))return false;
+  if(publisherProse?.has(node))return false;
   return label.split(/\s+/).some(token=>negative.test(token))&&!positive.test(label);
 }
 function walk(root,filter=()=>true){
@@ -70,7 +71,19 @@ export function extractArticle(html,url){
     let parent=node.parentNode;
     while(parent&&!articleAncestors.has(parent)){articleAncestors.add(parent);parent=parent.parentNode;}
   }
-  const clean=walk(body,n=>!excluded(n,articleAncestors));const cleanSet=new Set(clean);
+  // New Yorker uses `paywall` on article paragraphs as well as interface UI.
+  // Only preserve paragraphs in its actual body containers; banners, hidden
+  // content and other publishers retain the normal exclusion rules.
+  const publisherProse=new WeakSet();
+  if(/(^|\.)newyorker\.com$/.test(new URL(base).hostname)){
+    for(const node of all){
+      if(tag(node)!=='p'||!attr(node,'class').split(/\s+/).includes('paywall'))continue;
+      for(let parent=node.parentNode;parent;parent=parent.parentNode){
+        if(attr(parent,'class').split(/\s+/).includes('article__body')){publisherProse.add(node);break;}
+      }
+    }
+  }
+  const clean=walk(body,n=>!excluded(n,articleAncestors,publisherProse));const cleanSet=new Set(clean);
   const stats=new WeakMap();
   for(let i=clean.length-1;i>=0;i--){const node=clean[i];if(node.nodeName==='#text'){const length=normalise(node.value).length;stats.set(node,{length,links:0,paragraphs:0,score:0});continue;}
     const children=(node.childNodes||[]).filter(n=>cleanSet.has(n));
@@ -126,15 +139,20 @@ export function extractArticle(html,url){
   if(root)add(root);
   let method='html';
   const characterCount=()=>blocks.filter(b=>b[0]!=='img').reduce((s,b)=>s+b[1].length,0);
-  if(characterCount()<180){
+  {
     // Use only Article bodies explicitly marked public or without a restriction.
     // A schema declaring paid access is never used to fill missing page content.
-    const item=structured.find(item=>typeof item.articleBody==='string'&&item.isAccessibleForFree!==false&&item.isAccessibleForFree!=='False'&&item.isAccessibleForFree!=='false');
-    if(item?.articleBody?.length>=180){blocks.length=0;const fragment=parse('<article>'+item.articleBody+'</article>');
+    const item=structured.filter(item=>typeof item.articleBody==='string'&&item.isAccessibleForFree!==false&&item.isAccessibleForFree!=='False'&&item.isAccessibleForFree!=='false').sort((a,b)=>b.articleBody.length-a.articleBody.length)[0];
+    if(item?.articleBody?.length>=180){const fragment=parse('<article>'+item.articleBody+'</article>');
       // Structured bodies may be prose or HTML; parsing decodes entities without
       // running scripts. Emit text-only paragraphs on this fallback path.
       const text=walk(fragment,n=>!ignored.has(tag(n))).filter(n=>n.nodeName==='#text').map(n=>n.value).join('\n');
-      for(const part of text.split(/\n\s*\n|\n/).map(normalise).filter(Boolean))blocks.push(['p',part]);method='structured-data';
+      const parts=text.split(/\n\s*\n|\n/).map(normalise).filter(Boolean);
+      const structuredCharacters=parts.reduce((sum,part)=>sum+part.length,0);
+      // Keep rich HTML unless public structured prose is substantially longer.
+      if(characterCount()<180||structuredCharacters>characterCount()*1.5){
+        blocks.length=0;for(const part of parts)blocks.push(['p',part]);method='structured-data';
+      }
     }
   }
   if(characterCount()<180){
@@ -147,6 +165,15 @@ export function extractArticle(html,url){
   }
   const text=blocks.filter(b=>b[0]!=='img').map(b=>b[1]).join(' ');
   const wordCount=text.split(/\s+/).filter(Boolean).length;
+  const declaredWordCount=Number(String(schema.wordCount||'').replace(/,/g,''));
+  const restricted=schema.isAccessibleForFree===false||/^false$/i.test(String(schema.isAccessibleForFree));
+  const subscriptionPrompt=/subscribe to (?:continue|read)|sign in to (?:continue|read)|subscription required/i.test(rawText(body));
+  // Paid metadata alone does not imply truncation: full HTML can still be present.
+  // Require a substantial, publisher-declared length discrepancy as evidence.
+  if((restricted||subscriptionPrompt)&&Number.isFinite(declaredWordCount)&&declaredWordCount>=600&&wordCount<declaredWordCount*.35){
+    const error=importFailure('incomplete_article','This website returned only an article preview. Folio could not retrieve the full text. Import text you can access from the source.');
+    error.diagnostics={extractedWords:wordCount,declaredWords:declaredWordCount,method};throw error;
+  }
   const direction=attr(all.find(n=>tag(n)==='html')||{},'dir');
   return {id:base,url:base,title,author,excerpt,siteName,published,body:blocks,minutes:Math.max(1,Math.ceil(wordCount/230)),wordCount,category:'From the web',extraction:{method},dir:['rtl','ltr'].includes(direction)?direction:'auto'};
 }
