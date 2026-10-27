@@ -303,6 +303,7 @@ const shinkaCursorPointer=matchMedia('(any-pointer: fine)');
 const shinkaCursorContrast=matchMedia('(forced-colors: active)');
 let shinkaCursorGeneration=0;
 let shinkaCursorPalette=null,shinkaCursorIdleTimer=0,shinkaCursorFadeTimer=0;
+let shinkaCursorOpacity=1,shinkaCursorTarget=null;
 function shinkaCursorImage(weight,ink,paper,opacity=1){
  const images=[1,2,3].map(density=>{
   const canvas=document.createElement('canvas');canvas.width=28*density;canvas.height=28*density;
@@ -320,27 +321,39 @@ function shinkaCursorImage(weight,ink,paper,opacity=1){
  }
  return 'url("'+images[0].url+'") 3 3';
 }
-function wakeShinkaCursor(){
- clearTimeout(shinkaCursorIdleTimer);clearTimeout(shinkaCursorFadeTimer);
- if(!shinkaCursorPalette||!shinkaCursorPointer.matches||shinkaCursorContrast.matches)return;
+function fadeShinkaCursor(target,duration){
+ if(shinkaCursorTarget===target)return;
+ clearTimeout(shinkaCursorFadeTimer);
+ shinkaCursorTarget=target;
  const palette=shinkaCursorPalette;
- document.documentElement.style.setProperty('--cursor-arrow',palette.normal+', default');
- shinkaCursorIdleTimer=setTimeout(()=>{
-  const start=performance.now();
-  function fade(){
-   const step=Math.min(32,Math.floor((performance.now()-start)/1200*32));
-   if(step===32){document.documentElement.style.setProperty('--cursor-arrow','none');return;}
-   // Fade the native cursor itself, preserving its sharpness and exact position.
+ const start=performance.now(),from=shinkaCursorOpacity;
+ function fade(){
+  const progress=Math.min(1,(performance.now()-start)/duration);
+  const eased=progress*progress*(3-2*progress);
+  shinkaCursorOpacity=from+(target-from)*eased;
+  const step=Math.round((1-shinkaCursorOpacity)*32);
+  // Share the same native cursor frames in both directions, including reversals.
+  let cursor='none';
+  if(step===0)cursor=palette.normal+', default';
+  else if(step<32){
    if(!palette.frames[step])palette.frames[step]=shinkaCursorImage(400,palette.ink,palette.paper,1-step/32);
-   document.documentElement.style.setProperty('--cursor-arrow',palette.frames[step]+', default');
-   shinkaCursorFadeTimer=setTimeout(fade,40);
+   cursor=palette.frames[step]+', default';
   }
-  fade();
- },2000);
+  document.documentElement.style.setProperty('--cursor-arrow',cursor);
+  if(progress<1)shinkaCursorFadeTimer=setTimeout(fade,16);
+ }
+ fade();
+}
+function wakeShinkaCursor(){
+ clearTimeout(shinkaCursorIdleTimer);
+ if(!shinkaCursorPalette||!shinkaCursorPointer.matches||shinkaCursorContrast.matches)return;
+ fadeShinkaCursor(1,320);
+ shinkaCursorIdleTimer=setTimeout(()=>fadeShinkaCursor(0,1200),2000);
 }
 async function updateShinkaCursor(){
  const generation=++shinkaCursorGeneration;
  clearTimeout(shinkaCursorIdleTimer);clearTimeout(shinkaCursorFadeTimer);
+ shinkaCursorTarget=null;
  shinkaCursorPalette=null;
  if(!shinkaCursorPointer.matches||shinkaCursorContrast.matches){document.documentElement.style.removeProperty('--cursor-arrow');return;}
  const styles=getComputedStyle(document.body),ink=styles.getPropertyValue('--ink').trim(),paper=styles.getPropertyValue('--paper').trim();
