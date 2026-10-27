@@ -302,11 +302,12 @@ const shinkaCursorCache=new Map();
 const shinkaCursorPointer=matchMedia('(any-pointer: fine)');
 const shinkaCursorContrast=matchMedia('(forced-colors: active)');
 let shinkaCursorGeneration=0;
-function shinkaCursorImage(weight,ink,paper){
+let shinkaCursorPalette=null,shinkaCursorIdleTimer=0,shinkaCursorFadeTimer=0;
+function shinkaCursorImage(weight,ink,paper,opacity=1){
  const images=[1,2,3].map(density=>{
   const canvas=document.createElement('canvas');canvas.width=28*density;canvas.height=28*density;
   const context=canvas.getContext('2d');if(!context)throw Error('Cursor canvas unavailable');
-  context.scale(density,density);context.font=weight+' 24px "Shinka Mono"';context.textBaseline='alphabetic';
+  context.scale(density,density);context.globalAlpha=opacity;context.font=weight+' 24px "Shinka Mono"';context.textBaseline='alphabetic';
   const metrics=context.measureText('↖');
   const x=3+(metrics.actualBoundingBoxLeft||0),y=3+(metrics.actualBoundingBoxAscent||19);
   context.strokeStyle=paper;context.lineWidth=1.5;context.lineJoin='round';context.strokeText('↖',x,y);
@@ -319,23 +320,48 @@ function shinkaCursorImage(weight,ink,paper){
  }
  return 'url("'+images[0].url+'") 3 3';
 }
+function wakeShinkaCursor(){
+ clearTimeout(shinkaCursorIdleTimer);clearTimeout(shinkaCursorFadeTimer);
+ if(!shinkaCursorPalette||!shinkaCursorPointer.matches||shinkaCursorContrast.matches)return;
+ const palette=shinkaCursorPalette;
+ document.documentElement.style.setProperty('--cursor-arrow',palette.normal+', default');
+ shinkaCursorIdleTimer=setTimeout(()=>{
+  const start=performance.now();
+  function fade(){
+   const step=Math.min(32,Math.floor((performance.now()-start)/1200*32));
+   if(step===32){document.documentElement.style.setProperty('--cursor-arrow','none');return;}
+   // Fade the native cursor itself, preserving its sharpness and exact position.
+   if(!palette.frames[step])palette.frames[step]=shinkaCursorImage(400,palette.ink,palette.paper,1-step/32);
+   document.documentElement.style.setProperty('--cursor-arrow',palette.frames[step]+', default');
+   shinkaCursorFadeTimer=setTimeout(fade,40);
+  }
+  fade();
+ },2000);
+}
 async function updateShinkaCursor(){
  const generation=++shinkaCursorGeneration;
- if(!shinkaCursorPointer.matches||shinkaCursorContrast.matches){document.documentElement.style.removeProperty('--cursor-arrow');document.documentElement.style.removeProperty('--cursor-link');return;}
+ clearTimeout(shinkaCursorIdleTimer);clearTimeout(shinkaCursorFadeTimer);
+ shinkaCursorPalette=null;
+ if(!shinkaCursorPointer.matches||shinkaCursorContrast.matches){document.documentElement.style.removeProperty('--cursor-arrow');return;}
  const styles=getComputedStyle(document.body),ink=styles.getPropertyValue('--ink').trim(),paper=styles.getPropertyValue('--paper').trim();
  const key=ink+'|'+paper;
  try{
   if(!shinkaCursorCache.has(key)){
    const faces=await Promise.all([document.fonts.load('400 24px "Shinka Mono"','↖')]);
    if(faces.some(face=>!face.length))return;
-   shinkaCursorCache.set(key,{normal:shinkaCursorImage(400,ink,paper)});
+   shinkaCursorCache.set(key,{normal:shinkaCursorImage(400,ink,paper),ink,paper,frames:[]});
   }
   if(generation!==shinkaCursorGeneration)return;
-  const cursors=shinkaCursorCache.get(key);
-  document.documentElement.style.setProperty('--cursor-arrow',cursors.normal+', default');
+  shinkaCursorPalette=shinkaCursorCache.get(key);
+  wakeShinkaCursor();
  }catch{/* Keep native cursors if fonts, canvas or custom cursors are unavailable. */}
 }
 shinkaCursorPointer.addEventListener('change',updateShinkaCursor);
 shinkaCursorContrast.addEventListener('change',updateShinkaCursor);
+window.addEventListener('pointermove',event=>{if(event.pointerType!=='touch')wakeShinkaCursor()},{passive:true});
+window.addEventListener('pointerdown',event=>{if(event.pointerType!=='touch')wakeShinkaCursor()},{passive:true});
+window.addEventListener('wheel',wakeShinkaCursor,{passive:true});
+document.addEventListener('scroll',wakeShinkaCursor,{passive:true,capture:true});
+window.visualViewport?.addEventListener('scroll',wakeShinkaCursor,{passive:true});
 applyPrefs();renderCards();
 </script></body></html>
