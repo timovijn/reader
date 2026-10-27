@@ -68,10 +68,10 @@ body[data-theme="dark"]{--paper:#23231f;--ink:#e5e2d8;--muted:#aaa69b;--line:#49
 #browser-import-dialog textarea{height:150px}
 
 /* A quiet, decorative companion, kept outside the reading column. */
-.companion{position:fixed;right:38px;bottom:34px;width:66px;height:66px;border-radius:50%;pointer-events:none;user-select:none;z-index:1;opacity:.78;background:radial-gradient(circle at 27% 28%,rgba(202,220,210,.8),transparent 64%),radial-gradient(circle at 76% 35%,rgba(218,207,230,.75),transparent 65%),radial-gradient(circle at 51% 82%,rgba(237,218,203,.8),transparent 70%),rgba(222,225,218,.25);filter:blur(.6px);transition:filter var(--companion-duration,14s) ease-in-out;will-change:transform}
-body[data-theme="dark"] .companion{opacity:.42}
+.companion{position:fixed;right:38px;bottom:34px;width:66px;height:66px;border-radius:50%;pointer-events:none;user-select:none;z-index:1;opacity:.9;background:radial-gradient(circle at 27% 28%,rgba(155,201,175,.95),transparent 64%),radial-gradient(circle at 76% 35%,rgba(186,158,218,.93),transparent 65%),radial-gradient(circle at 51% 82%,rgba(235,186,151,.95),transparent 70%),rgba(210,214,206,.45);filter:blur(.6px);transition:filter var(--companion-duration,14s) ease-in-out;will-change:transform}
+body[data-theme="dark"] .companion{opacity:.65}
 .focus .companion{bottom:90px}
-@media(max-width:700px){.companion{right:20px;bottom:28px;width:48px;height:48px;opacity:.68}.focus .companion{bottom:78px}}
+@media(max-width:700px){.companion{right:20px;bottom:28px;width:48px;height:48px;opacity:.85}.focus .companion{bottom:78px}}
 @media(prefers-reduced-motion:reduce){.companion{transition:none;will-change:auto;transform:none!important;filter:blur(.6px)!important}}
 @media print,(forced-colors:active){.companion{display:none}}
 </style></head><body><div class="companion" id="companion" aria-hidden="true"></div><div class="progress" id="progress"></div><header><button class="brand" id="brand" aria-label="Folio home"><svg viewBox="0 0 30 30"><path d="M5 4h17v22H5zM9 8h9M9 12h7M9 16h8M9 20h4M22 7h3v22H8v-3"/></svg>folio<span>_</span></button><nav class="nav"><button id="nav-discover" class="active">Discover</button><button id="nav-saved">My collection <span id="save-count"></span></button><button class="about" id="about-open" aria-label="About Folio">i</button></nav></header>
