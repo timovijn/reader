@@ -534,6 +534,12 @@ document.addEventListener('scroll',wakeShinkaCursor,{passive:true,capture:true})
 window.visualViewport?.addEventListener('scroll',wakeShinkaCursor,{passive:true});
 // Compose gradients and dither in one high-precision pass. A separate CSS grain
 // layer cannot undo quantization that has already happened in gradient textures.
+function ambientGrainMetrics(density,renderScale){
+ // Let the grain grow gently with zoom, but cap it before it becomes blotchy.
+ const zoom=Math.max(0,Math.log2(Math.max(1,density)/2));
+ const screenSize=Math.min(4,2.4+zoom*.65);
+ return{cellSize:screenSize*renderScale/density,screenSize,gain:1+Math.min(.24,zoom*.08)};
+}
 function ambientViewportMetrics(viewport,width,height,dpr){
  return{width:viewport?.width>0?viewport.width:width,height:viewport?.height>0?viewport.height:height,
   left:Math.max(0,viewport?.offsetLeft||0),top:Math.max(0,viewport?.offsetTop||0),
@@ -543,7 +549,7 @@ function createAmbientRenderer(){
  const host=$('.ambient-background'),canvas=document.createElement('canvas');
  const gl=canvas.getContext('webgl',{alpha:false,antialias:false,depth:false,stencil:false,powerPreference:'low-power'});
  if(!gl)return null;
- let program,buffer,frame=0,stopped=false,lastDraw=-Infinity;
+ let program,buffer,frame=0,stopped=false,lastDraw=-Infinity,themeGrainStrength=.065;
  const motion=matchMedia('(prefers-reduced-motion: reduce)');
  const contrast=matchMedia('(forced-colors: active)');
  try{
@@ -625,7 +631,7 @@ function createAmbientRenderer(){
   function updateTheme(){
    if(stopped)return;
    const styles=getComputedStyle(document.body);
-   gl.uniform1f(uniforms.grainStrength,document.body.dataset.theme==='dark' ? .055 : .065);
+   themeGrainStrength=document.body.dataset.theme==='dark' ? .055 : .065;
    for(const [uniform,variable] of [['baseColor','base'],['shadowColor','shadow'],['midColor','mid'],['lightColor','light']])gl.uniform4fv(uniforms[uniform],colour(styles.getPropertyValue('--ambient-'+variable)));
    draw(performance.now());
   }
@@ -638,7 +644,9 @@ function createAmbientRenderer(){
    canvas.style.width=view.width+'px';canvas.style.height=view.height+'px';canvas.style.transform='translate('+view.left+'px,'+view.top+'px)';
    gl.uniform2f(uniforms.resolution,width,height);
    gl.uniform4f(uniforms.viewBox,view.left/window.innerWidth,view.top/window.innerHeight,view.width/window.innerWidth,view.height/window.innerHeight);
-   gl.uniform1f(uniforms.grainScale,2*scale/view.density);
+   const grain=ambientGrainMetrics(view.density,scale);
+   gl.uniform1f(uniforms.grainScale,grain.cellSize);
+   gl.uniform1f(uniforms.grainStrength,themeGrainStrength*grain.gain);
    gl.uniform1f(uniforms.time,motion.matches?0:now/1000);
    gl.drawArrays(gl.TRIANGLES,0,6);lastDraw=now;
   }
@@ -689,7 +697,7 @@ function updateAmbientDither(){
   context.putImageData(pixels,0,0);
   const root=document.documentElement;
   root.style.setProperty('--ambient-noise','url("'+canvas.toDataURL('image/png')+'")');
-  root.style.setProperty('--ambient-noise-size',canvas.width*2/density+'px');
+  root.style.setProperty('--ambient-noise-size',canvas.width*ambientGrainMetrics(density,density).screenSize/density+'px');
   ambientNoiseDensity=density;
  }catch{/* Retain the inline grain texture when canvas is unavailable. */}
 }
