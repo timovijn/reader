@@ -1,6 +1,7 @@
 // Read data already included in the document; never execute publisher JavaScript.
-function assignedData(source){
-  const match=/^\s*window\.__preloadedData\s*=\s*(?=\{)/.exec(source);
+export function assignedData(source,name='__preloadedData'){
+  if(!['__preloadedData','__NEXT_DATA__','__NUXT__','__APOLLO_STATE__','__INITIAL_STATE__'].includes(name))return null;
+  const match=new RegExp('^\\s*(?:window\\.)?'+name+'\\s*=\\s*(?=\\{)').exec(source);
   if(!match)return null;
   let depth=0,quoted=false,escaped=false,json='';
   for(let i=match[0].length;i<source.length;i++){

@@ -17,7 +17,7 @@ Open http://127.0.0.1:4173. Alternatively run `node scripts/build.mjs`, `node sc
 ## Features
 
 - Server fetch of publicly accessible article HTML with timeout, response-size limit, and restricted URLs/redirects.
-- Server-side article extraction on Vercel/local preview using an HTML5 parser, article-container and paragraph scoring, link-density filtering, metadata and public JSON-LD fallback.
+- Server-side article extraction on Vercel/local preview using an HTML5 parser, article-container and paragraph scoring, link-density filtering, metadata, public JSON-LD and common embedded application data.
 - Extracted content rebuilt from safe DOM elements, preserving links, emphasis and lists, while excluding images and their captions without executing publisher scripts or injecting arbitrary HTML.
 - Browser-assisted import via a clipboard bookmarklet for pages that refuse server requests, plus a paste-text fallback.
 - Browser-local collection, three page colours, serif/sans type, adjustable text size and line width.
@@ -59,7 +59,9 @@ Browser layout, real third-party fetches and a live Vercel deployment have not b
 
 The Node transport validates each destination, filters private DNS answers, and pins sockets to public addresses on every redirect. It tries another public address if a connection fails. Requests share a 35-second deadline, DNS has a 5-second budget, and decoded page HTML is capped at 6 MB. Gzip, deflate and Brotli are decoded before enforcing the page limit. Server errors 502/503/504 receive one retry. DNS, access denial, rate limiting, missing articles, redirect loops, and extraction failures have separate error codes and readable messages.
 
-The extractor parses HTML without running scripts or loading resources. It chooses prose-heavy semantic containers rather than navigation, comments or related links. Public Article JSON-LD is a fallback when the page has little usable prose; schema explicitly marked as paid is excluded from that fallback. Nothing bypasses a paywall or sign-in. Pages requiring client-side JavaScript or a browser challenge still need the paste-text option.
+The extractor parses HTML without running scripts or loading resources. It chooses prose-heavy semantic containers rather than navigation, comments or related links, and compares that result with public Article JSON-LD, Next.js JSON payloads, Nuxt object/indexed data, Apollo state and initial-state article objects. Candidate scoring rewards distinct prose and retains formatted HTML when another candidate is similar. Application data must identify the article by URL/title or belong to a named article/story/post/entry object; recommendation branches, mismatched stories and explicitly restricted metadata objects are excluded. Embedded HTML becomes text-only paragraphs without scripts, images or captions. Parsing and traversal have size/depth/work limits; executable application code is never evaluated. Publisher adapters remain available for exceptional formats such as Times paragraph blocks and New Yorker prose markers.
+
+This layer extracts text present in the returned page. It does not sign in, execute client-side applications, or resolve browser challenges. Server-browser rendering is not configured. Sites that withhold text or refuse server requests still need browser-assisted import or pasted text. Regression fixtures for common data formats and candidate selection are in `tests/embedded-articles.test.mjs`.
 
 Third-party HTML parsing code and original licences are in `vendor/`: parse5 7.3.0 (MIT) and entities 6.0.1 (BSD-2-Clause). See `vendor/README.md` for source and local modifications.
 

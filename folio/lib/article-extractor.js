@@ -1,6 +1,7 @@
 import { parse } from '../vendor/parse5/dist/index.js';
 import { importFailure } from '../worker/index.js';
 import { nytArticleBlocks } from './nyt-extractor.js';
+import { embeddedArticleCandidates, chooseArticleCandidate } from './embedded-articles.js';
 
 const normalise = value => String(value||'').replace(/\s+/g,' ').trim();
 const attr = (node,name) => node.attrs?.find(item=>item.name===name)?.value || '';
@@ -140,6 +141,7 @@ export function extractArticle(html,url){
   if(root)add(root);
   let method='html';
   const characterCount=()=>blocks.filter(b=>b[0]!=='img').reduce((s,b)=>s+b[1].length,0);
+  const extractionCandidates=[{method:'html',blocks:[...blocks]}];
   {
     // Use only Article bodies explicitly marked public or without a restriction.
     // A schema declaring paid access is never used to fill missing page content.
@@ -149,17 +151,14 @@ export function extractArticle(html,url){
       // running scripts. Emit text-only paragraphs on this fallback path.
       const text=walk(fragment,n=>!ignored.has(tag(n))).filter(n=>n.nodeName==='#text').map(n=>n.value).join('\n');
       const parts=text.split(/\n\s*\n|\n/).map(normalise).filter(Boolean);
-      const structuredCharacters=parts.reduce((sum,part)=>sum+part.length,0);
-      // Keep rich HTML unless public structured prose is substantially longer.
-      if(characterCount()<180||structuredCharacters>characterCount()*1.5){
-        blocks.length=0;for(const part of parts)blocks.push(['p',part]);method='structured-data';
-      }
+      extractionCandidates.push({method:'structured-data',blocks:parts.map(part=>['p',part])});
     }
   }
   const publisherBlocks=nytArticleBlocks(all,base);
-  if(publisherBlocks.reduce((sum,block)=>sum+block[1].length,0)>Math.max(180,characterCount()*1.5)){
-    blocks.length=0;blocks.push(...publisherBlocks);method='publisher-data';
-  }
+  if(publisherBlocks.length)extractionCandidates.push({method:'publisher-data',blocks:publisherBlocks});
+  extractionCandidates.push(...embeddedArticleCandidates(all,base,title));
+  const selected=chooseArticleCandidate(extractionCandidates);
+  blocks.length=0;blocks.push(...selected.blocks);method=selected.method;
   if(characterCount()<180){
     const text=normalise(rawText(body)).slice(0,12000);
     const blocked=/verify you are human|checking your browser|just a moment|enable javascript and cookies|captcha|access denied/i.test(text);
