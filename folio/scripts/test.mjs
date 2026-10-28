@@ -53,3 +53,4 @@ await import('../tests/embedded-articles.test.mjs');
 await import('../tests/zoom-geometry.test.mjs');
 await import('../tests/text-pinch.test.mjs');
 await import('../tests/pointer-fade.test.mjs');
+await import('../tests/epub.test.mjs');

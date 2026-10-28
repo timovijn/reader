@@ -22,6 +22,7 @@ Open http://127.0.0.1:4173. Alternatively run `node scripts/build.mjs`, `node sc
 - Browser-assisted import via a clipboard bookmarklet for pages that refuse server requests, plus a paste-text fallback.
 - My collection as the single home view, with browser-local saving, three page colours, serif/sans type, adjustable text size and line width.
 - Focus view, subtle line numbers and underline-only text selection.
+- Download EPUB from an article's controls or My collection. Exports include title, author, publication date, source link, headings and safe inline formatting, without images or interface decorations. Generation stays in the browser and requires no email account or extra service. For Kindle, upload the EPUB through [Send to Kindle](https://www.amazon.com/sendtokindle) for conversion; EPUB is not a native Kindle USB format.
 
 ## Typography
 
