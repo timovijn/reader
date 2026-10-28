@@ -1,4 +1,4 @@
-# Folio
+# other lives
 
 A quiet web article reader with a minimal typewriter interface, Shinka Mono typography, warm paper tones and a numbered reading list.
 
@@ -69,6 +69,6 @@ Third-party HTML parsing code and original licences are in `vendor/`: parse5 7.3
 
 ## Browser-assisted import
 
-When a publisher returns HTTP 403, the extraction engine has not received the article. Use **Import from an open browser page** to install the **Copy for Folio** bookmarklet. Open an article you can access normally, click that bookmark, then paste the clip into Folio. It captures article text and metadata from the page DOM without images, makes no network requests from the source page, and does not collect cookies, form values, scripts or storage. Query strings and fragments are removed from the source URL. Imported clips stay in the current browser unless the user separately shares them.
+When a publisher returns HTTP 403, the extraction engine has not received the article. Use **Import from an open browser page** to install the **Copy for other lives** bookmarklet. Open an article you can access normally, click that bookmark, then paste the clip into other lives. It captures article text and metadata from the page DOM without images, makes no network requests from the source page, and does not collect cookies, form values, scripts or storage. Query strings and fragments are removed from the source URL. Imported clips stay in the current browser unless the user separately shares them.
 
 The bookmarklet is a user-operated fallback; it does not solve CAPTCHAs, log in, bypass paywalls or guarantee that every page will work. Browser and publisher policies may block bookmarklets; manual text pasting remains available.

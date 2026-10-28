@@ -99,7 +99,7 @@ export function createPublicFetch(resolve = lookup, transports = { http, https }
         // Try the next checked address for connection/TLS/IPv6 failures only.
       }
     }
-    throw importFailure('connection_failed',lastError?.name === 'AbortError' ? 'The website took too long to connect. Please try again.' : 'Folio could not connect to this website. Please try again or paste the article text.');
+    throw importFailure('connection_failed',lastError?.name === 'AbortError' ? 'The website took too long to connect. Please try again.' : 'other lives could not connect to this website. Please try again or paste the article text.');
   };
 }
 
@@ -111,7 +111,7 @@ export function createVercelHandler(fetchPage = createPublicFetch()) {
     try {
       return Response.json({article:extractArticle(result.html,result.url),url:result.url}, {headers:{'cache-control':'no-store','x-content-type-options':'nosniff'}});
     } catch(error) {
-      if(error.diagnostics)console.warn('Folio extraction failed',{host:new URL(result.url).hostname,code:error.code,...error.diagnostics});
+      if(error.diagnostics)console.warn('other lives extraction failed',{host:new URL(result.url).hostname,code:error.code,...error.diagnostics});
       return Response.json({error:error.message,code:error.code||'extraction_failed'}, {status:422,headers:{'cache-control':'no-store'}});
     }
   } };

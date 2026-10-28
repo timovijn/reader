@@ -1,5 +1,5 @@
 {
-  "name": "folio-reader-workspace",
+  "name": "other-lives-reader-workspace",
   "private": true,
   "type": "module",
   "engines": { "node": ">=22" },

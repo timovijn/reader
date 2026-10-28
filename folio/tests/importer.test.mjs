@@ -129,6 +129,6 @@ const clipFunction=client.slice(client.indexOf('function normaliseBrowserClip(')
 const normaliseClip=vm.runInNewContext('('+clipFunction+')',{safeHref:value=>{try{const u=new URL(value);return ['https:','http:'].includes(u.protocol)?u.href:null}catch{return null}},Date});
 const clip=normaliseClip(JSON.stringify({format:'folio-browser-clip',version:1,title:'A browser article',url:'https://www.washingtonian.com/article/',author:'Author',body:[['p',prose],['img','https://example.com/image.jpg'],['script','alert(1)'],['p','<script>This stays literal text</script>']]}));
 assert.equal(clip.title,'A browser article');assert.equal(clip.body.length,2);assert.equal(clip.body[0][0],'p');assert.equal(clip.url,'https://www.washingtonian.com/article/');
-assert.throws(()=>normaliseClip('not json'),/Please paste/);assert.throws(()=>normaliseClip('{}'),/not a Folio browser clip/);
+assert.throws(()=>normaliseClip('not json'),/Please paste/);assert.throws(()=>normaliseClip('{}'),/not an other lives browser clip/);
 assert.equal(normaliseClip(JSON.stringify({format:'folio-browser-clip',version:1,title:'Test',url:'javascript:alert(1)',body:[['p',prose]]})).url,undefined);
 console.log('Passed: browser-clip format validation, text-only blocks, unsafe URL rejection and local import model.');

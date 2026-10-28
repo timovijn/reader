@@ -164,7 +164,7 @@ export function extractArticle(html,url){
     const text=normalise(rawText(body)).slice(0,12000);
     const blocked=/verify you are human|checking your browser|just a moment|enable javascript and cookies|captcha|access denied/i.test(text);
     const restricted=/subscribe to (continue|read)|sign in to (continue|read)|already a subscriber|subscription required/i.test(text);
-    const error=importFailure(blocked?'bot_protection':restricted?'sign_in_required':'no_article',blocked?'This website requires browser verification. Open it at the source, then paste the article text.':restricted?'This article requires a subscription or sign-in. Paste text you can access from the source.':'Folio could not find enough article text on this page. It may load with JavaScript; try pasting its text.');
+    const error=importFailure(blocked?'bot_protection':restricted?'sign_in_required':'no_article',blocked?'This website requires browser verification. Open it at the source, then paste the article text.':restricted?'This article requires a subscription or sign-in. Paste text you can access from the source.':'other lives could not find enough article text on this page. It may load with JavaScript; try pasting its text.');
     error.diagnostics={paragraphsFound:all.filter(n=>tag(n)==='p').length,paragraphsKept:clean.filter(n=>tag(n)==='p').length,cleanTextCharacters:stats.get(body)?.length||0,extractedCharacters:characterCount(),candidateCount:candidates.length};
     throw error;
   }
@@ -176,7 +176,7 @@ export function extractArticle(html,url){
   // Paid metadata alone does not imply truncation: full HTML can still be present.
   // Require a substantial, publisher-declared length discrepancy as evidence.
   if((restricted||subscriptionPrompt)&&Number.isFinite(declaredWordCount)&&declaredWordCount>=600&&wordCount<declaredWordCount*.35){
-    const error=importFailure('incomplete_article','This website returned only an article preview. Folio could not retrieve the full text. Import text you can access from the source.');
+    const error=importFailure('incomplete_article','This website returned only an article preview. other lives could not retrieve the full text. Import text you can access from the source.');
     error.diagnostics={extractedWords:wordCount,declaredWords:declaredWordCount,method};throw error;
   }
   const direction=attr(all.find(n=>tag(n)==='html')||{},'dir');

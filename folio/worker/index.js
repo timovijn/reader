@@ -40,7 +40,7 @@ export async function handleRequest(request, fetchPage = fetch){
  for(let i=0;i<5;i++){
  if(visited.has(url.href))throw importFailure('redirect_loop','The website redirects in a loop. Try its final article link.');
  visited.add(url.href);
- const options={redirect:'manual',signal,headers:{'User-Agent':'Mozilla/5.0 (compatible; FolioReader/1.0; article reading view)','Accept':'text/html,application/xhtml+xml;q=0.9','Accept-Language':'en;q=0.8,*;q=0.5'}};
+ const options={redirect:'manual',signal,headers:{'User-Agent':'Mozilla/5.0 (compatible; OtherLivesReader/1.0; article reading view)','Accept':'text/html,application/xhtml+xml;q=0.9','Accept-Language':'en;q=0.8,*;q=0.5'}};
  response=await fetchPage(url,options);
  if([502,503,504].includes(response.status)){await response.body?.cancel();response=await fetchPage(url,options);}
  if([301,302,303,307,308].includes(response.status)){
@@ -51,7 +51,7 @@ export async function handleRequest(request, fetchPage = fetch){
  if(!response)throw importFailure('too_many_redirects','This website redirected too many times. Try its final article link.');
  if(!response.ok){
  await response.body?.cancel();
- const errors={401:['sign_in_required','This article requires a sign-in. Open it at the source, then paste text you can access.'],403:['access_denied','This website did not allow Folio to open the article (HTTP 403). Use “Import from an open browser page” below, or paste the article text.'],404:['not_found','This article could not be found. Please check the link.'],429:['rate_limited','This website is limiting requests. Please try again later.']};
+ const errors={401:['sign_in_required','This article requires a sign-in. Open it at the source, then paste text you can access.'],403:['access_denied','This website did not allow other lives to open the article (HTTP 403). Use “Import from an open browser page” below, or paste the article text.'],404:['not_found','This article could not be found. Please check the link.'],429:['rate_limited','This website is limiting requests. Please try again later.']};
  const [code,message]=errors[response.status]||['upstream_error','The website returned an error ('+response.status+'). Please try again later.'];throw importFailure(code,message);
  }
  const type=response.headers.get('content-type')||'';

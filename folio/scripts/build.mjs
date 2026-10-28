@@ -25,4 +25,4 @@ await writeFile('dist/public/index.html',html);
 // A Vercel checkout does not need a Sites hosting manifest.
 try { await copyFile('.openai/hosting.json','dist/.openai/hosting.json'); }
 catch (error) { if (error.code !== 'ENOENT') throw error; }
-console.log('Folio built: static homepage and Worker bundle.');
+console.log('other lives built: static homepage and Worker bundle.');
