@@ -50,14 +50,33 @@ function jsonArticles(nodes){
   return result;
 }
 
-export function cleanArticleTitle(value,siteNames=[]){
-  const title=String(value||'').replace(/\s+/g,' ').trim();
-  const key=text=>String(text||'').normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]/gu,'');
+export function cleanArticleTitle(value,siteNames=[],evidence={}){
+  let title=String(value||'').replace(/\s+/g,' ').trim();
+  const tidy=text=>String(text||'').replace(/\s+/g,' ').trim();
+  const key=text=>tidy(text).normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]/gu,'');
   const names=new Set(siteNames.map(key).filter(Boolean));
-  const separators=[...title.matchAll(/\s+[|–—·•-]\s+/g)];
-  for(let i=separators.length-1;i>=0;i--){
-    const separator=separators[i],suffix=title.slice(separator.index+separator[0].length);
-    if(names.has(key(suffix)))return title.slice(0,separator.index).trim()||title;
+  function withoutSite(text){
+    const separators=[...text.matchAll(/\s+[|–—·•-]\s+/g)];
+    for(let i=separators.length-1;i>=0;i--){
+      const separator=separators[i],suffix=text.slice(separator.index+separator[0].length);
+      if(names.has(key(suffix)))return text.slice(0,separator.index).trim()||text;
+    }
+    return text;
+  }
+  title=withoutSite(title);
+  const headlines=[evidence.headline,...(Array.isArray(evidence.headlines)?evidence.headlines:[])].filter(value=>typeof value==='string'&&value.trim()).map(value=>withoutSite(tidy(value)));
+  const candidates=[...headlines,typeof evidence.schemaHeadline==='string'?withoutSite(tidy(evidence.schemaHeadline)):''].filter(Boolean);
+  const author=key(tidy(evidence.author).replace(/^(?:written\s+)?by\s+/i,''));
+  const byline=title.match(/^(.+?)(?:,\s*|\s+[|–—-]\s+)(?:written\s+)?by\s+(.+?)\s*$/i);
+  const plainByline=byline||title.match(/^(.+?)\s+by\s+(.+?)\s*$/i);
+  if(plainByline){
+    const prefix=tidy(plainByline[1]),suffix=key(plainByline[2]);
+    const corroborating=candidates.find(candidate=>key(candidate)===key(prefix));
+    const authorMatches=author&&suffix===author;
+    // A visible full headline protects intentional constructions such as
+    // “Travelling, by Train”. Plain “by” needs confirmed author metadata.
+    const fullHeadline=headlines.some(headline=>key(headline)===key(title));
+    if((byline&&corroborating&&!fullHeadline)||(authorMatches&&!fullHeadline))return corroborating||prefix;
   }
   return title;
 }
@@ -68,11 +87,26 @@ export function extractArticle(html,url){
   const metadata=Object.create(null);
   for(const node of all)if(tag(node)==='meta')metadata[(attr(node,'property')||attr(node,'name')).toLowerCase()]=attr(node,'content');
   const rawText=node=>normalise(walk(node).filter(n=>n.nodeName==='#text').map(n=>n.value).join(' '));
-  const heading=all.find(n=>tag(n)==='h1'&&!excluded(n));
+  const headings=all.filter(node=>{
+    if(tag(node)!=='h1')return false;
+    for(let parent=node;parent;parent=parent.parentNode){
+      if(ignored.has(tag(parent))||attr(parent,'aria-hidden')==='true'||parent.attrs?.some(item=>item.name==='hidden')||/display\s*:\s*none|visibility\s*:\s*hidden/i.test(attr(parent,'style')))return false;
+    }
+    return true;
+  });
+  // Prefer article-scoped headings over mastheads without trusting their text
+  // blindly: the title helper reconciles them with metadata below.
+  const headingRank=node=>{
+    let rank=attr(node,'itemprop')==='headline'?20:0;
+    for(let parent=node.parentNode;parent;parent=parent.parentNode)if(['article','main'].includes(tag(parent))||attr(parent,'role')==='main'){rank+=10;break;}
+    return rank;
+  };
+  headings.sort((a,b)=>headingRank(b)-headingRank(a));
+  const heading=headings[0];
   const schema=structured.find(item=>typeof item.headline==='string')||structured[0]||{};
-  const title=cleanArticleTitle(normalise(metadata['og:title']||schema.headline||(heading&&rawText(heading))||rawText(all.find(n=>tag(n)==='title')||{} )||'Untitled article').slice(0,500),[metadata['og:site_name'],schema.publisher?.name,new URL(base).hostname.replace(/^www\./,'').replace(/\.[^.]+$/,'')]);
   const authorValue=metadata.author||metadata['article:author']||schema.author;
   const author=normalise(typeof authorValue==='string'?authorValue:Array.isArray(authorValue)?authorValue.map(a=>typeof a==='string'?a:a.name).join(', '):authorValue?.name||rawText(all.find(n=>attr(n,'rel').split(/\s+/).includes('author'))||{})).slice(0,250);
+  const title=cleanArticleTitle(normalise(metadata['og:title']||schema.headline||(heading&&rawText(heading))||rawText(all.find(n=>tag(n)==='title')||{} )||'Untitled article').slice(0,500),[metadata['og:site_name'],schema.publisher?.name,new URL(base).hostname.replace(/^www\./,'').replace(/\.[^.]+$/,'')],{headlines:headings.map(rawText),schemaHeadline:schema.headline,author});
   const excerpt=normalise(metadata.description||metadata['og:description']||schema.description).slice(0,500);
   const published=normalise(metadata['article:published_time']||schema.datePublished).slice(0,100);
   const siteName=normalise(metadata['og:site_name']||schema.publisher?.name||new URL(base).hostname.replace(/^www\./,'')).slice(0,150);

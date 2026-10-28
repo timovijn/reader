@@ -1,5 +1,13 @@
 # other lives
 
+Article titles are reconciled with visible headings, Article JSON-LD and author
+metadata rather than treating an Open Graph/search title as the headline.
+Confirmed publisher suffixes and corroborated trailing bylines are removed;
+unverified “by” phrases and full visible headlines are preserved. The same
+helper runs in the server importer, browser fallback and bookmarklet. Existing
+collection titles are also corrected on loading when their saved author/source
+metadata confirms a suffix, preserving content, identity and reading state.
+
 ## My collection
 
 The collection combines **Ready** (saved and still to read) and **Read** articles.

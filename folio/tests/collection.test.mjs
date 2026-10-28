@@ -36,9 +36,14 @@ const legacy=Array.from({length:135},(_,i)=>({...items[0],id:'legacy-'+i,savedAt
 assert.equal(context.selectCollection(legacy,view()).length,135);
 assert.equal(context.selectCollection(legacy,view())[0].id,'legacy-0');
 assert.equal(context.selectCollection(legacy,view({sort:'oldest'}))[0].id,'legacy-134');
-const startup={saved:[],prefs:{},localStorage:{getItem:key=>key==='folio-collection'?JSON.stringify(legacy):key==='folio-design'?'typewriter-v1':'{}',setItem(){}}};
+const titleHelper=vm.runInNewContext('('+source.slice(source.indexOf('function cleanArticleTitle('),source.indexOf('\nfunction extract(html,url)'))+')');
+const startup={saved:[],prefs:{},collectionSource:context.collectionSource,cleanArticleTitle:titleHelper,localStorage:{getItem:key=>key==='folio-collection'?JSON.stringify(legacy):key==='folio-design'?'typewriter-v1':'{}',setItem(){}}};
 vm.runInNewContext(source.slice(source.indexOf("try{const s=JSON.parse(localStorage.getItem('folio-collection')"),source.indexOf('function persist(')),startup);
 assert.equal(startup.saved.length,135);
+const storedArticle={...items[0],title:'Kicking Robots, by James Vincent',author:'James Vincent',readAt:123,savedAt:456};
+startup.localStorage.getItem=key=>key==='folio-collection'?JSON.stringify([storedArticle]):key==='folio-design'?'typewriter-v1':'{}';
+vm.runInNewContext(source.slice(source.indexOf("try{const s=JSON.parse(localStorage.getItem('folio-collection')"),source.indexOf('function persist(')),startup);
+assert.equal(startup.saved[0].title,'Kicking Robots');assert.equal(startup.saved[0].readAt,123);assert.equal(startup.saved[0].savedAt,456);assert.equal(startup.saved[0].id,storedArticle.id);
 
 // Exercise the actual renderer and controls with a small DOM implementation.
 class Element{

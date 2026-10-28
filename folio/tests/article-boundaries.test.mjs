@@ -24,6 +24,28 @@ const page=await readFile(new URL('../worker/page.html',import.meta.url),'utf8')
 const browserHelper=page.slice(page.indexOf('function cleanArticleTitle('),page.indexOf('\nfunction extract(html,url)'));
 assert.equal(browserHelper.trim(),cleanArticleTitle.toString().trim());
 assert.equal(runInNewContext('('+browserHelper+')')(brandedTitle,['The Creative Factor']),headline);
+const harpersTitle='Kicking Robots, by James Vincent';
+assert.equal(cleanArticleTitle(harpersTitle,[],{author:'James Vincent'}),'Kicking Robots');
+assert.equal(cleanArticleTitle(harpersTitle,[],{headlines:['Kicking Robots']}),'Kicking Robots');
+assert.equal(cleanArticleTitle(harpersTitle,[],{schemaHeadline:'Kicking Robots'}),'Kicking Robots');
+assert.equal(cleanArticleTitle(harpersTitle+' — Harper’s Magazine',['Harper’s Magazine'],{author:'James Vincent'}),'Kicking Robots');
+assert.equal(cleanArticleTitle('A field — a return, by Émile Zola',[],{author:'Émile Zola'}),'A field — a return');
+assert.equal(cleanArticleTitle('Designed by Nature',[],{author:'Someone Else'}),'Designed by Nature');
+assert.equal(cleanArticleTitle('Stand by Me',[],{author:'Someone Else'}),'Stand by Me');
+assert.equal(cleanArticleTitle('Travelling, by Train',[],{author:'Train',headlines:['Travelling, by Train']}),'Travelling, by Train');
+assert.equal(cleanArticleTitle('Travelling, by Train',[],{headlines:['Travelling, by Train'],schemaHeadline:'Travelling'}),'Travelling, by Train');
+assert.equal(cleanArticleTitle(harpersTitle,[],{author:'Different Writer'}),harpersTitle);
+assert.equal(cleanArticleTitle(harpersTitle),harpersTitle); // No unsupported guessing.
+for(const metadata of [
+ '<meta name="author" content="James Vincent">',
+ '<script type="application/ld+json">{"@type":"Article","headline":"Kicking Robots","author":{"name":"James Vincent"}}</script>',
+ ''
+]){
+ const imported=extractArticle(`<meta property="og:title" content="${harpersTitle}">${metadata}<header><h1>Magazine masthead</h1></header><article><h1>Kicking Robots</h1><p>${intro.repeat(3)}</p></article>`,'https://harpers.org/archive/example');
+ assert.equal(imported.title,'Kicking Robots');
+}
+const hiddenTitle=extractArticle(`<meta property="og:title" content="${harpersTitle}"><div hidden><h1>Kicking Robots</h1></div><article><p>${intro.repeat(3)}</p></article>`,'https://example.com/story');
+assert.equal(hiddenTitle.title,harpersTitle);
 const link=(text,href='/another-story')=>['p',text,[{tag:'a',href,children:[text]}]];
 // A synthetic Squarespace-style interview, including components that live
 // inside its article container. No publisher-specific hostname is required.
