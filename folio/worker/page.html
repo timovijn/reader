@@ -127,10 +127,9 @@ html.reading{scrollbar-width:none}html.reading::-webkit-scrollbar{display:none}
 @media(forced-colors:active){html.reading{scrollbar-width:auto}html.reading::-webkit-scrollbar{display:initial}.scroll-dot{display:none}}
 @media print{.reader-rail,.reader-menu-toggle,.scroll-dot{display:none!important}#reader{padding:0}}
 
-/* Full-viewport mesh. Reference samples: shadow #44423b, mid #737063,
-   centre #9a9688, highlight #bfbcb4. Lift shadows for readable dark text.
+/* Full-viewport mesh. Stone uses charcoal mineral tones and warm white ink.
    Static colour fields with a soft pointer light; screen-sized grain. */
-body{isolation:isolate;--ambient-base:#b7b4aa;--ambient-shadow:rgba(68,66,59,.6);--ambient-mid:rgba(115,112,99,.24);--ambient-light:rgba(191,188,180,.92);--paper:#b7b4aa;--ink:#24231e;--muted:#414037;--grain-opacity:.042;background:var(--ambient-base)}
+body{isolation:isolate;--ambient-base:#373632;--ambient-shadow:rgba(39,39,34,.48);--ambient-mid:rgba(75,73,65,.22);--ambient-light:rgba(102,98,88,.24);--paper:#373632;--ink:#f3f0e7;--muted:#c1bcb1;--line:#625e54;--panel:#45423b;--grain-opacity:.042;background:var(--ambient-base)}
 body[data-theme="snow"]{--ink:#272d29;--muted:#69716b;--line:#d9dfd7;--panel:#e9ece7;--ambient-base:#f4f5f2;--ambient-shadow:rgba(164,175,174,.13);--ambient-mid:rgba(211,219,217,.18);--ambient-light:rgba(255,255,255,.96);--paper:#f4f5f2;--grain-opacity:.031}
 body[data-theme="parchment"]{--ink:#342b20;--muted:#76644c;--line:#c7b38e;--panel:#dbc7a4;--ambient-base:#e6d5b3;--ambient-shadow:rgba(151,111,63,.2);--ambient-mid:rgba(200,166,112,.18);--ambient-light:rgba(244,233,210,.9);--paper:#e6d5b3;--grain-opacity:.035}
 body[data-theme="moss"]{--ink:#e2e6d5;--muted:#aeb9a1;--line:#59644d;--panel:#3c4734;--ambient-base:#30392c;--ambient-shadow:rgba(23,35,22,.45);--ambient-mid:rgba(88,105,72,.3);--ambient-light:rgba(141,161,118,.22);--paper:#30392c;--grain-opacity:.042}
@@ -204,7 +203,7 @@ body>header{max-width:none;min-height:0;height:auto;padding:24px;align-items:cen
 @media(max-width:700px){.collection-filters{gap:10px 16px}.collection-filters input{flex-basis:100%}.collection-filters select{max-width:140px}.collection-states{gap:22px}.collection .card{gap:14px}.collection .card-bottom button{font-size:9px}.collection .card h3{font-size:15px}}
 
 /* Theme-specific light: a warm tint remains visible even on Snow. */
-body{--ambient-glow:rgba(246,239,217,.2)}
+body{--ambient-glow:rgba(246,239,217,.15)}
 body[data-theme="parchment"]{--ambient-glow:rgba(255,249,229,.3)}
 body[data-theme="snow"]{--ambient-glow:rgba(224,208,173,.34)}
 body[data-theme="moss"]{--ambient-glow:rgba(215,232,181,.13)}
@@ -1202,7 +1201,7 @@ function createAmbientRenderer(){
   function updateTheme(){
    if(stopped)return;
    const styles=getComputedStyle(document.body);
-   backgroundDirty=true;themeGrainStrength=document.body.dataset.theme==='moss' ? .0308 : .0364;
+   backgroundDirty=true;themeGrainStrength=['stone','moss'].includes(document.body.dataset.theme) ? .0308 : .0364;
    for(const [uniform,variable] of [['baseColor','base'],['shadowColor','shadow'],['midColor','mid'],['lightColor','light'],['glowColor','glow']])gl.uniform4fv(uniforms[uniform],colour(styles.getPropertyValue('--ambient-'+variable)));
    resume();
   }
