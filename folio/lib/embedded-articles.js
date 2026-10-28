@@ -1,8 +1,10 @@
 import {parse} from '../vendor/parse5/dist/index.js';
 import {assignedData} from './nyt-extractor.js';
+import {isMediaCaption} from './article-boundaries.js';
 
 const normalise=value=>String(value||'').replace(/\s+/g,' ').trim();
 const skip=new Set(['script','style','aside','nav','footer','form','button','img','picture','figcaption','svg','iframe']);
+const isCaption=node=>isMediaCaption((node.attrs||[]).filter(attr=>['class','id'].includes(attr.name)).map(attr=>attr.value).join(' '),node.attrs?.find(attr=>attr.name==='itemprop')?.value);
 
 // Nuxt 3 serializes an indexed table rather than an ordinary object tree.
 // Decode only data/reference wrappers, with bounded work and cycle detection.
@@ -34,13 +36,13 @@ function proseBlocks(value){
   if(!/<[a-z][\s\S]*>/i.test(value))return value.split(/\n+/).map(normalise).filter(Boolean).map(text=>['p',text]);
   const blocks=[];let visited=0;
   function text(node,depth=0){
-    if(depth>80||++visited>40000||skip.has(node.tagName))return '';
+    if(depth>80||++visited>40000||skip.has(node.tagName)||isCaption(node))return '';
     if(node.nodeName==='#text')return node.value;
     if(node.tagName==='br')return '\n';
     return (node.childNodes||[]).map(n=>text(n,depth+1)).join('');
   }
   function collect(node,depth=0){
-    if(depth>80||++visited>40000||skip.has(node.tagName))return;
+    if(depth>80||++visited>40000||skip.has(node.tagName)||isCaption(node))return;
     if(['p','h2','h3','blockquote','pre','li'].includes(node.tagName)){
       const value=normalise(text(node));if(value)blocks.push([node.tagName==='li'?'p':node.tagName,value]);return;
     }

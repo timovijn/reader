@@ -2,7 +2,7 @@ import { parse } from '../vendor/parse5/dist/index.js';
 import { importFailure } from '../worker/index.js';
 import { nytArticleBlocks } from './nyt-extractor.js';
 import { embeddedArticleCandidates, chooseArticleCandidate } from './embedded-articles.js';
-import { isAncillaryComponent, cleanArticleBlocks } from './article-boundaries.js';
+import { isMediaCaption, isAncillaryComponent, cleanArticleBlocks } from './article-boundaries.js';
 
 const normalise = value => String(value||'').replace(/\s+/g,' ').trim();
 const attr = (node,name) => node.attrs?.find(item=>item.name===name)?.value || '';
@@ -26,6 +26,7 @@ function excluded(node,articleAncestors,publisherProse){
   if(/display\s*:\s*none|visibility\s*:\s*hidden/i.test(attr(node,'style')))return true;
   if(['navigation','dialog','complementary'].includes(attr(node,'role')))return true;
   const label=attr(node,'class')+' '+attr(node,'id');
+  if(isMediaCaption(label,attr(node,'itemprop')))return true;
   if(['main','article'].includes(name)||attr(node,'role')==='main'||attr(node,'itemprop')==='articleBody'||articleAncestors?.has(node))return false;
   if(publisherProse?.has(node))return false;
   return (isAncillaryComponent(label)||label.split(/\s+/).some(token=>negative.test(token)))&&!positive.test(label);
@@ -214,7 +215,7 @@ export function extractArticle(html,url){
     if(item?.articleBody?.length>=180){const fragment=parse('<article>'+item.articleBody+'</article>');
       // Structured bodies may be prose or HTML; parsing decodes entities without
       // running scripts. Emit text-only paragraphs on this fallback path.
-      const text=walk(fragment,n=>!ignored.has(tag(n))).filter(n=>n.nodeName==='#text').map(n=>n.value).join('\n');
+      const text=walk(fragment,n=>!ignored.has(tag(n))&&!isMediaCaption(attr(n,'class')+' '+attr(n,'id'),attr(n,'itemprop'))).filter(n=>n.nodeName==='#text').map(n=>n.value).join('\n');
       const parts=text.split(/\n\s*\n|\n/).map(normalise).filter(Boolean);
       extractionCandidates.push({method:'structured-data',blocks:parts.map(part=>['p',part])});
     }
@@ -222,7 +223,18 @@ export function extractArticle(html,url){
   const publisherBlocks=nytArticleBlocks(all,base);
   if(publisherBlocks.length)extractionCandidates.push({method:'publisher-data',blocks:publisherBlocks});
   extractionCandidates.push(...embeddedArticleCandidates(all,base,title));
-  const selected=chooseArticleCandidate(extractionCandidates.map(candidate=>({...candidate,blocks:cleanArticleBlocks(candidate.blocks)})));
+  // A metadata/plain-text candidate must not restore a caption whose media
+  // role is explicit in the page DOM. Never classify prose by its wording.
+  const captionText=new Set(),captionNodes=new WeakSet();
+  for(const node of all){
+    if(captionNodes.has(node))continue;
+    if(tag(node)!=='figcaption'&&!isMediaCaption(attr(node,'class')+' '+attr(node,'id'),attr(node,'itemprop')))continue;
+    const descendants=walk(node);descendants.forEach(n=>captionNodes.add(n));
+    for(const part of descendants.filter(n=>n===node||['p','figcaption'].includes(tag(n)))){
+      captionText.add(normalise(walk(part).filter(n=>n.nodeName==='#text').map(n=>n.value).join('')));
+    }
+  }
+  const selected=chooseArticleCandidate(extractionCandidates.map(candidate=>({...candidate,blocks:cleanArticleBlocks(candidate.blocks).filter(block=>!captionText.has(normalise(block[1])))})));
   blocks.length=0;blocks.push(...selected.blocks);method=selected.method;
   if(characterCount()<180){
     const text=normalise(rawText(body)).slice(0,12000);

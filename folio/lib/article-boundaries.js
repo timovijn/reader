@@ -2,8 +2,13 @@
 // scorer. Publishers often put recommendations and sign-up forms inside prose.
 const component = /(?:^|[-_])(?:image[-_]caption|image[-_]description|photo[-_]caption|newsletter|related[-_](?:posts?|articles?|stories)|recommended[-_](?:posts?|articles?|stories)|author[-_](?:bio|profile)|social[-_]share|share[-_]buttons|post[-_]navigation)(?:$|[-_])/i;
 
+export function isMediaCaption(label,itemprop=''){
+  const tokens=String(label||'').replace(/([a-z\d])([A-Z])/g,'$1-$2').split(/\s+/);
+  return String(itemprop).split(/\s+/).includes('caption')||tokens.some(token=>/(?:^|[-_])(?:caption|(?:image|photo|picture|figure|media)[-_](?:description|credit))(?:$|[-_])/i.test(token));
+}
+
 export function isAncillaryComponent(label){
-  return String(label).split(/\s+/).some(token=>component.test(token));
+  return isMediaCaption(label)||String(label).split(/\s+/).some(token=>component.test(token));
 }
 
 function linkedCharacters(parts){

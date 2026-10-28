@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { extractArticle, cleanArticleTitle, articleTitleMetadata } from '../lib/article-extractor.js';
-import { cleanArticleBlocks } from '../lib/article-boundaries.js';
+import { isMediaCaption, cleanArticleBlocks } from '../lib/article-boundaries.js';
 
 const url='https://example.com/articles/interview';
 const intro='An interview about the craft of building music players. The designer explains how physical objects carry a culture across generations and why a careful choice of materials matters. ';
@@ -95,4 +95,28 @@ assert.equal(structured.extraction.method,'structured-data');
 assert.ok(!JSON.stringify(structured.body).includes('Sign up'));
 // A real article subsection whose name resembles a component stays intact.
 assert.ok(extractArticle(`<article><div class="article-body"><p>${intro.repeat(3)}</p><h2>Related stories</h2><p>${final}</p></div></article>`,url).body.some(block=>block[1]===final));
+const caption='The RBO Hand 3 robot holds a flower in Berlin, 2019. The robot was developed in the Robotics and Biology Laboratory at Technische Universität Berlin.';
+const captionHelper=page.slice(page.indexOf('function isMediaCaption('),page.indexOf('\nfunction articleTitleMetadata('));
+assert.equal(captionHelper.trim(),isMediaCaption.toString().trim());
+for(const label of ['caption','caption-text','wp-caption-text','slideshow-caption','gallery__caption','imageCaption','photo-credit']){
+ assert.equal(isMediaCaption(label),true,label);
+ const imported=extractArticle(`<article class="article-body"><p>${intro.repeat(3)}</p><div class="${label}"><p>${caption}</p></div><p>${final}</p></article>`,url);
+ assert.ok(!JSON.stringify(imported.body).includes(caption),label);assert.equal(imported.body.at(-1)[1],final);
+}
+for(const label of ['captioned-article','recaptioning','article-body','photography','credit-policy'])assert.equal(isMediaCaption(label),false,label);
+assert.equal(isMediaCaption('','caption'),true);
+assert.ok(!JSON.stringify(extractArticle(`<article><p>${intro.repeat(3)}</p><span itemprop="caption">${caption}</span><p>${final}</p></article>`,url).body).includes(caption));
+// Metadata with more text must not resurrect a caption that was labelled in HTML.
+const metadataCaption=extractArticle(`<script type="application/ld+json">${JSON.stringify({'@type':'Article',articleBody:intro.repeat(12)+'\n'+caption+'\n'+final})}</script><article><p>${intro.repeat(3)}</p><p class="caption">${caption}</p></article>`,url);
+assert.equal(metadataCaption.extraction.method,'structured-data');assert.ok(!JSON.stringify(metadataCaption.body).includes(caption));
+// Also filter caption wrappers in metadata HTML and embedded application state.
+for(const metadata of [
+ {'@type':'Article',articleBody:`<p>${intro.repeat(12)}</p><div class="caption"><p>${caption}</p></div><p>${final}</p>`},
+ {article:{url,title:headline,body:`<p>${intro.repeat(12)}</p><p class="slideCaption">${caption}</p><p>${final}</p>`}}
+]){
+ const imported=extractArticle(`<meta property="og:title" content="${headline}"><script type="${metadata['@type']?'application/ld+json':'application/json'}">${JSON.stringify(metadata)}</script><article><p>${intro.repeat(2)}</p></article>`,url);
+ assert.ok(!JSON.stringify(imported.body).includes(caption));assert.ok(imported.body.some(block=>block[1]===final));
+}
+// Wording alone is insufficient: the same sentence in normal prose stays.
+assert.ok(extractArticle(`<article><p>${intro.repeat(3)}</p><p>${caption}</p><p>We discussed captions and photographic credits at length.</p></article>`,url).body.some(block=>block[1]===caption));
 console.log('Passed: nested article-body boundaries, captions, newsletter widgets/prompts, author bios, related links, mid-article recovery and editorial/list/formatting preservation.');

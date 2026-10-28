@@ -11,30 +11,11 @@ audio recording. Missing definitions, pronunciation and connection failures have
 explicit states. Escape, Close, an outside click, scrolling or article navigation
 dismisses it. Native text selection and copying remain available.
 
-The popup uses a self-hosted, pinned copy of [liquidGL 3.0.0](https://github.com/naughtyduk/liquidGL)
-for frosted GPU background refraction, a subtle bevel and specular highlights.
-A theme-coloured translucent surface further softens underlying article text
-while the dictionary text remains sharp. It loads
-on the first dictionary opening and destroys its lens, snapshot and GPU resources
-on dismissal or when the tab becomes hidden. Only the glass is rendered; the
-dictionary's selectable text and buttons remain native DOM above the lens.
-A clipped viewport snapshot preserves article sharpness on long pages. The
-background canvas is copied after an explicit draw, without enabling persistent
-drawing buffers or changing normal background rendering. The snapshot is local;
-no page content is uploaded. The library's optional inline worker requires the
-scoped `worker-src 'self' blob:` CSP directive. No external script host is allowed.
-
-Reduced motion keeps a static GPU lens with animated highlights disabled.
-Reduced transparency, forced colours and printing use the normal CSS/opaque
-fallback. Loading, GPU or snapshot failures also retain that fallback. GPU mode
-is enabled only after liquidGL confirms a rendered texture and a WebGPU/WebGL
-backend. The popup's `data-glass-state` identifies the actual backend or fallback;
-`window.otherLivesDictionaryGlass.status()` reports its state and failure reason.
-Initialisation has a 15-second deadline; fallback reasons are logged explicitly.
-The reading tint is feathered inside the popup so it doesn't cover the bevel.
-The source revision and MIT licence are in `vendor/liquidgl/`; the licence is also
-served at `/scripts/liquidGL.LICENSE.txt`. No upstream demo assets are included.
-Actual GPU appearance and frame rate still require browser/device validation.
+The popup uses a simple theme-aware frosted surface: CSS backdrop blur,
+a translucent tint, a subtle border highlight and soft shadow. Dictionary text
+and controls remain sharp, selectable and interactive. Reduced transparency,
+forced colours and printing use an opaque surface; reduced motion disables the
+short fade-in. Browsers without backdrop blur also use the opaque fallback.
 
 `GET /api/dictionary?word=...` proxies a single validated word to Free Dictionary
 API (`https://dictionaryapi.dev/`), falling back to Wiktionary's English definition
