@@ -4,8 +4,9 @@ import vm from 'node:vm';
 const source=await readFile(new URL('../worker/page.html',import.meta.url),'utf8');
 const styles=new Map(),timers=new Map();let now=0,next=0,glow=0;
 const context={
+ $:()=>({style:{setProperty:(name,value)=>styles.set(name,value),set opacity(value){styles.set('--pointer-ink-opacity',value)}}}),
  document:{documentElement:{style:{setProperty:(name,value)=>styles.set(name,value)}}},
- performance:{now:()=>now},setTimeout:(callback,delay)=>{timers.set(++next,{callback,time:now+delay});return next;},clearTimeout:id=>timers.delete(id),
+ performance:{now:()=>now},requestAnimationFrame:callback=>{timers.set(++next,{callback,time:now+8});return next;},cancelAnimationFrame:id=>timers.delete(id),setTimeout:(callback,delay)=>{timers.set(++next,{callback,time:now+delay});return next;},clearTimeout:id=>timers.delete(id),
  shinkaCursorPalette:{normal:'full',ink:'ink',paper:'paper',frames:[]},shinkaCursorFadeTimer:0,shinkaCursorIdleTimer:0,
  shinkaCursorPointer:{matches:true},shinkaCursorContrast:{matches:false},shinkaCursorTarget:null,shinkaCursorOpacity:0,
  ambientPointerPresent:true,ambientRenderer:{setGlow:value=>glow=value},

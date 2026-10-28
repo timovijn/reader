@@ -1,5 +1,25 @@
 # other lives
 
+## Display refresh and animation
+
+Pointer and progress fades use display-paced animation callbacks rather than
+16 ms timers. Glow easing uses elapsed time so its speed is consistent across
+refresh rates. Opacity updates are scoped to the relevant overlay elements;
+pointer events are batched once per frame. Native arrow cursor images use 256
+alpha steps, cached and prepared during idle time where supported.
+
+Selection underlines are anchored to document coordinates and recalculated on
+selection or layout changes, not on every scroll. Canvas geometry and fixed
+uniforms are updated only when needed, and the background stops scheduling
+frames once the glow settles or becomes invisible. Background resolution,
+grain and colour composition are preserved. The header uses a small text-only
+wordmark in the top-left corner.
+
+`tests/animation-performance.test.mjs` checks animation timing at 60–240 Hz,
+display-paced fades, input batching and renderer scheduling with a mock graphics
+context. This is not an on-device frame-rate benchmark: sustained 120 fps still
+depends on the browser, display, GPU and power settings.
+
 ## Concreteness experiment
 
 Articles display an optional thin curve in the right text margin. Further right
