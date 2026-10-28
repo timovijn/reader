@@ -6,6 +6,9 @@
   "functions": {
     "api/article.js": {
       "maxDuration": 60
+    },
+    "api/dictionary.js": {
+      "maxDuration": 15
     }
   },
   "headers": [

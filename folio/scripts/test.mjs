@@ -58,3 +58,5 @@ await import('../tests/epub.test.mjs');
 await import('../tests/concreteness.test.mjs');
 await import('../tests/animation-performance.test.mjs');
 await import('../tests/collection.test.mjs');
+
+await import('../tests/dictionary.test.mjs');

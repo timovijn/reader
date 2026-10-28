@@ -17,7 +17,9 @@ for (const family of ['MartinaPlantijn', 'Shinka']) {
     fonts[`/fonts/${name}`] = { data: bytes.toString('base64'), type: name.endsWith('.woff2') ? 'font/woff2' : 'font/otf' };
   }
 }
+const dictionary=(await readFile('lib/dictionary.js','utf8')).replace(/^export default .+;$/m,'').replace(/^export /gm,'');
 const worker=(await readFile('worker/index.js','utf8'))
+  .replace("import { handleDictionaryRequest } from '../lib/dictionary.js';",dictionary)
   .replace('"__FOLIO_HTML__"',JSON.stringify(html))
   .replace('"__FOLIO_FONTS__"',JSON.stringify(fonts));
 await writeFile('dist/server/index.js',worker);

@@ -207,10 +207,35 @@ body{--ambient-glow:rgba(246,239,217,.15)}
 body[data-theme="parchment"]{--ambient-glow:rgba(255,249,229,.3)}
 body[data-theme="snow"]{--ambient-glow:rgba(224,208,173,.34)}
 body[data-theme="moss"]{--ambient-glow:rgba(215,232,181,.13)}
+
+/* A transient glass surface; the article itself remains flat and unfiltered. */
+body{--dictionary-glass:rgba(49,48,44,.78);--dictionary-edge:rgba(255,252,237,.2);--dictionary-shadow:rgba(0,0,0,.2)}
+body[data-theme="parchment"]{--dictionary-glass:rgba(247,233,205,.8);--dictionary-edge:rgba(255,252,237,.7);--dictionary-shadow:rgba(87,60,26,.16)}
+body[data-theme="snow"]{--dictionary-glass:rgba(250,252,248,.82);--dictionary-edge:rgba(255,255,255,.86);--dictionary-shadow:rgba(29,48,38,.13)}
+body[data-theme="moss"]{--dictionary-glass:rgba(44,55,37,.8);--dictionary-edge:rgba(226,236,204,.2);--dictionary-shadow:rgba(8,16,8,.24)}
+.dictionary-popup{position:fixed;z-index:30;width:380px;max-width:calc(100vw - 24px);max-height:min(500px,calc(100dvh - 24px));overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;border:1px solid var(--dictionary-edge);border-radius:22px;padding:22px 25px 19px;background:var(--paper);color:var(--ink);box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 8px 24px -12px var(--dictionary-shadow),0 22px 64px -24px var(--dictionary-shadow);font:400 17px/1.55 var(--font-serif);outline-offset:4px;animation:dictionary-arrive .18s ease-out}
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.dictionary-popup{background:linear-gradient(130deg,rgba(255,255,255,.055),transparent 65%),var(--dictionary-glass);-webkit-backdrop-filter:blur(24px) saturate(135%);backdrop-filter:blur(24px) saturate(135%)}}
+.dictionary-top{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-bottom:12px;color:var(--muted);font:400 9px/1.6 var(--font-mono)}
+.dictionary-popup button{font:400 10px/1.6 var(--font-mono);padding:4px 0;color:var(--muted)}
+.dictionary-popup .dictionary-word{font:400 32px/1.15 var(--font-serif);letter-spacing:-.6px;margin:0 0 9px;overflow-wrap:anywhere}
+.dictionary-pronunciation{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px 16px;font:400 13px/1.7 var(--font-serif);color:var(--muted);margin-bottom:17px}
+.dictionary-audio-status{font:400 10px/1.6 var(--font-mono);color:var(--muted);margin:0}.dictionary-audio-status:empty{display:none}
+.dictionary-content,.dictionary-content *,.dictionary-word,.dictionary-pronunciation span{-webkit-user-select:text;user-select:text}
+.dictionary-content{overflow-wrap:anywhere}.dictionary-pronunciation span{overflow-wrap:anywhere;min-width:0;max-width:100%}
+.dictionary-content section+section{margin-top:18px}
+.dictionary-popup .dictionary-part{font:400 italic 15px/1.5 var(--font-serif);margin:0 0 7px;color:var(--muted)}
+.dictionary-content ol{padding-left:20px;margin:0}.dictionary-content li{padding-left:3px;margin:0 0 12px}.dictionary-content li::marker{font-size:12px;color:var(--muted)}
+.dictionary-example{font-style:italic;color:var(--muted);font-size:15px;margin:5px 0 0}.dictionary-message{margin:0 0 8px}
+.dictionary-sources{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:18px;padding-top:12px;border-top:1px solid var(--dictionary-edge);font:400 8px/1.7 var(--font-mono);color:var(--muted)}.dictionary-sources:empty{display:none}.dictionary-sources a{text-decoration:none}.dictionary-sources a:hover{text-decoration:underline}
+@keyframes dictionary-arrive{from{opacity:0;transform:translateY(4px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(prefers-reduced-motion:reduce){.dictionary-popup{animation:none}}
+@media(prefers-reduced-transparency:reduce){.dictionary-popup{background:var(--paper);-webkit-backdrop-filter:none;backdrop-filter:none}}
+@media(forced-colors:active){.dictionary-popup{background:Canvas;color:CanvasText;border:1px solid ButtonText;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}}
+@media print{.dictionary-popup{display:none!important}}
 </style></head><body><div class="ambient-background" aria-hidden="true"><div class="ambient-field"></div><div class="ambient-highlight"></div><div class="ambient-grain"></div></div><div class="selection-ink" id="selection-ink" aria-hidden="true"></div><header><button class="brand" id="brand" aria-label="other lives home">other lives</button><nav class="nav"><button id="nav-saved" class="active" aria-current="page">My collection <span id="save-count"></span></button><button class="about" id="about-open" aria-label="About other lives">About</button></nav></header>
 <main class="home" id="home"><section class="intro"><form class="url-form" id="url-form"><input id="url-input" aria-label="Article URL" type="url" placeholder="Article link" required><button class="primary" id="read-button" type="submit">Read</button></form><p class="under-form"><button id="paste-open">Paste text</button></p><div class="error" id="error" role="alert" hidden></div><button id="browser-import-open" class="browser-import-link">Import from your browser</button></section><section class="collection" aria-labelledby="section-title"><div class="section-heading"><h2 id="section-title">My collection</h2><span id="collection-count" class="collection-count" role="status" aria-live="polite" aria-atomic="true"></span></div><div class="collection-toolbar"><div class="collection-states" role="group" aria-label="Reading status"><button data-collection-status="all" aria-pressed="true">All <span>0</span></button><button data-collection-status="ready" aria-pressed="false">Ready <span>0</span></button><button data-collection-status="read" aria-pressed="false">Read <span>0</span></button></div><div class="collection-filters"><input id="collection-search" type="search" placeholder="Search articles" aria-label="Search collection by title, author or article text" maxlength="300"><select id="collection-source" aria-label="Filter by source"><option value="all">All sources</option></select><select id="collection-length" aria-label="Filter by reading time"><option value="all">Any length</option><option value="short">Up to 5 min</option><option value="medium">6–15 min</option><option value="long">Over 15 min</option></select><select id="collection-sort" aria-label="Sort collection"><option value="newest">Newest saved</option><option value="oldest">Oldest saved</option><option value="published">Date published</option><option value="title">Title A–Z</option><option value="shortest">Shortest first</option><option value="longest">Longest first</option><option value="read">Recently read</option></select><button id="collection-clear" hidden>Clear filters</button></div></div><div class="cards" id="cards"></div><div class="empty" id="empty" hidden><p id="empty-message">No saved articles.</p></div><div id="collection-more" class="collection-more" hidden><button id="collection-more-button">Show more</button><span id="collection-shown"></span></div></section></main>
-<section id="reader" hidden><div class="reader-rail"><button id="reader-menu-toggle" class="reader-menu-toggle" aria-label="Show reading controls" aria-expanded="false" aria-controls="reader-panel"></button><nav id="reader-panel" class="reader-panel" aria-label="Reading controls" inert><button class="back" id="back">Back</button><div class="reader-actions"><button id="bookmark" aria-label="Save article"></button><button id="mark-read" aria-pressed="false">Mark as read</button><button id="download-epub">Download EPUB</button><button id="concreteness-toggle" aria-pressed="true" aria-describedby="concreteness-note">Concreteness</button><p id="concreteness-note" class="concreteness-note">Experimental · English word clues. Further right means more tangible.</p><button id="settings-toggle" aria-expanded="false" aria-controls="settings"><span class="action-label">Appearance</span></button><div class="settings" id="settings" hidden><label>Text size</label><div class="setting-row"><button id="size-down" aria-label="Decrease text size">Smaller</button><button id="size-up" aria-label="Increase text size">Larger</button><button id="zoom-reset">Reset zoom</button></div><label for="typeface">Typeface</label><select id="typeface"><option value="serif">Martina Plantijn</option><option value="shinka">Shinka</option><option value="shinka-mono">Shinka Mono</option><option value="sans">System Sans</option></select><label for="font-weight">Font weight</label><select id="font-weight"><option value="300">Light</option><option value="400" selected>Regular</option><option value="500">Medium</option><option value="700">Bold</option><option value="900">Black</option></select><label>Page colour</label><div class="setting-row"><button data-theme="stone">Stone</button><button data-theme="parchment">Parchment</button><button data-theme="snow">Snow</button><button data-theme="moss">Moss</button></div><label>Reading width</label><div class="setting-row"><button data-width="660">Narrow</button><button data-width="820">Wide</button></div></div></div></nav></div><article class="article"><div class="eyebrow" id="article-source"></div><h1 id="article-title"></h1><p class="dek" id="article-dek"></p><div class="byline" id="article-byline"></div><div class="article-body" id="article-body"></div><div class="article-end"><a id="original" target="_blank" rel="noopener noreferrer">Read at the source</a></div></article></section><button id="scroll-dot" class="scroll-dot" role="slider" aria-label="Reading position" aria-orientation="vertical" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><span class="scroll-arrow" aria-hidden="true">→</span></button>
-<dialog id="paste-dialog"><button class="dialog-close" data-close aria-label="Close">Close</button><h2>Paste article text</h2><form id="paste-form"><label for="paste-title">ARTICLE TITLE</label><input id="paste-title" placeholder="Article title" required maxlength="300"><label for="paste-text">ARTICLE TEXT</label><textarea id="paste-text" placeholder="Paste the article here…" required minlength="50" maxlength="300000"></textarea><button class="primary" type="submit">Read</button></form></dialog><dialog id="browser-import-dialog"><button class="dialog-close" data-close aria-label="Close">Close</button><h2>Import from your browser</h2><p>For websites that refuse direct imports, copy the article from a page you can already read.</p><ol><li>Drag this button to your browser’s bookmarks bar.<br><a class="bookmarklet" id="browser-bookmarklet" href="#" draggable="true">Copy for other lives</a></li><li>Open the article at its source and click that bookmark. It copies the article text, without images, to your clipboard.</li><li>Come back here, paste the copied article below, and open it in other lives.</li></ol><p>Some websites or browsers block bookmarklets. You can still copy the article’s text and use “paste article text”. Nothing is sent from the source page to other lives automatically.</p><form id="browser-import-form"><label for="browser-import-text">COPIED ARTICLE</label><textarea id="browser-import-text" placeholder="Paste the article copied by the bookmark here…" required maxlength="2000000"></textarea><p id="browser-import-error" class="error" role="alert" hidden></p><button class="primary" type="submit">Read</button></form></dialog><dialog id="about-dialog"><button class="dialog-close" data-close aria-label="Close">Close</button><div class="eyebrow" style="justify-content:start;margin-bottom:20px">THE IDEA BEHIND OTHER LIVES</div><h2>A way into other lives.</h2><p>Through reading, we experience lives beyond our own: different places, different perspectives, different ways of being. This is a quiet place to spend time with those stories.</p><p>Article extraction works best on publicly accessible, text-based pages. Paywalls, sign-in screens, bot protection and pages that load their text with JavaScript may prevent extraction. other lives does not bypass these restrictions.</p><p>Your collection and reading preferences stay in this browser. Saved articles don’t sync across devices, and clearing browser data removes them. Opening a link fetches that page through other lives’s server; article images are excluded.</p></dialog><div class="zoom-feedback" id="zoom-feedback" role="status" aria-live="polite" aria-atomic="true"></div><div class="toast" id="toast" role="status" hidden></div>
+<section id="reader" hidden><div class="reader-rail"><button id="reader-menu-toggle" class="reader-menu-toggle" aria-label="Show reading controls" aria-expanded="false" aria-controls="reader-panel"></button><nav id="reader-panel" class="reader-panel" aria-label="Reading controls" inert><button class="back" id="back">Back</button><div class="reader-actions"><button id="bookmark" aria-label="Save article"></button><button id="mark-read" aria-pressed="false">Mark as read</button><button id="download-epub">Download EPUB</button><button id="dictionary-define" aria-keyshortcuts="D" title="Select a word and press D">Define word</button><button id="concreteness-toggle" aria-pressed="true" aria-describedby="concreteness-note">Concreteness</button><p id="concreteness-note" class="concreteness-note">Experimental · English word clues. Further right means more tangible.</p><button id="settings-toggle" aria-expanded="false" aria-controls="settings"><span class="action-label">Appearance</span></button><div class="settings" id="settings" hidden><label>Text size</label><div class="setting-row"><button id="size-down" aria-label="Decrease text size">Smaller</button><button id="size-up" aria-label="Increase text size">Larger</button><button id="zoom-reset">Reset zoom</button></div><label for="typeface">Typeface</label><select id="typeface"><option value="serif">Martina Plantijn</option><option value="shinka">Shinka</option><option value="shinka-mono">Shinka Mono</option><option value="sans">System Sans</option></select><label for="font-weight">Font weight</label><select id="font-weight"><option value="300">Light</option><option value="400" selected>Regular</option><option value="500">Medium</option><option value="700">Bold</option><option value="900">Black</option></select><label>Page colour</label><div class="setting-row"><button data-theme="stone">Stone</button><button data-theme="parchment">Parchment</button><button data-theme="snow">Snow</button><button data-theme="moss">Moss</button></div><label>Reading width</label><div class="setting-row"><button data-width="660">Narrow</button><button data-width="820">Wide</button></div></div></div></nav></div><article class="article"><div class="eyebrow" id="article-source"></div><h1 id="article-title"></h1><p class="dek" id="article-dek"></p><div class="byline" id="article-byline"></div><div class="article-body" id="article-body"></div><div class="article-end"><a id="original" target="_blank" rel="noopener noreferrer">Read at the source</a></div></article></section><button id="scroll-dot" class="scroll-dot" role="slider" aria-label="Reading position" aria-orientation="vertical" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><span class="scroll-arrow" aria-hidden="true">→</span></button>
+<dialog id="paste-dialog"><button class="dialog-close" data-close aria-label="Close">Close</button><h2>Paste article text</h2><form id="paste-form"><label for="paste-title">ARTICLE TITLE</label><input id="paste-title" placeholder="Article title" required maxlength="300"><label for="paste-text">ARTICLE TEXT</label><textarea id="paste-text" placeholder="Paste the article here…" required minlength="50" maxlength="300000"></textarea><button class="primary" type="submit">Read</button></form></dialog><dialog id="browser-import-dialog"><button class="dialog-close" data-close aria-label="Close">Close</button><h2>Import from your browser</h2><p>For websites that refuse direct imports, copy the article from a page you can already read.</p><ol><li>Drag this button to your browser’s bookmarks bar.<br><a class="bookmarklet" id="browser-bookmarklet" href="#" draggable="true">Copy for other lives</a></li><li>Open the article at its source and click that bookmark. It copies the article text, without images, to your clipboard.</li><li>Come back here, paste the copied article below, and open it in other lives.</li></ol><p>Some websites or browsers block bookmarklets. You can still copy the article’s text and use “paste article text”. Nothing is sent from the source page to other lives automatically.</p><form id="browser-import-form"><label for="browser-import-text">COPIED ARTICLE</label><textarea id="browser-import-text" placeholder="Paste the article copied by the bookmark here…" required maxlength="2000000"></textarea><p id="browser-import-error" class="error" role="alert" hidden></p><button class="primary" type="submit">Read</button></form></dialog><dialog id="about-dialog"><button class="dialog-close" data-close aria-label="Close">Close</button><div class="eyebrow" style="justify-content:start;margin-bottom:20px">THE IDEA BEHIND OTHER LIVES</div><h2>A way into other lives.</h2><p>Through reading, we experience lives beyond our own: different places, different perspectives, different ways of being. This is a quiet place to spend time with those stories.</p><p>Article extraction works best on publicly accessible, text-based pages. Paywalls, sign-in screens, bot protection and pages that load their text with JavaScript may prevent extraction. other lives does not bypass these restrictions.</p><p>Your collection and reading preferences stay in this browser. Saved articles don’t sync across devices, and clearing browser data removes them. Opening a link fetches that page through other lives’s server; article images are excluded.</p><p>Looking up a word sends that word to Free Dictionary API for English definitions and pronunciation.</p></dialog><div id="dictionary-popup" class="dictionary-popup" role="dialog" aria-modal="false" aria-labelledby="dictionary-word" tabindex="-1" hidden><div class="dictionary-top"><span>English dictionary</span><button id="dictionary-close" aria-label="Close dictionary">Close</button></div><h2 id="dictionary-word" class="dictionary-word"></h2><div class="dictionary-pronunciation"><span id="dictionary-phonetics"></span><button id="dictionary-listen" hidden>Listen</button></div><p id="dictionary-audio-status" class="dictionary-audio-status" role="status"></p><div id="dictionary-content" class="dictionary-content" aria-live="polite" aria-busy="false"></div><div id="dictionary-sources" class="dictionary-sources"></div></div><div class="zoom-feedback" id="zoom-feedback" role="status" aria-live="polite" aria-atomic="true"></div><div class="toast" id="toast" role="status" hidden></div>
 <script>
 const $=s=>document.querySelector(s);
 let ambientRenderer=null;
@@ -448,8 +473,8 @@ function refreshSavedMetadata(article){
  const before=saved;saved=saved.map((item,i)=>i===index?{...item,title,author,originalTitle}:item);
  if(!persist())saved=before;
 }
-function openArticle(article){refreshSavedMetadata(article);clearTimeout(collectionSearchTimer);collectionView.query=$('#collection-search').value;if(!current){collectionScrollTop=window.scrollY;collectionReturnId=article.id;}clearSelectionInk();current=article;document.body.classList.add('focus');document.documentElement.classList.add('reading');setReaderControls(false);$('#scroll-dot').hidden=false;$('#article-body').dir=['rtl','ltr'].includes(article.dir)?article.dir:'auto';$('#home').hidden=true;$('#reader').hidden=false;$('#settings').hidden=true;$('#settings-toggle').setAttribute('aria-expanded','false');$('#article-title').textContent=article.title;$('#article-source').textContent=article.url?new URL(article.url).hostname.replace(/^www\./,''):article.category||'A moment to yourself';$('#article-dek').textContent=article.excerpt||'';$('#article-dek').hidden=!article.excerpt;$('#article-byline').textContent=[article.author||(!article.url?'other lives':''),formatArticleDate(article.published),article.minutes+' min read'].filter(Boolean).join(' · ');renderBody(article.body,article.url);$('#original').hidden=!article.url;if(article.url)$('#original').href=article.url;updateBookmark();document.title=article.title+' — other lives';window.scrollTo(0,0);$('#article-title').tabIndex=-1;$('#article-title').focus({preventScroll:true});resetScrollArrow();resetScrollIndicator();scheduleLineNumbers();scheduleScrollDot();}
-function goHome(){const returning=!!current,returnTop=returning?collectionScrollTop:0;clearSelectionInk();resetScrollIndicator();current=null;document.body.classList.remove('focus');document.documentElement.classList.remove('reading');setReaderControls(false);$('#scroll-dot').hidden=true;$('#home').hidden=false;$('#reader').hidden=true;document.title='other lives';renderCards();requestAnimationFrame(()=>{if(returning){const target=[...$('#cards').querySelectorAll('.card-open')].find(button=>button.dataset.articleId===collectionReturnId)||$('#collection-search');target.focus({preventScroll:true});}window.scrollTo(0,returnTop)})}
+function openArticle(article){closeDictionaryPopup(false);refreshSavedMetadata(article);clearTimeout(collectionSearchTimer);collectionView.query=$('#collection-search').value;if(!current){collectionScrollTop=window.scrollY;collectionReturnId=article.id;}clearSelectionInk();current=article;document.body.classList.add('focus');document.documentElement.classList.add('reading');setReaderControls(false);$('#scroll-dot').hidden=false;$('#article-body').dir=['rtl','ltr'].includes(article.dir)?article.dir:'auto';$('#home').hidden=true;$('#reader').hidden=false;$('#settings').hidden=true;$('#settings-toggle').setAttribute('aria-expanded','false');$('#article-title').textContent=article.title;$('#article-source').textContent=article.url?new URL(article.url).hostname.replace(/^www\./,''):article.category||'A moment to yourself';$('#article-dek').textContent=article.excerpt||'';$('#article-dek').hidden=!article.excerpt;$('#article-byline').textContent=[article.author||(!article.url?'other lives':''),formatArticleDate(article.published),article.minutes+' min read'].filter(Boolean).join(' · ');renderBody(article.body,article.url);$('#original').hidden=!article.url;if(article.url)$('#original').href=article.url;updateBookmark();document.title=article.title+' — other lives';window.scrollTo(0,0);$('#article-title').tabIndex=-1;$('#article-title').focus({preventScroll:true});resetScrollArrow();resetScrollIndicator();scheduleLineNumbers();scheduleScrollDot();}
+function goHome(){closeDictionaryPopup(false);const returning=!!current,returnTop=returning?collectionScrollTop:0;clearSelectionInk();resetScrollIndicator();current=null;document.body.classList.remove('focus');document.documentElement.classList.remove('reading');setReaderControls(false);$('#scroll-dot').hidden=true;$('#home').hidden=false;$('#reader').hidden=true;document.title='other lives';renderCards();requestAnimationFrame(()=>{if(returning){const target=[...$('#cards').querySelectorAll('.card-open')].find(button=>button.dataset.articleId===collectionReturnId)||$('#collection-search');target.focus({preventScroll:true});}window.scrollTo(0,returnTop)})}
 function articleTitleMetadata(value,siteNames=[],evidence={}){
   const tidy=text=>String(text||'').replace(/\s+/g,' ').trim();
   const key=text=>tidy(text).normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]/gu,'');
@@ -766,7 +791,7 @@ function measureLineNumbers(){
   lines.forEach((line,index)=>{const number=document.createElement('span');number.className='line-number';number.textContent=String(index+1);number.style.top=lineNumberTop(line.baseline,digitMetrics.ascent,digitMetrics.descent,digitSize)+'px';gutter.append(number)});
   drawConcreteness(root,lines,records,textParts.join(''),origin);root.append(gutter);scheduleSelectionInk();
 }
-const articleResizeObserver=new ResizeObserver(()=>{scheduleLineNumbers();scheduleScrollDot()});
+const articleResizeObserver=new ResizeObserver(()=>{closeDictionaryPopup(false);scheduleLineNumbers();scheduleScrollDot()});
 articleResizeObserver.observe($('#article-body'));
 document.fonts.ready.then(scheduleLineNumbers);
 document.fonts.addEventListener('loadingdone',scheduleLineNumbers);
@@ -1363,6 +1388,127 @@ function queueAmbientPointer(event){
 document.addEventListener('pointermove',queueAmbientPointer,{passive:true});
 document.documentElement.addEventListener('pointerleave',()=>setAmbientPointer(0,0,false),{passive:true});
 window.addEventListener('blur',()=>setAmbientPointer(0,0,false));
+function normaliseDictionaryWord(value){
+ if(typeof value!=='string')return '';
+ const word=value.normalize('NFKC').trim().replace(/[‘’]/g,"'").replace(/^[“”"'([{]+/u,'').replace(/[“”"')\]},.!?:;]+$/u,'').toLowerCase();
+ return word.length<=80&&/^[\p{L}\p{M}]+(?:['-][\p{L}\p{M}]+)*$/u.test(word)?word:'';
+}
+function dictionaryPlacement(anchor,width,height,viewport){
+ const inset=12,gap=12,leftEdge=viewport.left+inset,topEdge=viewport.top+inset;
+ const rightEdge=viewport.left+viewport.width-inset,bottomEdge=viewport.top+viewport.height-inset;
+ const left=Math.max(leftEdge,Math.min(rightEdge-width,anchor.left+anchor.width/2-width/2));
+ const below=bottomEdge-anchor.bottom,above=anchor.top-topEdge;
+ const onTop=below<height+gap&&above>below;
+ const top=Math.max(topEdge,Math.min(bottomEdge-height,onTop?anchor.top-height-gap:anchor.bottom+gap));
+ return{left,top,onTop};
+}
+function dictionarySelection(selection,scope){
+ if(!selection||selection.isCollapsed||selection.rangeCount!==1||!scope?.contains(selection.anchorNode)||!scope.contains(selection.focusNode))return null;
+ const word=normaliseDictionaryWord(selection.toString());if(!word)return null;
+ return{word,range:selection.getRangeAt(0).cloneRange()};
+}
+const dictionaryCache=new Map();
+let dictionaryController=null,dictionaryGeneration=0,dictionaryRange=null,dictionaryCurrentWord='',dictionaryReturnFocus=null,dictionarySpeech=null;
+function closeDictionaryPopup(restoreFocus=true){
+ const popup=$('#dictionary-popup');if(popup.hidden)return;
+ dictionaryGeneration++;dictionaryController?.abort();dictionaryController=null;dictionaryRange=null;
+ if(dictionarySpeech&&window.speechSynthesis){dictionarySpeech=null;window.speechSynthesis.cancel();}
+ const focused=popup.contains(document.activeElement);popup.hidden=true;
+ if(restoreFocus&&focused){const target=dictionaryReturnFocus?.isConnected?dictionaryReturnFocus:$('#article-title');target?.focus({preventScroll:true});}
+}
+function positionDictionaryPopup(){
+ const popup=$('#dictionary-popup');if(popup.hidden||!dictionaryRange)return;
+ const rects=[...dictionaryRange.getClientRects()].filter(rect=>rect.width>0&&rect.height>0);
+ if(!rects.length){closeDictionaryPopup();return;}
+ const rect=rects[0],view=window.visualViewport;
+ const viewport={left:view?.offsetLeft||0,top:view?.offsetTop||0,width:view?.width||window.innerWidth,height:view?.height||window.innerHeight};
+ popup.style.maxWidth=Math.max(1,Math.min(380,viewport.width-24))+'px';
+ popup.style.maxHeight=Math.max(1,Math.min(500,viewport.height-24))+'px';
+ const place=dictionaryPlacement(rect,popup.offsetWidth,popup.offsetHeight,viewport);
+ popup.style.left=place.left+'px';popup.style.top=place.top+'px';popup.style.transformOrigin=place.onTop?'50% 100%':'50% 0%';
+}
+function showDictionaryStatus(message,retry=false){
+ const content=$('#dictionary-content');content.replaceChildren();
+ const text=document.createElement('p');text.className='dictionary-message';text.textContent=message;content.append(text);
+ if(retry){const button=document.createElement('button');button.className='dictionary-retry';button.textContent='Try again';button.onclick=()=>lookupDictionaryWord(dictionaryCurrentWord);content.append(button);}
+ $('#dictionary-phonetics').textContent='';$('#dictionary-listen').hidden=true;$('#dictionary-sources').replaceChildren();
+ positionDictionaryPopup();
+}
+function renderDictionaryEntry(entry){
+ $('#dictionary-word').textContent=entry.word||dictionaryCurrentWord;
+ const pronunciations=Array.isArray(entry.phonetics)?entry.phonetics:[];
+ $('#dictionary-phonetics').textContent=pronunciations.length?pronunciations.map(text=>text.startsWith('/')||text.startsWith('[')?text:'/'+text+'/').join(' · '):'Phonetic spelling unavailable';
+ $('#dictionary-listen').hidden=!(window.speechSynthesis&&typeof SpeechSynthesisUtterance==='function');
+ const content=$('#dictionary-content'),fragment=document.createDocumentFragment();
+ for(const meaning of entry.meanings||[]){
+  const section=document.createElement('section'),part=document.createElement('h3');part.className='dictionary-part';part.textContent=meaning.partOfSpeech;
+  const list=document.createElement('ol');
+  for(const item of meaning.definitions||[]){const definition=document.createElement('li');definition.append(document.createTextNode(item.definition));if(item.example){const example=document.createElement('p');example.className='dictionary-example';example.textContent='“'+item.example+'”';definition.append(example);}list.append(definition);}
+  section.append(part,list);fragment.append(section);
+ }
+ content.replaceChildren(fragment);
+ const sources=$('#dictionary-sources');sources.replaceChildren();
+ function link(label,url){const href=safeHref(url);if(!href||!href.startsWith('https:'))return;const a=document.createElement('a');a.textContent=label;a.href=href;a.target='_blank';a.rel='noopener noreferrer';sources.append(a);}
+ link('Free Dictionary API','https://dictionaryapi.dev/');
+ if(entry.sources?.[0])link('Source',entry.sources[0]);
+ for(const license of entry.licenses||[])link(license.name,license.url);
+ positionDictionaryPopup();
+}
+async function lookupDictionaryWord(word){
+ dictionaryController?.abort();dictionaryController=new AbortController();const generation=++dictionaryGeneration;
+ dictionaryCurrentWord=word;$('#dictionary-word').textContent=word;$('#dictionary-content').setAttribute('aria-busy','true');
+ if(dictionaryCache.has(word)){renderDictionaryEntry(dictionaryCache.get(word));$('#dictionary-content').setAttribute('aria-busy','false');return;}
+ showDictionaryStatus('Looking up…');
+ try{
+  const response=await fetch('/api/dictionary?word='+encodeURIComponent(word),{signal:dictionaryController.signal});
+  const result=await response.json();
+  if(generation!==dictionaryGeneration||$('#dictionary-popup').hidden)return;
+  if(!response.ok){showDictionaryStatus(response.status===404?'No English definition found for “'+word+'”.':'The dictionary is unavailable. Please try again.',response.status!==404);return;}
+  if(!Array.isArray(result.meanings)||!result.meanings.length)throw Error('Empty dictionary entry');
+  dictionaryCache.set(word,result);while(dictionaryCache.size>100)dictionaryCache.delete(dictionaryCache.keys().next().value);
+  renderDictionaryEntry(result);
+ }catch(error){if(error.name!=='AbortError'&&generation===dictionaryGeneration&&!$('#dictionary-popup').hidden)showDictionaryStatus('The dictionary is unavailable. Please try again.',true);}
+ finally{if(generation===dictionaryGeneration)$('#dictionary-content').setAttribute('aria-busy','false');}
+}
+function openDictionarySelection(selected){
+ if(!selected)return;
+ closeDictionaryPopup(false);dictionaryRange=selected.range;dictionaryReturnFocus=document.activeElement;
+ const popup=$('#dictionary-popup');popup.hidden=false;popup.scrollTop=0;
+ $('#dictionary-audio-status').textContent='';lookupDictionaryWord(selected.word);
+ positionDictionaryPopup();popup.focus({preventScroll:true});
+}
+$('.article').addEventListener('dblclick',event=>{
+ if(!current||event.target.closest('a,button,input,textarea,select,.line-numbers,.concreteness-curve'))return;
+ const selected=dictionarySelection(window.getSelection(),$('.article'));
+ if(selected)openDictionarySelection(selected);
+});
+$('#dictionary-define').onclick=()=>{
+ const selected=dictionarySelection(window.getSelection(),$('.article'));
+ if(selected)openDictionarySelection(selected);else notify('Select one word in the article first.');
+};
+$('#dictionary-close').onclick=()=>closeDictionaryPopup();
+document.addEventListener('pointerdown',event=>{if(!$('#dictionary-popup').hidden&&!$('#dictionary-popup').contains(event.target))closeDictionaryPopup(false)},{capture:true,passive:true});
+document.addEventListener('keydown',event=>{
+ if(event.key==='Escape'&&!$('#dictionary-popup').hidden){event.preventDefault();event.stopImmediatePropagation();closeDictionaryPopup();return;}
+ if(event.key.toLowerCase()==='d'&&!event.altKey&&!event.ctrlKey&&!event.metaKey&&current&&$('#dictionary-popup').hidden&&!event.target.closest('input,textarea,select,[contenteditable="true"]')){
+  const selected=dictionarySelection(window.getSelection(),$('.article'));if(selected){event.preventDefault();openDictionarySelection(selected);}
+ }
+},{capture:true});
+$('#dictionary-popup').addEventListener('focusout',()=>requestAnimationFrame(()=>{const popup=$('#dictionary-popup');if(!popup.hidden&&!popup.contains(document.activeElement))closeDictionaryPopup(false)}));
+window.addEventListener('scroll',()=>closeDictionaryPopup(),{passive:true});
+window.addEventListener('resize',()=>closeDictionaryPopup(),{passive:true});
+window.visualViewport?.addEventListener('resize',()=>closeDictionaryPopup(),{passive:true});
+window.visualViewport?.addEventListener('scroll',()=>closeDictionaryPopup(),{passive:true});
+document.fonts.addEventListener('loadingdone',positionDictionaryPopup);
+$('#dictionary-listen').onclick=()=>{
+ if(!window.speechSynthesis||typeof SpeechSynthesisUtterance!=='function')return;
+ dictionarySpeech=null;window.speechSynthesis.cancel();$('#dictionary-audio-status').textContent='';const speech=new SpeechSynthesisUtterance($('#dictionary-word').textContent);dictionarySpeech=speech;speech.lang='en-GB';speech.rate=.85;
+ const voices=window.speechSynthesis.getVoices();speech.voice=voices.find(voice=>voice.localService&&/^en-GB/i.test(voice.lang))||voices.find(voice=>/^en-GB/i.test(voice.lang))||voices.find(voice=>/^en\b/i.test(voice.lang))||null;
+ speech.onend=()=>{if(dictionarySpeech===speech)dictionarySpeech=null;};
+ speech.onerror=()=>{if(dictionarySpeech===speech){dictionarySpeech=null;$('#dictionary-audio-status').textContent='Audio pronunciation is unavailable.';positionDictionaryPopup();}};
+ window.speechSynthesis.speak(speech);
+};
+
 // One fresh composition per page load. Theme changes and zoom retain this seed.
 const ambientComposition=createAmbientComposition();
 document.documentElement.style.setProperty('--ambient-layout-angle',ambientComposition.angle+'rad');

@@ -4,7 +4,8 @@
   "buildCommand": "npm run build",
   "outputDirectory": "folio/dist/public",
   "functions": {
-    "api/article.js": { "maxDuration": 60 }
+    "api/article.js": { "maxDuration": 60 },
+    "api/dictionary.js": { "maxDuration": 15 }
   },
   "headers": [
     {

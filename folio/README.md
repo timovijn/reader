@@ -1,5 +1,32 @@
 # other lives
 
+## Dictionary
+
+Double-click a single word in article text to open an anchored English dictionary
+popover. You can also select a word and press **D**, or choose **Define word**
+from the reading controls. It shows IPA spellings, parts of speech, numbered
+definitions and examples, with source/licence links. **Listen** uses the browser's
+speech engine with a British English voice where available; it is not a provider
+audio recording. Missing definitions, pronunciation and connection failures have
+explicit states. Escape, Close, an outside click, scrolling or article navigation
+dismisses it. Native text selection and copying remain available.
+
+The Liquid Glass-inspired appearance is a theme-aware CSS approximation using a
+bounded backdrop blur, translucent tint, edge highlights and shallow shadows.
+It respects reduced motion, reduced transparency, forced colours and printing;
+browsers without backdrop blur get an opaque surface. The article itself is not
+filtered or changed.
+
+`GET /api/dictionary?word=...` proxies a single validated word to Free Dictionary
+API (`https://dictionaryapi.dev/`). No article text, source URL or publisher login
+is sent with the lookup. Requests have an 8-second timeout and 512 KB response
+limit. Successful entries are cached for 24 hours with at most 256 server entries
+and 100 entries per browser session; concurrent server requests are deduplicated.
+The route is available in both Vercel roots, local preview and the standalone
+Worker. No API key is needed. Provider uptime and vocabulary coverage are external
+dependencies. Dictionary tests use mocked provider responses; a live response
+could not be verified from the development environment.
+
 Article titles are reconciled with visible headings, Article JSON-LD and author
 metadata rather than treating an Open Graph/search title as the headline.
 Confirmed publisher suffixes and corroborated trailing bylines are removed;

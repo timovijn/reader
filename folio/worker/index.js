@@ -1,3 +1,4 @@
+import { handleDictionaryRequest } from '../lib/dictionary.js';
 const page = "__FOLIO_HTML__";
 const fonts = "__FOLIO_FONTS__";
 const json = (data,status=200) => Response.json(data,{status,headers:{'cache-control':'no-store','x-content-type-options':'nosniff'}});
@@ -25,6 +26,7 @@ async function readPage(response,signal){
 }
 export async function handleRequest(request, fetchPage = fetch){
  const path=new URL(request.url).pathname;
+ if(path==='/api/dictionary')return handleDictionaryRequest(request);
  if (request.method === 'GET' && Object.hasOwn(fonts, path)) {
    const bytes = Uint8Array.from(atob(fonts[path].data), char => char.charCodeAt(0));
    return new Response(bytes, {headers: {'content-type': fonts[path].type, 'cache-control': 'public, max-age=86400', 'x-content-type-options': 'nosniff'}});
