@@ -159,14 +159,26 @@ html.text-pinch{touch-action:pan-x pan-y}
 .article .byline,.article .eyebrow,.article-end{font-size:calc(10px * var(--text-zoom,1))}
 body:not(.focus) .home,body:not(.focus)>header{zoom:var(--text-zoom,1)}
 @media(max-width:700px){.article-body{font-size:calc((var(--article-size) - 1px) * var(--text-zoom,1))}.article h1{font-size:calc(30px * var(--text-zoom,1))}.article .dek{font-size:calc(17px * var(--text-zoom,1))}}
+
+/* One quiet curve alongside the prose; its horizontal range represents
+   abstract (left) to tangible (right). The text keeps its existing width. */
+.article-body .concreteness-curve{position:absolute;top:0;right:-34px;width:24px;max-width:none;overflow:visible;fill:none;stroke:none;pointer-events:none;user-select:none;-webkit-user-select:none}
+.concreteness-curve,.concreteness-curve *{user-select:none;-webkit-user-select:none}
+.concreteness-curve path{stroke:var(--muted);stroke-width:1;stroke-linecap:round;stroke-linejoin:round;opacity:.55}
+.concreteness-curve circle{fill:transparent;stroke:none;pointer-events:all}
+.concreteness-curve circle:hover{fill:var(--muted);opacity:.3}
+.reader-panel .concreteness-note{font:400 9px/1.8 var(--font-mono);color:var(--muted);max-width:145px;margin:0 0 8px}
+#concreteness-toggle[aria-pressed="true"]{text-decoration:underline;text-underline-offset:4px}
+@media(max-width:700px){.article-body .concreteness-curve{right:-31px}}
+@media print{.concreteness-curve{display:none!important}}
 </style></head><body><div class="ambient-background" aria-hidden="true"><div class="ambient-field"></div><div class="ambient-highlight"></div><div class="ambient-grain"></div></div><div class="selection-ink" id="selection-ink" aria-hidden="true"></div><header><button class="brand" id="brand" aria-label="other lives home"><svg class="brand-mark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" aria-hidden="true" focusable="false"><g transform="translate(-250 -250)" fill="currentColor" fill-rule="evenodd"><path d="M429.5,291 C519.246272,291 592,363.753728 592,453.5 C592,543.246272 519.246272,616 429.5,616 C339.753728,616 267,543.246272 267,453.5 C267,363.753728 339.753728,291 429.5,291 Z M430,311 C383.055796,311 345,374.799423 345,453.5 C345,532.200577 383.055796,596 430,596 C476.944204,596 515,532.200577 515,453.5 C515,374.799423 476.944204,311 430,311 Z"/><path d="M678,531 C708.375661,531 733,555.624339 733,586 C733,601.184293 726.846783,614.931425 716.897828,624.883917 L717,624.842603 C642,707.417337 567,729.939272 492,692.408408 C417,654.877544 342,651.121041 267,681.1389 C342,598.577831 417,576.062729 492,613.593594 C550.299333,642.767252 608.598667,651.529188 666.898,639.879401 C641.844231,634.743725 623,612.572515 623,586 C623,555.624339 647.624339,531 678,531 Z"/></g></svg><span>other lives</span></button><nav class="nav"><button id="nav-saved" class="active" aria-current="page">My collection <span id="save-count"></span></button><button class="about" id="about-open" aria-label="About other lives">About</button></nav></header>
 <main class="home" id="home"><section class="intro"><h1>A little room to read</h1><p>Paste a link. Settle into the words.</p><form class="url-form" id="url-form"><input id="url-input" aria-label="Article URL" type="url" placeholder="Paste an article link here…" required><button class="primary" id="read-button" type="submit">Read</button></form><p class="under-form"><button id="paste-open">Paste text</button></p><div class="error" id="error" role="alert" hidden></div><button id="browser-import-open" class="browser-import-link">Import from your browser</button></section><section class="collection"><div class="section-heading"><h2 id="section-title">My collection</h2></div><div class="cards" id="cards"></div><div class="empty" id="empty" hidden><h3>Your next good read belongs here.</h3><p>Open an article and choose Save to keep it here.</p></div></section></main>
-<section id="reader" hidden><div class="reader-rail"><button id="reader-menu-toggle" class="reader-menu-toggle" aria-label="Show reading controls" aria-expanded="false" aria-controls="reader-panel"></button><nav id="reader-panel" class="reader-panel" aria-label="Reading controls" inert><button class="back" id="back">Back</button><div class="reader-actions"><button id="bookmark" aria-label="Save article"></button><button id="download-epub">Download EPUB</button><button id="settings-toggle" aria-expanded="false" aria-controls="settings"><span class="action-label">Appearance</span></button><div class="settings" id="settings" hidden><label>Text size</label><div class="setting-row"><button id="size-down" aria-label="Decrease text size">Smaller</button><button id="size-up" aria-label="Increase text size">Larger</button><button id="zoom-reset">Reset zoom</button></div><label for="typeface">Typeface</label><select id="typeface"><option value="serif">Martina Plantijn</option><option value="shinka">Shinka</option><option value="shinka-mono">Shinka Mono</option><option value="sans">System Sans</option></select><label for="font-weight">Font weight</label><select id="font-weight"><option value="300">Light</option><option value="400" selected>Regular</option><option value="500">Medium</option><option value="700">Bold</option><option value="900">Black</option></select><label>Page colour</label><div class="setting-row"><button data-theme="paper">Paper</button><button data-theme="white">White</button><button data-theme="dark">Night</button></div><label>Reading width</label><div class="setting-row"><button data-width="660">Narrow</button><button data-width="820">Wide</button></div></div></div></nav></div><article class="article"><div class="eyebrow" id="article-source"></div><h1 id="article-title"></h1><p class="dek" id="article-dek"></p><div class="byline" id="article-byline"></div><div class="article-body" id="article-body"></div><div class="article-end"><a id="original" target="_blank" rel="noopener noreferrer">Read at the source</a></div></article></section><button id="scroll-dot" class="scroll-dot" role="slider" aria-label="Reading position" aria-orientation="vertical" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><span class="scroll-arrow" aria-hidden="true">→</span></button>
+<section id="reader" hidden><div class="reader-rail"><button id="reader-menu-toggle" class="reader-menu-toggle" aria-label="Show reading controls" aria-expanded="false" aria-controls="reader-panel"></button><nav id="reader-panel" class="reader-panel" aria-label="Reading controls" inert><button class="back" id="back">Back</button><div class="reader-actions"><button id="bookmark" aria-label="Save article"></button><button id="download-epub">Download EPUB</button><button id="concreteness-toggle" aria-pressed="true" aria-describedby="concreteness-note">Concreteness</button><p id="concreteness-note" class="concreteness-note">Experimental · English word clues. Further right means more tangible.</p><button id="settings-toggle" aria-expanded="false" aria-controls="settings"><span class="action-label">Appearance</span></button><div class="settings" id="settings" hidden><label>Text size</label><div class="setting-row"><button id="size-down" aria-label="Decrease text size">Smaller</button><button id="size-up" aria-label="Increase text size">Larger</button><button id="zoom-reset">Reset zoom</button></div><label for="typeface">Typeface</label><select id="typeface"><option value="serif">Martina Plantijn</option><option value="shinka">Shinka</option><option value="shinka-mono">Shinka Mono</option><option value="sans">System Sans</option></select><label for="font-weight">Font weight</label><select id="font-weight"><option value="300">Light</option><option value="400" selected>Regular</option><option value="500">Medium</option><option value="700">Bold</option><option value="900">Black</option></select><label>Page colour</label><div class="setting-row"><button data-theme="paper">Paper</button><button data-theme="white">White</button><button data-theme="dark">Night</button></div><label>Reading width</label><div class="setting-row"><button data-width="660">Narrow</button><button data-width="820">Wide</button></div></div></div></nav></div><article class="article"><div class="eyebrow" id="article-source"></div><h1 id="article-title"></h1><p class="dek" id="article-dek"></p><div class="byline" id="article-byline"></div><div class="article-body" id="article-body"></div><div class="article-end"><a id="original" target="_blank" rel="noopener noreferrer">Read at the source</a></div></article></section><button id="scroll-dot" class="scroll-dot" role="slider" aria-label="Reading position" aria-orientation="vertical" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><span class="scroll-arrow" aria-hidden="true">→</span></button>
 <dialog id="paste-dialog"><button class="dialog-close" data-close aria-label="Close">Close</button><h2>Bring your own words.</h2><p>Copy the text from an article you can access, then give it a little room to breathe.</p><form id="paste-form"><label for="paste-title">ARTICLE TITLE</label><input id="paste-title" placeholder="A story worth your time" required maxlength="300"><label for="paste-text">ARTICLE TEXT</label><textarea id="paste-text" placeholder="Paste the article here…" required minlength="50" maxlength="300000"></textarea><button class="primary" type="submit">Read</button></form></dialog><dialog id="browser-import-dialog"><button class="dialog-close" data-close aria-label="Close">Close</button><h2>Bring a page into other lives.</h2><p>For websites that refuse direct imports, copy the article from a page you can already read.</p><ol><li>Drag this button to your browser’s bookmarks bar.<br><a class="bookmarklet" id="browser-bookmarklet" href="#" draggable="true">Copy for other lives</a></li><li>Open the article at its source and click that bookmark. It copies the article text, without images, to your clipboard.</li><li>Come back here, paste the copied article below, and open it in other lives.</li></ol><p>Some websites or browsers block bookmarklets. You can still copy the article’s text and use “paste article text”. Nothing is sent from the source page to other lives automatically.</p><form id="browser-import-form"><label for="browser-import-text">COPIED ARTICLE</label><textarea id="browser-import-text" placeholder="Paste the article copied by the bookmark here…" required maxlength="2000000"></textarea><p id="browser-import-error" class="error" role="alert" hidden></p><button class="primary" type="submit">Read</button></form></dialog><dialog id="about-dialog"><button class="dialog-close" data-close aria-label="Close">Close</button><div class="eyebrow" style="justify-content:start;margin-bottom:20px">THE IDEA BEHIND OTHER LIVES</div><h2>A way into other lives.</h2><p>Through reading, we experience lives beyond our own: different places, different perspectives, different ways of being. This is a quiet place to spend time with those stories.</p><p>Article extraction works best on publicly accessible, text-based pages. Paywalls, sign-in screens, bot protection and pages that load their text with JavaScript may prevent extraction. other lives does not bypass these restrictions.</p><p>Your collection and reading preferences stay in this browser. Saved articles don’t sync across devices, and clearing browser data removes them. Opening a link fetches that page through other lives’s server; article images are excluded.</p></dialog><div class="zoom-feedback" id="zoom-feedback" role="status" aria-live="polite" aria-atomic="true"></div><div class="toast" id="toast" role="status" hidden></div>
 <script>
 const $=s=>document.querySelector(s);
 let ambientRenderer=null;
-let saved=[],prefs={theme:'paper',font:'shinka-mono',size:18,width:660,weight:400},current=null,saveFailed=false;
+let saved=[],prefs={theme:'paper',font:'shinka-mono',size:18,width:660,weight:400,concreteness:true},current=null,saveFailed=false;
 try{const s=JSON.parse(localStorage.getItem('folio-collection')||'[]');if(Array.isArray(s))saved=s.filter(x=>x&&typeof x.id==='string'&&typeof x.title==='string'&&Array.isArray(x.body)).slice(0,100);const p=JSON.parse(localStorage.getItem('folio-preferences')||'{}');if(p&&typeof p==='object')prefs={...prefs,...p};if(localStorage.getItem('folio-design')!=='typewriter-v1'){prefs.font='shinka-mono';prefs.size=18;localStorage.setItem('folio-design','typewriter-v1');}}catch{}
 function persist(){try{localStorage.setItem('folio-collection',JSON.stringify(saved));return true;}catch{notify('Your browser could not save this article. Its storage may be full or disabled.');return false;}}
 function notify(message){$('#toast').textContent=message;$('#toast').hidden=false;clearTimeout(notify.timer);notify.timer=setTimeout(()=>$('#toast').hidden=true,4000)}
@@ -296,7 +308,7 @@ function renderInline(parent,nodes,base,depth=0){
  }
 }
 function renderBody(blocks,base){
- const root=$('#article-body');root.replaceChildren();
+ const root=$('#article-body');root.replaceChildren();concretenessAnalysis=null;
  for(const block of blocks){
   if(!Array.isArray(block))continue;const [tag,text,content]=block;
   if(!['p','h2','h3','blockquote','pre','ul','ol','li'].includes(tag)||typeof text!=='string')continue;
@@ -306,12 +318,24 @@ function renderBody(blocks,base){
 }
 function openArticle(article){clearSelectionInk();current=article;document.body.classList.add('focus');document.documentElement.classList.add('reading');setReaderControls(false);$('#scroll-dot').hidden=false;$('#article-body').dir=['rtl','ltr'].includes(article.dir)?article.dir:'auto';$('#home').hidden=true;$('#reader').hidden=false;$('#settings').hidden=true;$('#settings-toggle').setAttribute('aria-expanded','false');$('#article-title').textContent=article.title;$('#article-source').textContent=article.url?new URL(article.url).hostname.replace(/^www\./,''):article.category||'A moment to yourself';$('#article-dek').textContent=article.excerpt||'';$('#article-dek').hidden=!article.excerpt;$('#article-byline').textContent=[article.author||(!article.url?'other lives':''),formatArticleDate(article.published),article.minutes+' min read'].filter(Boolean).join(' · ');renderBody(article.body,article.url);$('#original').hidden=!article.url;if(article.url)$('#original').href=article.url;updateBookmark();document.title=article.title+' — other lives';window.scrollTo(0,0);$('#article-title').tabIndex=-1;$('#article-title').focus({preventScroll:true});resetScrollArrow();resetScrollIndicator();scheduleLineNumbers();scheduleScrollDot();}
 function goHome(){clearSelectionInk();resetScrollIndicator();current=null;document.body.classList.remove('focus');document.documentElement.classList.remove('reading');setReaderControls(false);$('#scroll-dot').hidden=true;$('#home').hidden=false;$('#reader').hidden=true;document.title='other lives — A little room to read';renderCards();window.scrollTo(0,0)}
-function extract(html,url){const doc=new DOMParser().parseFromString(html,'text/html');const meta=name=>doc.querySelector('meta[property="'+name+'"],meta[name="'+name+'"]')?.getAttribute('content')?.trim();const title=(meta('og:title')||doc.querySelector('h1')?.textContent||doc.title||'Untitled article').trim().slice(0,300);const author=(meta('author')||doc.querySelector('[rel="author"]')?.textContent||'').trim().slice(0,160);const excerpt=(meta('description')||meta('og:description')||'').slice(0,400);const published=(meta('article:published_time')||meta('datePublished')||doc.querySelector('time[itemprop="datePublished"]')?.getAttribute('datetime')||'').slice(0,100);doc.querySelectorAll('script,style,nav,header,footer,aside,form,button,input,iframe,svg,img,picture,source,figcaption,noscript,dialog,[hidden],[aria-hidden="true"],[role="navigation"],[role="dialog"],.advertisement,.ads,.cookie-banner,.newsletter,.related-posts').forEach(x=>x.remove());const candidates=[...doc.querySelectorAll('article,main,[role="main"],.post-content,.entry-content,.article-body,.story-body')];const score=node=>[...node.querySelectorAll('p')].reduce((s,p)=>s+Math.max(0,(p.textContent||'').length-(p.querySelector('a')?.textContent?.length||0)*2),0);let root=candidates.sort((a,b)=>score(b)-score(a))[0];if(!root||score(root)<250){const parentScores=new Map();doc.querySelectorAll('p').forEach(p=>{if(p.textContent.length>70){const par=p.parentElement;parentScores.set(par,(parentScores.get(par)||0)+p.textContent.length)}});root=[...parentScores.entries()].sort((a,b)=>b[1]-a[1])[0]?.[0]||doc.body}const blocks=[];const nodes=root.querySelectorAll('h2,h3,p,blockquote,pre,li');for(const node of nodes){if(node.parentElement?.closest('blockquote,pre,li'))continue;const text=(node.textContent||'').replace(/\s+/g,' ').trim();if(text.length<3||text===title)continue;blocks.push([node.tagName==='LI'?'p':node.tagName.toLowerCase(),node.tagName==='LI'?'• '+text:text])}const words=blocks.filter(b=>b[0]!=='img').map(b=>b[1]).join(' ').split(/\s+/).length;if(words<100)throw Error('There is not enough readable article text on this page. It may require a sign-in or load its content with JavaScript. Try pasting the text instead.');return{id:url,title,author,excerpt,published,body:blocks,minutes:Math.max(1,Math.ceil(words/230)),url,category:'From the web'}}
+function cleanArticleTitle(value,siteNames=[]){
+  const title=String(value||'').replace(/\s+/g,' ').trim();
+  const key=text=>String(text||'').normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]/gu,'');
+  const names=new Set(siteNames.map(key).filter(Boolean));
+  const separators=[...title.matchAll(/\s+[|–—·•-]\s+/g)];
+  for(let i=separators.length-1;i>=0;i--){
+    const separator=separators[i],suffix=title.slice(separator.index+separator[0].length);
+    if(names.has(key(suffix)))return title.slice(0,separator.index).trim()||title;
+  }
+  return title;
+}
+
+function extract(html,url){const doc=new DOMParser().parseFromString(html,'text/html');const meta=name=>doc.querySelector('meta[property="'+name+'"],meta[name="'+name+'"]')?.getAttribute('content')?.trim();const title=cleanArticleTitle((meta('og:title')||doc.querySelector('h1')?.textContent||doc.title||'Untitled article').trim().slice(0,300),[meta('og:site_name'),new URL(url).hostname.replace(/^www\./,'').replace(/\.[^.]+$/,'')]);const author=(meta('author')||doc.querySelector('[rel="author"]')?.textContent||'').trim().slice(0,160);const excerpt=(meta('description')||meta('og:description')||'').slice(0,400);const published=(meta('article:published_time')||meta('datePublished')||doc.querySelector('time[itemprop="datePublished"]')?.getAttribute('datetime')||'').slice(0,100);doc.querySelectorAll('script,style,nav,header,footer,aside,form,button,input,iframe,svg,img,picture,source,figcaption,noscript,dialog,[hidden],[aria-hidden="true"],[role="navigation"],[role="dialog"],.advertisement,.ads,.cookie-banner,.newsletter,.related-posts').forEach(x=>x.remove());const candidates=[...doc.querySelectorAll('article,main,[role="main"],.post-content,.entry-content,.article-body,.story-body')];const score=node=>[...node.querySelectorAll('p')].reduce((s,p)=>s+Math.max(0,(p.textContent||'').length-(p.querySelector('a')?.textContent?.length||0)*2),0);let root=candidates.sort((a,b)=>score(b)-score(a))[0];if(!root||score(root)<250){const parentScores=new Map();doc.querySelectorAll('p').forEach(p=>{if(p.textContent.length>70){const par=p.parentElement;parentScores.set(par,(parentScores.get(par)||0)+p.textContent.length)}});root=[...parentScores.entries()].sort((a,b)=>b[1]-a[1])[0]?.[0]||doc.body}const blocks=[];const nodes=root.querySelectorAll('h2,h3,p,blockquote,pre,li');for(const node of nodes){if(node.parentElement?.closest('blockquote,pre,li'))continue;const text=(node.textContent||'').replace(/\s+/g,' ').trim();if(text.length<3||text===title)continue;blocks.push([node.tagName==='LI'?'p':node.tagName.toLowerCase(),node.tagName==='LI'?'• '+text:text])}const words=blocks.filter(b=>b[0]!=='img').map(b=>b[1]).join(' ').split(/\s+/).length;if(words<100)throw Error('There is not enough readable article text on this page. It may require a sign-in or load its content with JavaScript. Try pasting the text instead.');return{id:url,title,author,excerpt,published,body:blocks,minutes:Math.max(1,Math.ceil(words/230)),url,category:'From the web'}}
 // This function runs only when the reader clicks their saved bookmark on an
 // article page. It uses the DOM and clipboard; it makes no network requests.
 function browserClipper(){
  const tidy=value=>String(value||'').replace(/\s+/g,' ').trim();
- const originalTitle=tidy(document.querySelector('meta[property="og:title"]')?.content||document.querySelector('h1')?.textContent||document.title);
+ const originalTitle=cleanArticleTitle(tidy(document.querySelector('meta[property="og:title"]')?.content||document.querySelector('h1')?.textContent||document.title),[document.querySelector('meta[property="og:site_name"]')?.content,location.hostname.replace(/^www\./,'').replace(/\.[^.]+$/,'')]);
  const author=tidy(document.querySelector('meta[name="author"]')?.content||document.querySelector('[rel="author"]')?.textContent);
  const published=tidy(document.querySelector('meta[property="article:published_time"],meta[name="datePublished"]')?.content||document.querySelector('time[itemprop="datePublished"]')?.getAttribute('datetime'));
  const doc=document.cloneNode(true);
@@ -340,13 +364,115 @@ function normaliseBrowserClip(raw){
  const url=typeof data.url==='string'?safeHref(data.url):null;
  return{id:url||'browser-'+Date.now(),url:url||undefined,title:typeof data.title==='string'?data.title.slice(0,500):'Untitled article',author:typeof data.author==='string'?data.author.slice(0,250):'',published:typeof data.published==='string'?data.published.slice(0,100):'',excerpt:'',body,minutes:Math.max(1,Math.ceil(text.split(/\s+/).length/230)),category:'From your browser'};
 }
-$('#browser-bookmarklet').href='javascript:('+browserClipper.toString()+')();';
+$('#browser-bookmarklet').href='javascript:(()=>{'+cleanArticleTitle.toString()+';('+browserClipper.toString()+')();})();';
 $('#browser-bookmarklet').onclick=e=>{e.preventDefault();notify('Drag this link to your bookmarks bar, then use it on the article page.');};
 $('#browser-import-open').onclick=()=>$('#browser-import-dialog').showModal();
 $('#browser-import-form').onsubmit=e=>{e.preventDefault();try{const article=normaliseBrowserClip($('#browser-import-text').value.trim());$('#browser-import-error').hidden=true;$('#browser-import-dialog').close();$('#browser-import-form').reset();openArticle(article);}catch(error){$('#browser-import-error').textContent=error.message;$('#browser-import-error').hidden=false;}};
 $('#url-form').onsubmit=async e=>{e.preventDefault();$('#error').hidden=true;$('#read-button').disabled=true;$('#read-button').textContent='Opening…';try{const url=$('#url-input').value.trim();if(!/^https?:\/\//i.test(url))throw Error('Please paste a complete http or https article link.');const response=await fetch('/api/article',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({url}),signal:AbortSignal.timeout(65000)});const result=await response.json();if(!response.ok)throw Error(result.error||'Unable to open the article.');openArticle(result.article||extract(result.html,result.url));}catch(error){$('#error').textContent=error.name==='TimeoutError'?'This article took too long to open. Please try again.':error.message;$('#error').hidden=false;if(/did not allow|browser verification|requires a sign-in|requires a subscription/i.test(error.message))$('#browser-import-open').textContent='Import from your browser';}finally{$('#read-button').disabled=false;$('#read-button').textContent='Read'}};
 $('#paste-form').onsubmit=e=>{e.preventDefault();const text=$('#paste-text').value.trim();if(text.length<50)return;const article={id:'pasted-'+Date.now(),title:$('#paste-title').value.trim(),excerpt:'',author:'Pasted article',category:'Your own words',minutes:Math.max(1,Math.ceil(text.split(/\s+/).length/230)),body:text.split(/\n\s*\n/).map(t=>['p',t.trim()]).filter(t=>t[1])};$('#paste-dialog').close();openArticle(article);};
 $('#back').onclick=()=>goHome();$('#brand').onclick=()=>goHome();$('#nav-saved').onclick=()=>goHome();$('#bookmark').onclick=()=>current&&toggleSave(current);$('#download-epub').onclick=()=>current&&downloadArticleEpub(current);$('#paste-open').onclick=()=>$('#paste-dialog').showModal();$('#about-open').onclick=()=>$('#about-dialog').showModal();document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.closest('dialog').close());document.querySelectorAll('dialog').forEach(d=>d.addEventListener('click',e=>{if(e.target===d){const r=d.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)d.close()}}));$('#settings-toggle').onclick=()=>{$('#settings').hidden=!$('#settings').hidden;$('#settings-toggle').setAttribute('aria-expanded',String(!$('#settings').hidden))};$('#font-weight').onchange=e=>{prefs.weight=Number(e.target.value);applyPrefs()};$('#size-down').onclick=()=>{prefs.size-=1;applyPrefs()};$('#size-up').onclick=()=>{prefs.size+=1;applyPrefs()};document.querySelectorAll('button[data-theme]').forEach(b=>b.onclick=()=>{prefs.theme=b.dataset.theme;applyPrefs()});$('#typeface').onchange=e=>{prefs.font=e.target.value;applyPrefs()};document.querySelectorAll('button[data-width]').forEach(b=>b.onclick=()=>{prefs.width=Number(b.dataset.width);applyPrefs()});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&current){setReaderControls(false);$('#settings').hidden=true;$('#settings-toggle').setAttribute('aria-expanded','false');if($('.reader-panel').contains(document.activeElement))$('#article-title').focus({preventScroll:true})}});document.addEventListener('click',e=>{if(current&&!e.target.closest('.reader-rail, .reader-menu-toggle'))setReaderControls(false)});
+// Experimental English word clues, hand-weighted for this prototype. These
+// are not published human ratings or a semantic model; unknown words abstain.
+function createConcretenessAnalysis(text){
+ const vocabulary=new Map();
+ const groups=[
+  [1,'abstraction assumption belief concept consciousness consequence criterion democracy dignity economy ethics existence freedom hypothesis ideology implication importance inequality interpretation justice knowledge logic meaning notion opportunity philosophy possibility principle probability purpose reality reason relevance responsibility significance society strategy theory thought truth understanding value wisdom'],
+  [1.8,'ability access advantage ambition analysis approach argument attention attitude authority awareness behaviour benefit change choice communication community complexity confidence conflict connection context control creativity culture decision design development difference difficulty discovery education effect emotion energy evidence evolution experience fact failure future history idea identity imagination impact influence information innovation interest issue language life memory method mind motivation need opinion organisation organization pattern perspective policy potential power problem process progress quality relationship research respect result risk role sense solution spirit success system technology tendency time tradition trend trust uncertainty value work'],
+  [4,'bend bite boil breathe brush build burn carry carve chew climb cook crack crawl crush cut dance dig draw drink drive drop eat fall float fold fry gather grip grow hang hear hold jump kick kiss knock laugh lean lift listen melt move paint pick pour press pull push ride roll rub run scratch shake shine shiver shoot shout sing sit sleep slice smell smile soak speak spill spin squeeze stand stare steam step stir stroke sweat swim taste tear throw touch tremble turn walk wash watch whisper wipe wrap write'],
+  [4.6,'bitter black blue bright brown cold damp dark dry fragrant fresh golden green grey gray hard heavy hot loud orange pale pink purple red rough round salty sharp shiny silent slippery smooth soft sour sticky sweet thick thin warm wet white yellow'],
+  [5,'apple arm ash baby bag ball banana bark barrel basket bath beach beard bed bee bell bicycle bike bird blanket blood boat bone book boot bottle bowl box boy branch bread brick bridge broom brother bucket building bull bus butter button cabin cake camera candle car carpet carrot cart cat cave ceiling chair cheek cheese chest chicken child chimney chin church cigarette clay cliff clock cloth cloud coat coffee coin collar colour color column corn cotton cow cup curtain daughter desk dirt dish dog door dust ear earth egg elbow eye face feather fence field finger fire fish flag floor flower fog foot fork forest fountain fox frame friend fruit garden gate girl glass glove goat grass ground guitar hair hammer hand hat head heart hill hole honey horse hospital hotel house ice ink jacket jar jaw jeans kettle key kitchen knee knife lake lamp leaf leather leg lemon letter lid lip lock machine meat milk mirror moon mother mountain mouth mud nail neck needle newspaper nose ocean onion oven page paint pan paper park path pen pencil photograph piano picture pig pillow pipe plate pocket pool porch potato pot rain record restaurant rice river road rock roof room root rope rose rug salt sand scarf school screen sea seed shadow sheep shelf shell shirt shoe shoulder sidewalk silver sink sister skin sky sleeve smoke snow soap sock soil soup spoon square stair star station steam steel stick stone stove straw street sugar sun table tail tea teeth telephone tent thumb ticket tile tongue tooth towel track train tree trousers truck tunnel umbrella valley village violin wall water wheel window wing wire wood wool wrist yard']
+ ];
+ for(const [rating,words] of groups)for(const word of words.split(' '))vocabulary.set(word,rating);
+ const tokens=[...text.matchAll(/[a-z]+(?:['’][a-z]+)?/gi)].map(match=>{
+  const word=match[0].toLowerCase();let key=word;
+  if(!vocabulary.has(key)){
+   const variants=[word.replace(/['’]s$/,''),word.endsWith('ies')?word.slice(0,-3)+'y':'',word.endsWith('s')?word.slice(0,-1):'',word.endsWith('ed')?word.slice(0,-2):'',word.endsWith('ed')?word.slice(0,-1):'',word.endsWith('ing')?word.slice(0,-3):'',word.endsWith('ing')?word.slice(0,-3)+'e':''];
+   key=variants.find(value=>vocabulary.has(value))||word;
+  }
+  return{start:match.index,end:match.index+match[0].length,word:match[0],rating:vocabulary.get(key)};
+ });
+ const samples=[];let tokenIndex=0;
+ for(const sentence of text.matchAll(/[^.!?\n]+(?:[.!?]+|(?=\n|$))/g)){
+  const start=sentence.index,end=start+sentence[0].length;
+  while(tokenIndex<tokens.length&&tokens[tokenIndex].end<=start)tokenIndex++;
+  const first=tokenIndex;let last=first;
+  while(last<tokens.length&&tokens[last].start<end)last++;
+  if(last===first)continue;
+  // Nearby words soften isolated jumps, while the sentence itself dominates.
+  let sum=0,weight=0;const clues=[];
+  for(let i=Math.max(0,first-8);i<Math.min(tokens.length,last+8);i++){
+   const token=tokens[i];if(token.rating===undefined)continue;
+   const local=i>=first&&i<last,w=local?1:.2;
+   sum+=token.rating*w;weight+=w;if(local)clues.push(token.word);
+  }
+  // A sparse match stays near neutral rather than claiming extreme certainty.
+  const score=weight?Math.max(0,Math.min(1,.5+((sum/weight-1)/4-.5)*Math.min(1,weight/3))):null;
+  samples.push({start,end,score,clues:[...new Set(clues)].slice(0,4)});
+  tokenIndex=last;
+ }
+ return{samples,rated:tokens.filter(token=>token.rating!==undefined).length,total:tokens.length};
+}
+function concretenessPath(points){
+ let path='',previous=null;
+ for(const point of points){
+  if(!Number.isFinite(point.score)){previous=null;continue;}
+  const x=3+18*Math.max(0,Math.min(1,point.score)),y=point.y;
+  if(!Number.isFinite(y))continue;
+  if(previous){const dy=(y-previous.y)/3;path+=` C ${previous.x.toFixed(2)} ${(previous.y+dy).toFixed(2)} ${x.toFixed(2)} ${(y-dy).toFixed(2)} ${x.toFixed(2)} ${y.toFixed(2)}`;}
+  else path+=` M ${x.toFixed(2)} ${y.toFixed(2)}`;
+  previous={x,y};
+ }
+ return path.trim();
+}
+let concretenessAnalysis=null;
+function drawConcreteness(root,lines,records,text,origin){
+ const enabled=prefs.concreteness!==false;
+ $('#concreteness-toggle').setAttribute('aria-pressed',String(enabled));
+ const note=$('#concreteness-note');note.hidden=!enabled;
+ if(!enabled||!records.length||!lines.length)return;
+ if(concretenessAnalysis?.text!==text)concretenessAnalysis={text,...createConcretenessAnalysis(text)};
+ const analysis=concretenessAnalysis;
+ note.textContent=analysis.rated<3?'Experimental · Not enough recognised English vocabulary to draw a curve.':'Experimental · English word clues. Further right means more tangible. Hover the curve for clues.';
+ if(analysis.rated<3)return;
+ const values=lines.map(()=>({sum:0,weight:0,clues:new Set()}));
+ const locate=offset=>{
+  let lo=0,hi=records.length-1;
+  while(lo<hi){const mid=(lo+hi)>>1;if(records[mid].end<offset)lo=mid+1;else hi=mid;}
+  return records[lo];
+ };
+ const range=document.createRange();
+ for(const sample of analysis.samples){
+  if(sample.score===null)continue;
+  const start=locate(sample.start),end=locate(sample.end);
+  range.setStart(start.node,Math.max(0,Math.min(start.node.length,sample.start-start.start)));
+  range.setEnd(end.node,Math.max(0,Math.min(end.node.length,sample.end-end.start)));
+  for(const rect of range.getClientRects()){
+   if(rect.width<=0||rect.height<=0)continue;
+   const center=rect.top-origin+rect.height/2;
+   let lo=0,hi=lines.length;
+   while(lo<hi){const mid=(lo+hi)>>1;if(lines[mid].center<center)lo=mid+1;else hi=mid;}
+   const index=lo===lines.length?lo-1:lo>0&&Math.abs(lines[lo-1].center-center)<Math.abs(lines[lo].center-center)?lo-1:lo;
+   if(index<0||Math.abs(lines[index].center-center)>Math.max(rect.height,lines[index].height)*.6)continue;
+   values[index].sum+=sample.score*rect.width;values[index].weight+=rect.width;
+   for(const clue of sample.clues)values[index].clues.add(clue);
+  }
+ }
+ const points=lines.map((line,index)=>({y:line.center,score:values[index].weight?values[index].sum/values[index].weight:null,clues:[...values[index].clues].slice(0,4)}));
+ const namespace='http://www.w3.org/2000/svg',svg=document.createElementNS(namespace,'svg');
+ const height=Math.max(1,...lines.map(line=>line.top+line.height));
+ svg.classList.add('concreteness-curve');svg.setAttribute('viewBox',`0 0 24 ${height}`);svg.style.height=height+'px';
+ svg.setAttribute('role','img');svg.setAttribute('aria-label','Experimental concreteness curve. Further right indicates more tangible language, based on English word clues.');
+ const path=document.createElementNS(namespace,'path');path.setAttribute('d',concretenessPath(points));path.setAttribute('vector-effect','non-scaling-stroke');svg.append(path);
+ for(const point of points){
+  if(!Number.isFinite(point.score))continue;
+  const target=document.createElementNS(namespace,'circle');target.setAttribute('cx',String(3+18*point.score));target.setAttribute('cy',String(point.y));target.setAttribute('r','7');
+  const title=document.createElementNS(namespace,'title');title.textContent='Estimated '+(point.score>.6?'more concrete':point.score<.4?'more abstract':'mixed language')+(point.clues.length?' · '+point.clues.join(', '):' · neighbouring word clues');
+  target.append(title);svg.append(target);
+ }
+ root.append(svg);
+}
+
+$('#concreteness-toggle').onclick=()=>{prefs.concreteness=prefs.concreteness===false;applyPrefs();scheduleLineNumbers(true)};
 let lineNumberFrame=0;
 function readingPageRect(rect,origin){
  return{left:rect.left-origin.left,top:rect.top-origin.top,width:rect.width,height:rect.height};
@@ -372,7 +498,7 @@ function scheduleLineNumbers(immediate=false){
 }
 function measureLineNumbers(){
   lineNumberFrame=0;if(!current)return;
-  const root=$('#article-body');root.querySelector('.line-numbers')?.remove();
+  const root=$('#article-body');root.querySelector('.line-numbers')?.remove();root.querySelector('.concreteness-curve')?.remove();
   const origin=root.getBoundingClientRect().top;
   const context=document.createElement('canvas').getContext('2d'),fontMetrics=new Map();
   function metrics(font,size){
@@ -387,9 +513,13 @@ function measureLineNumbers(){
    return fontMetrics.get(font);
   }
   const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
-  const range=document.createRange();const rects=[];
+  const range=document.createRange();const rects=[],records=[],textParts=[];let textOffset=0,lastBlock=null;
   while(walker.nextNode()){
-   const node=walker.currentNode;if(!node.textContent.trim())continue;
+   const node=walker.currentNode;
+   let block=node.parentElement;while(block&&block.parentElement!==root)block=block.parentElement;
+   if(lastBlock&&block!==lastBlock){textParts.push('\n\n');textOffset+=2;}lastBlock=block;
+   records.push({node,start:textOffset,end:textOffset+node.length});textParts.push(node.textContent);textOffset+=node.length;
+   if(!node.textContent.trim())continue;
    const style=getComputedStyle(node.parentElement),size=parseFloat(style.fontSize);
    const metric=metrics(style.fontStyle+' '+style.fontWeight+' '+style.fontSize+' '+style.fontFamily,size);
    range.selectNodeContents(node);
@@ -410,7 +540,7 @@ function measureLineNumbers(){
   // Align baselines rather than the bottoms of font boxes, whose descender
   // space grows with zoom. Measure the digits at their matching zoomed size.
   lines.forEach((line,index)=>{const number=document.createElement('span');number.className='line-number';number.textContent=String(index+1);number.style.top=lineNumberTop(line.baseline,digitMetrics.ascent,digitMetrics.descent,digitSize)+'px';gutter.append(number)});
-  root.append(gutter);scheduleSelectionInk();
+  root.append(gutter);drawConcreteness(root,lines,records,textParts.join(''),origin);scheduleSelectionInk();
 }
 const articleResizeObserver=new ResizeObserver(()=>{scheduleLineNumbers();scheduleScrollDot()});
 articleResizeObserver.observe($('#article-body'));
@@ -454,7 +584,7 @@ function scheduleSelectionInk(){
     const walker=document.createTreeWalker(scope,NodeFilter.SHOW_TEXT);
     while(walker.nextNode()){
      const node=walker.currentNode;
-     if(!node.textContent.trim()||node.parentElement.closest('.line-numbers,[aria-hidden="true"],input,textarea,select,button')||!selected.intersectsNode(node))continue;
+     if(!node.textContent.trim()||node.parentElement.closest('.line-numbers,.concreteness-curve,[aria-hidden="true"],input,textarea,select,button')||!selected.intersectsNode(node))continue;
      const range=document.createRange();range.selectNodeContents(node);
      if(selected.startContainer===node)range.setStart(node,selected.startOffset);
      if(selected.endContainer===node)range.setEnd(node,selected.endOffset);

@@ -1,10 +1,29 @@
 import assert from 'node:assert/strict';
-import { extractArticle } from '../lib/article-extractor.js';
+import { extractArticle, cleanArticleTitle } from '../lib/article-extractor.js';
 import { cleanArticleBlocks } from '../lib/article-boundaries.js';
 
 const url='https://example.com/articles/interview';
 const intro='An interview about the craft of building music players. The designer explains how physical objects carry a culture across generations and why a careful choice of materials matters. ';
 const final='The last answer remains part of the interview, even when it is short.';
+const headline='What We Can Learn About Craft From Turntable Design';
+const brandedTitle=headline+' — The Creative Factor';
+assert.equal(cleanArticleTitle(brandedTitle,['The Creative Factor']),headline);
+assert.equal(cleanArticleTitle(brandedTitle,['thecreativefactor']),headline);
+assert.equal(cleanArticleTitle('Music — machines — The Creative Factor',['The Creative Factor']),'Music — machines');
+assert.equal(cleanArticleTitle('Music — machines',['The Creative Factor']),'Music — machines');
+assert.equal(cleanArticleTitle('Music: the human connection',['The Creative Factor']),'Music: the human connection');
+assert.equal(cleanArticleTitle('The Creative Factor',['The Creative Factor']),'The Creative Factor');
+for(const separator of [' | ',' – ',' - ',' · '])assert.equal(cleanArticleTitle(headline+separator+'The Creative Factor',['The Creative Factor']),headline);
+for(const metadata of ['', '<meta property="og:site_name" content="The Creative Factor">']){
+ const imported=extractArticle(`<meta property="og:title" content="${brandedTitle}">${metadata}<article><h1>${headline}</h1><p>${intro.repeat(3)}</p></article>`,'https://www.thecreativefactor.co/articles/example');
+ assert.equal(imported.title,headline);
+}
+const {readFile}=await import('node:fs/promises');
+const {runInNewContext}=await import('node:vm');
+const page=await readFile(new URL('../worker/page.html',import.meta.url),'utf8');
+const browserHelper=page.slice(page.indexOf('function cleanArticleTitle('),page.indexOf('\nfunction extract(html,url)'));
+assert.equal(browserHelper.trim(),cleanArticleTitle.toString().trim());
+assert.equal(runInNewContext('('+browserHelper+')')(brandedTitle,['The Creative Factor']),headline);
 const link=(text,href='/another-story')=>['p',text,[{tag:'a',href,children:[text]}]];
 // A synthetic Squarespace-style interview, including components that live
 // inside its article container. No publisher-specific hostname is required.

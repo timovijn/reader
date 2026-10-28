@@ -55,3 +55,4 @@ await import('../tests/zoom-geometry.test.mjs');
 await import('../tests/text-pinch.test.mjs');
 await import('../tests/pointer-fade.test.mjs');
 await import('../tests/epub.test.mjs');
+await import('../tests/concreteness.test.mjs');

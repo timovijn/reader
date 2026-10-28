@@ -1,5 +1,23 @@
 # other lives
 
+## Concreteness experiment
+
+Articles display an optional thin curve in the right text margin. Further right
+means more tangible language; further left means more abstract language. Use
+**Concreteness** in the reading controls to toggle it; this preference is saved
+in the current browser. Hover the curve to see a qualitative estimate and some
+of the vocabulary behind it. It is excluded from EPUB downloads and printing.
+
+This first experiment uses a small, hand-weighted English vocabulary in the
+browser, not a trained semantic model or a validated human-rating dataset.
+Sentence estimates include nearby words with lower weight, and sparse evidence
+is pulled towards neutral. Unknown words abstain; insufficient recognised
+vocabulary hides the curve. Metaphor, ambiguous word meanings and other
+languages are not reliably understood. Article text is not sent to an analysis
+service. Scores are cached from source text; DOM ranges map them to the current
+lines after font, width or zoom changes. Tests cover scoring, abstention and
+geometry in `tests/concreteness.test.mjs`.
+
 A quiet web article reader with a minimal typewriter interface, Shinka Mono typography, warm paper tones and a numbered reading list.
 
 ## Run locally

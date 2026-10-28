@@ -50,6 +50,18 @@ function jsonArticles(nodes){
   return result;
 }
 
+export function cleanArticleTitle(value,siteNames=[]){
+  const title=String(value||'').replace(/\s+/g,' ').trim();
+  const key=text=>String(text||'').normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]/gu,'');
+  const names=new Set(siteNames.map(key).filter(Boolean));
+  const separators=[...title.matchAll(/\s+[|–—·•-]\s+/g)];
+  for(let i=separators.length-1;i>=0;i--){
+    const separator=separators[i],suffix=title.slice(separator.index+separator[0].length);
+    if(names.has(key(suffix)))return title.slice(0,separator.index).trim()||title;
+  }
+  return title;
+}
+
 export function extractArticle(html,url){
   const base=safeUrl(url);if(!base)throw importFailure('invalid_url','Please use a public article URL.');
   const doc=parse(html);const all=walk(doc);const structured=jsonArticles(all);
@@ -58,7 +70,7 @@ export function extractArticle(html,url){
   const rawText=node=>normalise(walk(node).filter(n=>n.nodeName==='#text').map(n=>n.value).join(' '));
   const heading=all.find(n=>tag(n)==='h1'&&!excluded(n));
   const schema=structured.find(item=>typeof item.headline==='string')||structured[0]||{};
-  const title=normalise(metadata['og:title']||schema.headline||(heading&&rawText(heading))||rawText(all.find(n=>tag(n)==='title')||{} )||'Untitled article').slice(0,500);
+  const title=cleanArticleTitle(normalise(metadata['og:title']||schema.headline||(heading&&rawText(heading))||rawText(all.find(n=>tag(n)==='title')||{} )||'Untitled article').slice(0,500),[metadata['og:site_name'],schema.publisher?.name,new URL(base).hostname.replace(/^www\./,'').replace(/\.[^.]+$/,'')]);
   const authorValue=metadata.author||metadata['article:author']||schema.author;
   const author=normalise(typeof authorValue==='string'?authorValue:Array.isArray(authorValue)?authorValue.map(a=>typeof a==='string'?a:a.name).join(', '):authorValue?.name||rawText(all.find(n=>attr(n,'rel').split(/\s+/).includes('author'))||{})).slice(0,250);
   const excerpt=normalise(metadata.description||metadata['og:description']||schema.description).slice(0,500);
