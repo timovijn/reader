@@ -2,11 +2,12 @@ import { parse } from '../vendor/parse5/dist/index.js';
 import { importFailure } from '../worker/index.js';
 import { nytArticleBlocks } from './nyt-extractor.js';
 import { embeddedArticleCandidates, chooseArticleCandidate } from './embedded-articles.js';
+import { isAncillaryComponent, cleanArticleBlocks } from './article-boundaries.js';
 
 const normalise = value => String(value||'').replace(/\s+/g,' ').trim();
 const attr = (node,name) => node.attrs?.find(item=>item.name===name)?.value || '';
 const tag = node => node.tagName || '';
-const positive = /(^|[\s_-])(entry-content|post-content|article-body|article-content|story-body|story-content|body-copy|content-body|post-body|articlebody)([\s_-]|$)/i;
+const positive = /(^|[\s_-])(entry-content|post-content|article-body|article-content|story-body|story-content|body-copy|content-body|post-body|articlebody|blog-item-content)([\s_-]|$)/i;
 // Match an ancillary component's own name, not layout flags like no-sidebar
 // or has-footer. A page's ancestor must never disappear from a substring hit.
 const negative = /^(nav|menu|sidebar|footer|comments?|related|recommended|newsletter|advertisement|advert|social|share-buttons|cookie|promo|paywall|subscription-wall)(?:[-_]|$)/i;
@@ -27,7 +28,7 @@ function excluded(node,articleAncestors,publisherProse){
   const label=attr(node,'class')+' '+attr(node,'id');
   if(['main','article'].includes(name)||attr(node,'role')==='main'||attr(node,'itemprop')==='articleBody'||articleAncestors?.has(node))return false;
   if(publisherProse?.has(node))return false;
-  return label.split(/\s+/).some(token=>negative.test(token))&&!positive.test(label);
+  return (isAncillaryComponent(label)||label.split(/\s+/).some(token=>negative.test(token)))&&!positive.test(label);
 }
 function walk(root,filter=()=>true){
   const result=[];const stack=[root];while(stack.length){const node=stack.pop();if(!filter(node))continue;result.push(node);if(result.length>80000)throw importFailure('page_too_complex','This page is too complex to extract. Try pasting the article text.');const children=node.childNodes||[];for(let i=children.length-1;i>=0;i--)stack.push(children[i]);}return result;
@@ -157,7 +158,7 @@ export function extractArticle(html,url){
   const publisherBlocks=nytArticleBlocks(all,base);
   if(publisherBlocks.length)extractionCandidates.push({method:'publisher-data',blocks:publisherBlocks});
   extractionCandidates.push(...embeddedArticleCandidates(all,base,title));
-  const selected=chooseArticleCandidate(extractionCandidates);
+  const selected=chooseArticleCandidate(extractionCandidates.map(candidate=>({...candidate,blocks:cleanArticleBlocks(candidate.blocks)})));
   blocks.length=0;blocks.push(...selected.blocks);method=selected.method;
   if(characterCount()<180){
     const text=normalise(rawText(body)).slice(0,12000);

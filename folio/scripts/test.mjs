@@ -49,6 +49,7 @@ for(const [configPath,output] of [['../../vercel.json','folio/dist/public'],['..
 }
 console.log('Passed: static homepage, both Vercel entry points/configurations, API success response, private DNS rejection and pinned public DNS connection.');
 await import('../tests/importer.test.mjs');
+await import('../tests/article-boundaries.test.mjs');
 await import('../tests/embedded-articles.test.mjs');
 await import('../tests/zoom-geometry.test.mjs');
 await import('../tests/text-pinch.test.mjs');
