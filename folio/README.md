@@ -56,6 +56,15 @@ means more tangible language; further left means more abstract language. Use
 in the current browser. Hover the curve to see a qualitative estimate and some
 of the vocabulary behind it. It is excluded from EPUB downloads and printing.
 
+The curve uses a wider 64 px desktop gutter and a compact 32 px gutter on small
+screens, with symmetric reading margins to make room. A fixed display scale
+amplifies mid-range variation consistently across articles. Nearby sentence
+scores are smoothed in source-text coordinates, then drawn through sentence
+centres with continuous monotone cubic tangents, instead of changing direction
+on each printed line. One short unsupported sentence may be bridged between
+supported neighbours and is labelled interpolated on hover; longer unsupported
+passages keep a gap. Source scores stay unchanged by zoom or reflow.
+
 This first experiment uses a small, hand-weighted English vocabulary in the
 browser, not a trained semantic model or a validated human-rating dataset.
 Sentence estimates include nearby words with lower weight, and sparse evidence

@@ -165,14 +165,15 @@ body:not(.focus) .home,body:not(.focus)>header{zoom:var(--text-zoom,1)}
 
 /* One quiet curve alongside the prose; its horizontal range represents
    abstract (left) to tangible (right). The text keeps its existing width. */
-.article-body .concreteness-curve{position:absolute;top:0;right:-34px;width:24px;max-width:none;overflow:visible;fill:none;stroke:none;pointer-events:none;user-select:none;-webkit-user-select:none}
+.article-body .concreteness-curve{position:absolute;top:0;right:-76px;width:64px;max-width:none;overflow:visible;fill:none;stroke:none;pointer-events:none;user-select:none;-webkit-user-select:none}
 .concreteness-curve,.concreteness-curve *{user-select:none;-webkit-user-select:none}
-.concreteness-curve path{stroke:var(--muted);stroke-width:1;stroke-linecap:round;stroke-linejoin:round;opacity:.55}
+.concreteness-curve path{stroke:var(--muted);stroke-width:1.15;stroke-linecap:round;stroke-linejoin:round;opacity:.7}
+.concreteness-curve .concreteness-hit{stroke:transparent;stroke-width:14;pointer-events:stroke}
 .concreteness-curve circle{fill:transparent;stroke:none;pointer-events:all}
 .concreteness-curve circle:hover{fill:var(--muted);opacity:.3}
 .reader-panel .concreteness-note{font:400 9px/1.8 var(--font-mono);color:var(--muted);max-width:145px;margin:0 0 8px}
 #concreteness-toggle[aria-pressed="true"]{text-decoration:underline;text-underline-offset:4px}
-@media(max-width:700px){.article-body .concreteness-curve{right:-31px}}
+@media(max-width:700px){.article-body .concreteness-curve{right:-36px;width:32px}.focus.concreteness-visible .article{padding-inline:40px}}
 @media print{.concreteness-curve{display:none!important}}
 body>header{max-width:none;min-height:0;height:auto;padding:24px;align-items:center;flex-wrap:wrap;gap:12px 24px}body>header .brand{font-size:11px;line-height:1.6;letter-spacing:0}
 .intro{padding:40px 0 48px}.intro .url-form{margin-top:0}.empty{padding:16px 0}
@@ -266,6 +267,7 @@ const typefaces={
 };
 const weightNames={100:'Thin',300:'Light',400:'Regular',500:'Medium',700:'Bold',900:'Black'};
 function applyPrefs(){
+ document.body.classList.toggle('concreteness-visible',prefs.concreteness!==false);
  if(!Object.hasOwn(typefaces,prefs.font))prefs.font='serif';
  const typeface=typefaces[prefs.font];
  const requestedWeight=Number(prefs.weight)||400;
@@ -535,15 +537,52 @@ function createConcretenessAnalysis(text){
  }
  return{samples,rated:tokens.filter(token=>token.rating!==undefined).length,total:tokens.length};
 }
+function concretenessProfile(samples){
+ return samples.map((sample,index)=>{
+  if(!Number.isFinite(sample.score)){
+   const before=samples[index-1],after=samples[index+1];
+   // Bridge one short unknown sentence only when both neighbours provide
+   // evidence. Longer unsupported passages retain an explicit break.
+   if(before&&after&&Number.isFinite(before.score)&&Number.isFinite(after.score)&&after.start-before.end<=800){
+    const t=(sample.start-before.start)/Math.max(1,after.start-before.start);
+    return{...sample,score:before.score+(after.score-before.score)*t,clues:[...new Set([...before.clues,...after.clues])].slice(0,4),inferred:true};
+   }
+   return sample;
+  }
+  const center=(sample.start+sample.end)/2;let sum=0,weight=0;
+  for(let i=Math.max(0,index-4);i<=Math.min(samples.length-1,index+4);i++){
+   const neighbour=samples[i];if(!Number.isFinite(neighbour.score))continue;
+   const distance=((neighbour.start+neighbour.end)/2-center)/220;
+   const w=Math.exp(-.5*distance*distance);sum+=neighbour.score*w;weight+=w;
+  }
+  return{...sample,score:sum/weight};
+ });
+}
+function concretenessX(score){
+ // One fixed display scale across articles; amplify mid-range changes without
+ // normalising each article or altering its underlying word-clue estimates.
+ return 4+56*(.5+.5*Math.tanh((Math.max(0,Math.min(1,score))-.5)*3.4));
+}
 function concretenessPath(points){
- let path='',previous=null;
+ let path='';const runs=[];let run=[];
  for(const point of points){
-  if(!Number.isFinite(point.score)){previous=null;continue;}
-  const x=3+18*Math.max(0,Math.min(1,point.score)),y=point.y;
-  if(!Number.isFinite(y))continue;
-  if(previous){const dy=(y-previous.y)/3;path+=` C ${previous.x.toFixed(2)} ${(previous.y+dy).toFixed(2)} ${x.toFixed(2)} ${(y-dy).toFixed(2)} ${x.toFixed(2)} ${y.toFixed(2)}`;}
-  else path+=` M ${x.toFixed(2)} ${y.toFixed(2)}`;
-  previous={x,y};
+  if(!Number.isFinite(point.score)||!Number.isFinite(point.y)){if(run.length)runs.push(run);run=[];continue;}
+  if(run.length&&point.y<=run.at(-1).y)continue;
+  run.push({x:concretenessX(point.score),y:point.y});
+ }
+ if(run.length)runs.push(run);
+ for(const points of runs){
+  const slopes=points.slice(1).map((point,index)=>(point.x-points[index].x)/(point.y-points[index].y));
+  const tangents=points.map((_,index)=>{
+   if(index===0)return slopes[0]||0;if(index===points.length-1)return slopes.at(-1)||0;
+   const a=slopes[index-1],b=slopes[index];return a*b>0?2*a*b/(a+b):0;
+  });
+  path+=` M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
+  for(let i=1;i<points.length;i++){
+   const before=points[i-1],point=points[i],dy=(point.y-before.y)/3;
+   const clamp=x=>Math.max(Math.min(before.x,point.x),Math.min(Math.max(before.x,point.x),x));
+   path+=` C ${clamp(before.x+tangents[i-1]*dy).toFixed(2)} ${(before.y+dy).toFixed(2)} ${clamp(point.x-tangents[i]*dy).toFixed(2)} ${(point.y-dy).toFixed(2)} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`;
+  }
  }
  return path.trim();
 }
@@ -553,22 +592,21 @@ function drawConcreteness(root,lines,records,text,origin){
  $('#concreteness-toggle').setAttribute('aria-pressed',String(enabled));
  const note=$('#concreteness-note');note.hidden=!enabled;
  if(!enabled||!records.length||!lines.length)return;
- if(concretenessAnalysis?.text!==text)concretenessAnalysis={text,...createConcretenessAnalysis(text)};
+ if(concretenessAnalysis?.text!==text){const analysis=createConcretenessAnalysis(text);concretenessAnalysis={text,...analysis,profile:concretenessProfile(analysis.samples)};}
  const analysis=concretenessAnalysis;
- note.textContent=analysis.rated<3?'Experimental · Not enough recognised English vocabulary to draw a curve.':'Experimental · English word clues. Further right means more tangible. Hover the curve for clues.';
+ note.textContent=analysis.rated<3?'Experimental · Not enough recognised English vocabulary to draw a curve.':'Experimental · Smoothed English word clues. Further right means more tangible. Hover for clues.';
  if(analysis.rated<3)return;
- const values=lines.map(()=>({sum:0,weight:0,clues:new Set()}));
  const locate=offset=>{
   let lo=0,hi=records.length-1;
   while(lo<hi){const mid=(lo+hi)>>1;if(records[mid].end<offset)lo=mid+1;else hi=mid;}
   return records[lo];
  };
- const range=document.createRange();
- for(const sample of analysis.samples){
-  if(sample.score===null)continue;
+ const range=document.createRange(),anchors=[];
+ for(const sample of analysis.profile){
   const start=locate(sample.start),end=locate(sample.end);
   range.setStart(start.node,Math.max(0,Math.min(start.node.length,sample.start-start.start)));
   range.setEnd(end.node,Math.max(0,Math.min(end.node.length,sample.end-end.start)));
+  let y=0,weight=0;
   for(const rect of range.getClientRects()){
    if(rect.width<=0||rect.height<=0)continue;
    const center=rect.top-origin+rect.height/2;
@@ -576,20 +614,38 @@ function drawConcreteness(root,lines,records,text,origin){
    while(lo<hi){const mid=(lo+hi)>>1;if(lines[mid].center<center)lo=mid+1;else hi=mid;}
    const index=lo===lines.length?lo-1:lo>0&&Math.abs(lines[lo-1].center-center)<Math.abs(lines[lo].center-center)?lo-1:lo;
    if(index<0||Math.abs(lines[index].center-center)>Math.max(rect.height,lines[index].height)*.6)continue;
-   values[index].sum+=sample.score*rect.width;values[index].weight+=rect.width;
-   for(const clue of sample.clues)values[index].clues.add(clue);
+   y+=lines[index].center*rect.width;weight+=rect.width;
   }
+  if(weight)anchors.push({y:y/weight,score:sample.score,weight,clues:sample.clues,inferred:sample.inferred});
  }
- const points=lines.map((line,index)=>({y:line.center,score:values[index].weight?values[index].sum/values[index].weight:null,clues:[...values[index].clues].slice(0,4)}));
+ anchors.sort((a,b)=>a.y-b.y);
+ const points=[];
+ for(const anchor of anchors){
+  const previous=points.at(-1);
+  if(previous&&Math.abs(previous.y-anchor.y)<1){
+   if(Number.isFinite(anchor.score)){
+    const previousWeight=Number.isFinite(previous.score)?previous.weight:0;
+    previous.score=((previousWeight?previous.score*previousWeight:0)+anchor.score*anchor.weight)/(previousWeight+anchor.weight);previous.weight=previousWeight+anchor.weight;
+   }
+   previous.clues=[...new Set([...previous.clues,...anchor.clues])].slice(0,4);
+  }else points.push({...anchor});
+ }
+ if(!points.length)return;
+ // Carry the edge estimate to the first/last line only when supported nearby.
+ if(points[0].y-lines[0].center<=lines[0].height*3&&points[0].y>lines[0].center)points.unshift({...points[0],y:lines[0].center});
+ const lastLine=lines.at(-1);if(lastLine.center-points.at(-1).y<=lastLine.height*3&&lastLine.center>points.at(-1).y)points.push({...points.at(-1),y:lastLine.center});
  const namespace='http://www.w3.org/2000/svg',svg=document.createElementNS(namespace,'svg');
  const height=Math.max(1,...lines.map(line=>line.top+line.height));
- svg.classList.add('concreteness-curve');svg.setAttribute('viewBox',`0 0 24 ${height}`);svg.style.height=height+'px';
- svg.setAttribute('role','img');svg.setAttribute('aria-label','Experimental concreteness curve. Further right indicates more tangible language, based on English word clues.');
- const path=document.createElementNS(namespace,'path');path.setAttribute('d',concretenessPath(points));path.setAttribute('vector-effect','non-scaling-stroke');svg.append(path);
+ svg.classList.add('concreteness-curve');svg.setAttribute('viewBox',`0 0 64 ${height}`);svg.style.height=height+'px';svg.setAttribute('preserveAspectRatio','none');
+ svg.setAttribute('role','img');svg.setAttribute('aria-label','Smoothed experimental concreteness curve. Further right indicates more tangible language, based on surrounding English word clues.');
+ const pathData=concretenessPath(points);
+ const path=document.createElementNS(namespace,'path');path.setAttribute('d',pathData);path.setAttribute('vector-effect','non-scaling-stroke');svg.append(path);
+ const hit=document.createElementNS(namespace,'path');hit.setAttribute('d',pathData);hit.setAttribute('class','concreteness-hit');hit.setAttribute('vector-effect','non-scaling-stroke');
+ const description=document.createElementNS(namespace,'title');description.textContent='Smoothed concreteness across surrounding sentences. Further right means more tangible language.';hit.append(description);svg.append(hit);
  for(const point of points){
   if(!Number.isFinite(point.score))continue;
-  const target=document.createElementNS(namespace,'circle');target.setAttribute('cx',String(3+18*point.score));target.setAttribute('cy',String(point.y));target.setAttribute('r','7');
-  const title=document.createElementNS(namespace,'title');title.textContent='Estimated '+(point.score>.6?'more concrete':point.score<.4?'more abstract':'mixed language')+(point.clues.length?' · '+point.clues.join(', '):' · neighbouring word clues');
+  const target=document.createElementNS(namespace,'circle');target.setAttribute('cx',String(concretenessX(point.score)));target.setAttribute('cy',String(point.y));target.setAttribute('r','7');
+  const title=document.createElementNS(namespace,'title');title.textContent=(point.inferred?'Interpolated from neighbouring sentences':'Smoothed estimate')+' · '+(point.score>.6?'more concrete':point.score<.4?'more abstract':'mixed language')+(point.clues.length?' · '+point.clues.join(', '):'');
   target.append(title);svg.append(target);
  }
  root.append(svg);
