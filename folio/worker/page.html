@@ -209,10 +209,10 @@ body[data-theme="snow"]{--ambient-glow:rgba(224,208,173,.34)}
 body[data-theme="moss"]{--ambient-glow:rgba(215,232,181,.13)}
 
 /* A transient glass surface; the article itself remains flat and unfiltered. */
-body{--dictionary-lens-tint:rgba(49,48,44,.48);--dictionary-glass:rgba(49,48,44,.78);--dictionary-edge:rgba(255,252,237,.2);--dictionary-shadow:rgba(0,0,0,.2)}
-body[data-theme="parchment"]{--dictionary-lens-tint:rgba(247,233,205,.25);--dictionary-glass:rgba(247,233,205,.8);--dictionary-edge:rgba(255,252,237,.7);--dictionary-shadow:rgba(87,60,26,.16)}
-body[data-theme="snow"]{--dictionary-lens-tint:rgba(250,252,248,.3);--dictionary-glass:rgba(250,252,248,.82);--dictionary-edge:rgba(255,255,255,.86);--dictionary-shadow:rgba(29,48,38,.13)}
-body[data-theme="moss"]{--dictionary-lens-tint:rgba(44,55,37,.48);--dictionary-glass:rgba(44,55,37,.8);--dictionary-edge:rgba(226,236,204,.2);--dictionary-shadow:rgba(8,16,8,.24)}
+body{--dictionary-reading-veil:rgba(49,48,44,.62);--dictionary-lens-tint:rgba(49,48,44,.48);--dictionary-glass:rgba(49,48,44,.78);--dictionary-edge:rgba(255,252,237,.2);--dictionary-shadow:rgba(0,0,0,.2)}
+body[data-theme="parchment"]{--dictionary-reading-veil:rgba(247,233,205,.7);--dictionary-lens-tint:rgba(247,233,205,.25);--dictionary-glass:rgba(247,233,205,.8);--dictionary-edge:rgba(255,252,237,.7);--dictionary-shadow:rgba(87,60,26,.16)}
+body[data-theme="snow"]{--dictionary-reading-veil:rgba(250,252,248,.7);--dictionary-lens-tint:rgba(250,252,248,.3);--dictionary-glass:rgba(250,252,248,.82);--dictionary-edge:rgba(255,255,255,.86);--dictionary-shadow:rgba(29,48,38,.13)}
+body[data-theme="moss"]{--dictionary-reading-veil:rgba(44,55,37,.64);--dictionary-lens-tint:rgba(44,55,37,.48);--dictionary-glass:rgba(44,55,37,.8);--dictionary-edge:rgba(226,236,204,.2);--dictionary-shadow:rgba(8,16,8,.24)}
 .dictionary-popup{position:fixed;z-index:30;width:380px;max-width:calc(100vw - 24px);max-height:min(500px,calc(100dvh - 24px));overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;border:1px solid var(--dictionary-edge);border-radius:22px;padding:22px 25px 19px;background:var(--paper);color:var(--ink);box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 8px 24px -12px var(--dictionary-shadow),0 22px 64px -24px var(--dictionary-shadow);font:400 17px/1.55 var(--font-serif);outline-offset:4px;animation:dictionary-arrive .18s ease-out}
 @supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.dictionary-popup{background:linear-gradient(130deg,rgba(255,255,255,.055),transparent 65%),var(--dictionary-glass);-webkit-backdrop-filter:blur(24px) saturate(135%);backdrop-filter:blur(24px) saturate(135%)}}
 .dictionary-top{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-bottom:12px;color:var(--muted);font:400 9px/1.6 var(--font-mono)}
@@ -227,7 +227,7 @@ body[data-theme="moss"]{--dictionary-lens-tint:rgba(44,55,37,.48);--dictionary-g
 .dictionary-content ol{padding-left:20px;margin:0}.dictionary-content li{padding-left:3px;margin:0 0 12px}.dictionary-content li::marker{font-size:12px;color:var(--muted)}
 .dictionary-example{font-style:italic;color:var(--muted);font-size:15px;margin:5px 0 0}.dictionary-message{margin:0 0 8px}
 .dictionary-sources{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:18px;padding-top:12px;border-top:1px solid var(--dictionary-edge);font:400 8px/1.7 var(--font-mono);color:var(--muted)}.dictionary-sources:empty{display:none}.dictionary-sources a{text-decoration:none}.dictionary-sources a:hover{text-decoration:underline}
-.dictionary-popup[data-glass="gpu"]{background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none}
+.dictionary-popup[data-glass="gpu"]{background:linear-gradient(130deg,rgba(255,255,255,.055),transparent 65%),var(--dictionary-reading-veil);-webkit-backdrop-filter:none;backdrop-filter:none}
 @keyframes dictionary-arrive{from{opacity:0}to{opacity:1}}
 @media(prefers-reduced-motion:reduce){.dictionary-popup{animation:none}}
 @media(prefers-reduced-transparency:reduce){.dictionary-popup{background:var(--paper);-webkit-backdrop-filter:none;backdrop-filter:none}}

@@ -12,7 +12,9 @@ explicit states. Escape, Close, an outside click, scrolling or article navigatio
 dismisses it. Native text selection and copying remain available.
 
 The popup uses a self-hosted, pinned copy of [liquidGL 3.0.0](https://github.com/naughtyduk/liquidGL)
-for GPU background refraction, a subtle bevel and specular highlights. It loads
+for frosted GPU background refraction, a subtle bevel and specular highlights.
+A theme-coloured translucent surface further softens underlying article text
+while the dictionary text remains sharp. It loads
 on the first dictionary opening and destroys its lens, snapshot and GPU resources
 on dismissal or when the tab becomes hidden. Only the glass is rendered; the
 dictionary's selectable text and buttons remain native DOM above the lens.

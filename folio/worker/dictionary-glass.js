@@ -67,7 +67,7 @@
    current.deadline=setTimeout(()=>{if(session===current&&!popup.dataset.glass)hide();},5000);
    current.lens=window.liquidGL({target:'#dictionary-glass-pane',snapshot:'#dictionary-glass-scene',content:false,
     resolution:Math.min(2,window.devicePixelRatio||1),engine:'auto',zIndex:29,
-    refraction:.003,bevelDepth:.035,bevelWidth:.13,frost:4,aberration:0,
+    refraction:.003,bevelDepth:.035,bevelWidth:.13,frost:12,aberration:0,
     shadow:false,specular:true,reveal:'none',tilt:false,draggable:false,interaction:'none',magnify:1,
     tint:getComputedStyle(document.body).getPropertyValue('--dictionary-lens-tint').trim(),
     on:{init(){if(session===current&&!popup.hidden){clearTimeout(current.deadline);popup.dataset.glass='gpu';}}}
