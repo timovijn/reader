@@ -178,20 +178,22 @@ body>header{max-width:none;min-height:0;height:auto;padding:24px;align-items:cen
 .intro{padding:40px 0 48px}.intro .url-form{margin-top:0}.empty{padding:16px 0}
 @media(max-width:700px){.intro{padding:24px 0 40px}}
 
-/* Static, translucent ink flecks let the actual paper show through the glyphs.
+/* Static ink flecks let the actual paper show through the glyphs in every theme.
+   Coarser grain and stronger alpha contrast keep the effect visible at 100%.
    Apply once per text block, keeping nested emphasis/links and the gutter intact. */
-body[data-theme="parchment"]{--pressed-ink:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22128%22%20height%3D%22128%22%20viewBox%3D%220%200%20128%20128%22%3E%3Cfilter%20id%3D%22ink%22%20x%3D%220%22%20y%3D%220%22%20width%3D%22100%25%22%20height%3D%22100%25%22%20color-interpolation-filters%3D%22sRGB%22%3E%3CfeTurbulence%20type%3D%22fractalNoise%22%20baseFrequency%3D%22.82%22%20numOctaves%3D%222%22%20seed%3D%2217%22%20stitchTiles%3D%22stitch%22%2F%3E%3CfeColorMatrix%20type%3D%22matrix%22%20values%3D%220%200%200%200%201%200%200%200%200%201%200%200%200%200%201%20.22%20.22%20.22%200%20.57%22%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D%22128%22%20height%3D%22128%22%20fill%3D%22white%22%20filter%3D%22url%28%23ink%29%22%2F%3E%3C%2Fsvg%3E")}
+body{--pressed-ink:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22128%22%20height%3D%22128%22%20viewBox%3D%220%200%20128%20128%22%3E%3Cfilter%20id%3D%22ink%22%20x%3D%220%22%20y%3D%220%22%20width%3D%22100%25%22%20height%3D%22100%25%22%20color-interpolation-filters%3D%22sRGB%22%3E%3CfeTurbulence%20type%3D%22fractalNoise%22%20baseFrequency%3D%22.48%22%20numOctaves%3D%221%22%20seed%3D%2217%22%20stitchTiles%3D%22stitch%22%2F%3E%3CfeColorMatrix%20type%3D%22matrix%22%20values%3D%220%200%200%200%201%200%200%200%200%201%200%200%200%200%201%20.8%20.8%20.8%200%20-.45%22%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D%22128%22%20height%3D%22128%22%20fill%3D%22white%22%20filter%3D%22url%28%23ink%29%22%2F%3E%3C%2Fsvg%3E");--pressed-ink-edge:rgba(255,247,225,.65)}
+body[data-theme="dark"]{--pressed-ink-edge:rgba(0,0,0,.5)}
 @supports (mask-image:linear-gradient(white,white)) or (-webkit-mask-image:linear-gradient(white,white)){
- body[data-theme="parchment"] :is(.article h1,.article .dek,.article .byline,.article-body>p,.article-body>h2,.article-body>h3,.article-body>blockquote,.article-body>pre,.article-body>ul,.article-body>ol,.article-body>li,.card h3){
+ body :is(.article h1,.article .dek,.article .byline,.article-body>p,.article-body>h2,.article-body>h3,.article-body>blockquote,.article-body>pre,.article-body>ul,.article-body>ol,.article-body>li,.card h3){
   -webkit-mask-image:var(--pressed-ink);mask-image:var(--pressed-ink);
   -webkit-mask-mode:alpha;mask-mode:alpha;
   -webkit-mask-size:128px 128px;mask-size:128px 128px;
   -webkit-mask-repeat:repeat;mask-repeat:repeat;
-  text-shadow:0 .35px 0 rgba(255,247,225,.45);
+  text-shadow:0 .6px 0 var(--pressed-ink-edge);
  }
 }
 @media print,(forced-colors:active){
- body[data-theme="parchment"] :is(.article h1,.article .dek,.article .byline,.article-body>p,.article-body>h2,.article-body>h3,.article-body>blockquote,.article-body>pre,.article-body>ul,.article-body>ol,.article-body>li,.card h3){-webkit-mask-image:none;mask-image:none;text-shadow:none}
+ body :is(.article h1,.article .dek,.article .byline,.article-body>p,.article-body>h2,.article-body>h3,.article-body>blockquote,.article-body>pre,.article-body>ul,.article-body>ol,.article-body>li,.card h3){-webkit-mask-image:none;mask-image:none;text-shadow:none}
 }
 </style></head><body><div class="ambient-background" aria-hidden="true"><div class="ambient-field"></div><div class="ambient-highlight"></div><div class="ambient-grain"></div></div><div class="selection-ink" id="selection-ink" aria-hidden="true"></div><header><button class="brand" id="brand" aria-label="other lives home">other lives</button><nav class="nav"><button id="nav-saved" class="active" aria-current="page">My collection <span id="save-count"></span></button><button class="about" id="about-open" aria-label="About other lives">About</button></nav></header>
 <main class="home" id="home"><section class="intro"><form class="url-form" id="url-form"><input id="url-input" aria-label="Article URL" type="url" placeholder="Article link" required><button class="primary" id="read-button" type="submit">Read</button></form><p class="under-form"><button id="paste-open">Paste text</button></p><div class="error" id="error" role="alert" hidden></div><button id="browser-import-open" class="browser-import-link">Import from your browser</button></section><section class="collection"><div class="section-heading"><h2 id="section-title">My collection</h2></div><div class="cards" id="cards"></div><div class="empty" id="empty" hidden><p>No saved articles.</p></div></section></main>
