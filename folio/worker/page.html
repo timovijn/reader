@@ -943,7 +943,7 @@ window.addEventListener('pointermove',handleCursorMovement,{passive:true});
 // layer cannot undo quantization that has already happened in gradient textures.
 function advanceAmbientPointer(state,milliseconds,reducedMotion=false){
  if(reducedMotion)return{x:state.targetX,y:state.targetY,vx:0,vy:0};
- const seconds=Math.max(0,Math.min(100,milliseconds))/1000,omega=1000/170;
+ const seconds=Math.max(0,Math.min(100,milliseconds))/1000,omega=1000/300;
  const decay=1-animationFollowAmount(milliseconds);
  function axis(position,target,velocity=0){
   const offset=position-target,travel=(velocity+omega*offset)*seconds;
@@ -954,7 +954,7 @@ function advanceAmbientPointer(state,milliseconds,reducedMotion=false){
 }
 function animationFollowAmount(milliseconds,reducedMotion=false){
  if(reducedMotion)return 1;
- return 1-Math.exp(-Math.max(0,Math.min(100,milliseconds))/170);
+ return 1-Math.exp(-Math.max(0,Math.min(100,milliseconds))/300);
 }
 function textPinchScale(start,factor){
  const value=start*factor;
@@ -1171,7 +1171,7 @@ function createAmbientRenderer(){
   function animate(now){
    frame=0;if(stopped||document.hidden||contrast.matches){lastFrameTime=0;return;}
    Object.assign(pointer,advanceAmbientPointer(pointer,lastFrameTime?now-lastFrameTime:1000/60,motion.matches));lastFrameTime=now;
-   const moving=Math.abs(pointer.targetX-pointer.x)+Math.abs(pointer.targetY-pointer.y)>.0005||Math.abs(pointer.vx)+Math.abs(pointer.vy)>.003;
+   const moving=Math.abs(pointer.targetX-pointer.x)+Math.abs(pointer.targetY-pointer.y)>.00008||Math.abs(pointer.vx)+Math.abs(pointer.vy)>.0005;
    if(!moving){pointer.x=pointer.targetX;pointer.y=pointer.targetY;pointer.vx=0;pointer.vy=0;}
    draw(now);if(moving&&pointer.glow>0)frame=requestAnimationFrame(animate);else lastFrameTime=0;
   }
@@ -1240,7 +1240,7 @@ function moveFallbackGlow(x,y){
   if(ambientRenderer||document.hidden){ambientFallbackTime=0;return;}
   Object.assign(point,advanceAmbientPointer(point,ambientFallbackTime?now-ambientFallbackTime:1000/60,matchMedia('(prefers-reduced-motion: reduce)').matches));ambientFallbackTime=now;
   host.style.setProperty('--ambient-pointer-x',point.x+'px');host.style.setProperty('--ambient-pointer-y',point.y+'px');
-  const moving=Math.abs(point.targetX-point.x)+Math.abs(point.targetY-point.y)>.25||Math.abs(point.vx)+Math.abs(point.vy)>1;
+  const moving=Math.abs(point.targetX-point.x)+Math.abs(point.targetY-point.y)>.08||Math.abs(point.vx)+Math.abs(point.vy)>.3;
   if(moving&&shinkaCursorOpacity>0)ambientFallbackFrame=requestAnimationFrame(animate);else ambientFallbackTime=0;
  }
  if(!ambientFallbackFrame)ambientFallbackFrame=requestAnimationFrame(animate);

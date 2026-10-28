@@ -18,7 +18,7 @@ for(const hz of [60,90,120,144,240]){
  const point=springTravel(hz);
  assert.ok(Math.abs(point.x-springTravel(60).x)<1e-10);
  assert.ok(Math.abs(point.vx-springTravel(60).vx)<1e-10);
- assert.ok(point.x>.7&&point.x<.85); // Visible lag, rather than snapping to the pointer.
+ assert.ok(point.x>.45&&point.x<.55); // Visible lag, rather than snapping to the pointer.
 }
 const moving=springTravel(120),reversed={...moving,targetX:0,targetY:0};
 const noTime=advance(reversed,0);assert.equal(noTime.x,moving.x);assert.equal(noTime.vx,moving.vx);
