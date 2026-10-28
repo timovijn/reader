@@ -7,12 +7,19 @@ for(const [input,expected] of [['“Hello,”','hello'],['can’t',"can't"],['we
 const entry=normaliseDictionaryEntries(fixture,'testword');assert.equal(entry.phonetics.length,2);assert.equal(entry.meanings[0].definitions.length,1);assert.equal(entry.sources.length,1);assert.equal(entry.licenses[0].name,'Test license');
 assert.equal(normaliseDictionaryEntries({},'testword'),null);assert.equal(normaliseDictionaryEntries([{meanings:[]}],'testword'),null);
 const request=(word,method='GET')=>new Request('https://reader.example/api/dictionary?word='+encodeURIComponent(word),{method});
-let calls=0,time=100;const handler=createDictionaryHandler(async(url,options)=>{calls++;assert.equal(url,'https://api.dictionaryapi.dev/api/v2/entries/en/testword');assert.equal(options.redirect,'error');assert.equal(options.headers.accept,'application/json');return Response.json(fixture)},()=>time);
+let calls=0,time=100;const handler=createDictionaryHandler(async(url,options)=>{calls++;assert.equal(url,'https://api.dictionaryapi.dev/api/v2/entries/en/testword');assert.equal(options.redirect,'follow');assert.equal(options.headers.accept,'application/json');return Response.json(fixture)},()=>time);
 assert.equal((await handler(request('testword'))).status,200);assert.equal((await handler(request('TESTWORD'))).status,200);assert.equal(calls,1);
 time+=86400001;assert.equal((await handler(request('testword'))).status,200);assert.equal(calls,2);
 assert.equal((await handler(request('http://localhost/'))).status,400);assert.equal((await handler(request('testword','POST'))).status,405);assert.equal(calls,2);
 for(const [reply,status] of [[()=>new Response(null,{status:404}),404],[()=>new Response(null,{status:429}),503],[()=>new Response('not JSON'),503],[()=>new Response('x'.repeat(512001)),503],[()=>{throw Object.assign(Error('deadline'),{name:'TimeoutError'})},504]])assert.equal((await createDictionaryHandler(reply)(request('word'))).status,status);
 let release;calls=0;const shared=createDictionaryHandler(()=>{calls++;return new Promise(resolve=>release=resolve)});const one=shared(request('word')),two=shared(request('word'));assert.equal(calls,1);release(Response.json(fixture));assert.equal((await one).status,200);assert.equal((await two).status,200);
+const wikiFixture={en:[{partOfSpeech:'Noun',definitions:[{definition:'A <a href="/wiki/test">test</a> &amp; an example.',parsedExamples:[{example:'<b>Test</b> &#x2014; here.'}]}]}],fr:[{definitions:[{definition:'Must not appear'}]}]};
+for(const primary of [()=>{throw Error('network')},()=>new Response(null,{status:429}),()=>new Response('invalid JSON'),()=>new Response(null,{status:404})]){
+ const urls=[];const fallback=createDictionaryHandler(url=>{urls.push(url);return urls.length===1?primary():Response.json(wikiFixture)});
+ const response=await fallback(request('fallback'));assert.equal(response.status,200);const data=await response.json();assert.equal(data.provider,'Wiktionary');assert.equal(data.meanings[0].definitions[0].definition,'A test & an example.');assert.equal(data.meanings[0].definitions[0].example,'Test — here.');assert.match(urls[1],/^https:\/\/en.wiktionary.org\/api\/rest_v1\/page\/definition\/fallback$/);
+ await fallback(request('fallback'));assert.equal(urls.length,2);
+}
+let attempts=0;assert.equal((await createDictionaryHandler(()=>++attempts===1?new Response(null,{status:404}):new Response(null,{status:503}))(request('uncertain'))).status,503);
 // Both Vercel roots and the standalone Worker expose the same local route.
 const root=(await import('../../api/dictionary.js')).default,nested=(await import('../api/dictionary.js')).default;
 const source=await readFile(new URL('../worker/page.html',import.meta.url),'utf8');
@@ -55,7 +62,8 @@ context.openDictionarySelection({word:'testword',range});await flush();assert.eq
 context.openDictionarySelection({word:'first',range});const stale=pending.at(-1);
 context.openDictionarySelection({word:'second',range});const latest=pending.at(-1);assert.equal(stale.options.signal.aborted,true);
 latest.resolve(Response.json({...entry,word:'second'}));await flush();stale.resolve(Response.json({...entry,word:'first'}));await flush();assert.equal($('#dictionary-word').textContent,'second');
-context.lookupDictionaryWord('missing');pending.at(-1).resolve(new Response('{}',{status:404}));await flush();assert.match($('#dictionary-content').children[0].textContent,/No English definition/);
+context.lookupDictionaryWord('missing');pending.at(-1).resolve(Response.json({code:'not_found'},{status:404}));await flush();assert.match($('#dictionary-content').children[0].textContent,/No English definition/);
+context.lookupDictionaryWord('deployment');pending.at(-1).resolve(new Response('<html>Function unavailable</html>',{status:500}));await flush();assert.match($('#dictionary-content').children[0].textContent,/deployment/);
 context.lookupDictionaryWord('offline');pending.at(-1).reject(Error('offline'));await flush();assert.equal($('#dictionary-content').children[1].textContent,'Try again');
 context.openDictionarySelection({word:'closing',range});const closing=pending.at(-1);windowEvents.get('scroll')();assert.equal(popup.hidden,true);assert.equal(closing.options.signal.aborted,true);closing.resolve(Response.json(entry));await flush();assert.equal(popup.hidden,true);
 context.openDictionarySelection({word:'testword',range});await flush();documentEvents.get('pointerdown')({target:new Element()});assert.equal(popup.hidden,true);

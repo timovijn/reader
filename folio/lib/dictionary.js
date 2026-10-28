@@ -41,14 +41,32 @@ async function readDictionaryData(response){
  const bytes=new Uint8Array(size);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}
  return JSON.parse(new TextDecoder().decode(bytes));
 }
+// Provider markup is converted to inert text, never inserted as HTML.
+export function normaliseWiktionaryEntries(data,word){
+ const text=value=>typeof value==='string'?value.slice(0,16000).replace(/<[^>]*>/g,'').replace(/&(#x[\da-f]+|#\d+|amp|lt|gt|quot|apos|nbsp);/gi,(_,entity)=>{
+  if(entity[0]!=='#')return ({amp:'&',lt:'<',gt:'>',quot:'"',apos:"'",nbsp:' '})[entity.toLowerCase()];
+  const code=entity[1].toLowerCase()==='x'?parseInt(entity.slice(2),16):Number(entity.slice(1));return code>0&&code<=0x10ffff&&!(code>=0xd800&&code<=0xdfff)?String.fromCodePoint(code):'�';
+ }):'';
+ const meanings=(Array.isArray(data?.en)?data.en:[]).slice(0,10).map(group=>({partOfSpeech:text(group?.partOfSpeech).toLowerCase(),definitions:(Array.isArray(group?.definitions)?group.definitions:[]).slice(0,12).map(item=>({definition:text(item?.definition),example:text(item?.parsedExamples?.[0]?.example||item?.examples?.[0])}))}));
+ const entry=normaliseDictionaryEntries([{word,meanings,sourceUrls:['https://en.wiktionary.org/wiki/'+encodeURIComponent(word)+'#English'],license:{name:'CC BY-SA 4.0',url:'https://creativecommons.org/licenses/by-sa/4.0/'}}],word);
+ return entry?{...entry,provider:'Wiktionary',providerUrl:'https://en.wiktionary.org/'}:null;
+}
 export function createDictionaryHandler(fetcher=(...args)=>fetch(...args),now=()=>Date.now()){
  const cache=new Map(),pending=new Map();
  const reply=(data,status=200)=>Response.json(data,{status,headers:{'cache-control':status===200?'public, max-age=86400':'no-store','x-content-type-options':'nosniff',...(status===405?{allow:'GET'}:{})}});
  async function lookup(word){
-  const response=await fetcher('https://api.dictionaryapi.dev/api/v2/entries/en/'+encodeURIComponent(word),{headers:{accept:'application/json'},redirect:'error',signal:AbortSignal.timeout(8000)});
-  if(response.status===404){await response.body?.cancel();return null;}
-  if(!response.ok){await response.body?.cancel();throw Error('Dictionary unavailable');}
-  return normaliseDictionaryEntries(await readDictionaryData(response),word);
+  const providers=[['https://api.dictionaryapi.dev/api/v2/entries/en/',normaliseDictionaryEntries],['https://en.wiktionary.org/api/rest_v1/page/definition/',normaliseWiktionaryEntries]];
+  let missing=0,lastError;
+  for(const [base,normalise] of providers){
+   try{
+    const response=await fetcher(base+encodeURIComponent(word),{headers:{accept:'application/json','user-agent':'OtherLivesReader/1.0 (English dictionary lookup)'},redirect:'follow',signal:AbortSignal.timeout(5500)});
+    if(response.status===404){await response.body?.cancel();missing++;continue;}
+    if(!response.ok){await response.body?.cancel();throw Error('Upstream HTTP '+response.status);}
+    const entry=normalise(await readDictionaryData(response),word);if(entry)return entry;missing++;
+   }catch(error){lastError=error;console.warn('other lives dictionary provider failed',{provider:new URL(base).hostname,reason:error.name==='TimeoutError'?'timeout':error.message});}
+  }
+  if(missing===providers.length)return null;
+  throw lastError||Error('Dictionary unavailable');
  }
  return async request=>{
   if(request.method!=='GET')return reply({error:'Method not allowed.'},405);

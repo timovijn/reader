@@ -18,13 +18,17 @@ browsers without backdrop blur get an opaque surface. The article itself is not
 filtered or changed.
 
 `GET /api/dictionary?word=...` proxies a single validated word to Free Dictionary
-API (`https://dictionaryapi.dev/`). No article text, source URL or publisher login
-is sent with the lookup. Requests have an 8-second timeout and 512 KB response
+API (`https://dictionaryapi.dev/`), falling back to Wiktionary's English definition
+endpoint if the primary lookup fails or has no entry. Each result credits its
+actual provider and licence. No article text, source URL or publisher login
+is sent with the lookup. Each provider has a 5.5-second timeout and 512 KB response
 limit. Successful entries are cached for 24 hours with at most 256 server entries
 and 100 entries per browser session; concurrent server requests are deduplicated.
 The route is available in both Vercel roots, local preview and the standalone
 Worker. No API key is needed. Provider uptime and vocabulary coverage are external
-dependencies. Dictionary tests use mocked provider responses; a live response
+dependencies. Provider failures log the provider and error, without article text.
+Missing deployment routes are distinguished from missing dictionary entries.
+Dictionary tests use mocked provider responses; a live response
 could not be verified from the development environment.
 
 Article titles are reconciled with visible headings, Article JSON-LD and author
