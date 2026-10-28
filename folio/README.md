@@ -11,11 +11,22 @@ audio recording. Missing definitions, pronunciation and connection failures have
 explicit states. Escape, Close, an outside click, scrolling or article navigation
 dismisses it. Native text selection and copying remain available.
 
-The Liquid Glass-inspired appearance is a theme-aware CSS approximation using a
-bounded backdrop blur, translucent tint, edge highlights and shallow shadows.
-It respects reduced motion, reduced transparency, forced colours and printing;
-browsers without backdrop blur get an opaque surface. The article itself is not
-filtered or changed.
+The popup uses a self-hosted, pinned copy of [liquidGL 3.0.0](https://github.com/naughtyduk/liquidGL)
+for GPU background refraction, a subtle bevel and specular highlights. It loads
+on the first dictionary opening and destroys its lens, snapshot and GPU resources
+on dismissal or when the tab becomes hidden. Only the glass is rendered; the
+dictionary's selectable text and buttons remain native DOM above the lens.
+A clipped viewport snapshot preserves article sharpness on long pages. The
+background canvas is copied after an explicit draw, without enabling persistent
+drawing buffers or changing normal background rendering. The snapshot is local;
+no page content is uploaded. The library's optional inline worker requires the
+scoped `worker-src 'self' blob:` CSP directive. No external script host is allowed.
+
+Reduced motion, reduced transparency, forced colours and printing use the normal
+CSS/opaque fallback. Loading, GPU or snapshot failures also retain that fallback.
+The source revision and MIT licence are in `vendor/liquidgl/`; the licence is also
+served at `/scripts/liquidGL.LICENSE.txt`. No upstream demo assets are included.
+Actual GPU appearance and frame rate still require browser/device validation.
 
 `GET /api/dictionary?word=...` proxies a single validated word to Free Dictionary
 API (`https://dictionaryapi.dev/`), falling back to Wiktionary's English definition

@@ -5,6 +5,14 @@ process.chdir(fileURLToPath(new URL('..', import.meta.url)));
 await mkdir('dist/server',{recursive:true});await mkdir('dist/.openai',{recursive:true});
 await mkdir('dist/public',{recursive:true});
 const html=await readFile('worker/page.html','utf8');
+const scripts={};
+await mkdir('dist/public/scripts',{recursive:true});
+for(const [name,path] of [['liquidGL.js','vendor/liquidgl/liquidGL.js'],['dictionary-glass.js','worker/dictionary-glass.js']]){
+ const source=await readFile(path,'utf8');scripts['/scripts/'+name]=source;
+ await writeFile('dist/public/scripts/'+name,source);
+}
+await copyFile('vendor/liquidgl/LICENSE','dist/public/scripts/liquidGL.LICENSE.txt');
+scripts['/scripts/liquidGL.LICENSE.txt']=await readFile('vendor/liquidgl/LICENSE','utf8');
 await mkdir('dist/public/fonts',{recursive:true});
 const fonts = {};
 for (const family of ['MartinaPlantijn', 'Shinka']) {
@@ -21,6 +29,7 @@ const dictionary=(await readFile('lib/dictionary.js','utf8')).replace(/^export d
 const worker=(await readFile('worker/index.js','utf8'))
   .replace("import { handleDictionaryRequest } from '../lib/dictionary.js';",dictionary)
   .replace('"__FOLIO_HTML__"',JSON.stringify(html))
+  .replace('"__FOLIO_SCRIPTS__"',JSON.stringify(scripts))
   .replace('"__FOLIO_FONTS__"',JSON.stringify(fonts));
 await writeFile('dist/server/index.js',worker);
 await writeFile('dist/public/index.html',html);
