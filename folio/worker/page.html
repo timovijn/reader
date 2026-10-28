@@ -227,7 +227,7 @@ body[data-theme="moss"]{--dictionary-reading-veil:rgba(44,55,37,.64);--dictionar
 .dictionary-content ol{padding-left:20px;margin:0}.dictionary-content li{padding-left:3px;margin:0 0 12px}.dictionary-content li::marker{font-size:12px;color:var(--muted)}
 .dictionary-example{font-style:italic;color:var(--muted);font-size:15px;margin:5px 0 0}.dictionary-message{margin:0 0 8px}
 .dictionary-sources{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:18px;padding-top:12px;border-top:1px solid var(--dictionary-edge);font:400 8px/1.7 var(--font-mono);color:var(--muted)}.dictionary-sources:empty{display:none}.dictionary-sources a{text-decoration:none}.dictionary-sources a:hover{text-decoration:underline}
-.dictionary-popup[data-glass="gpu"]{background:linear-gradient(130deg,rgba(255,255,255,.055),transparent 65%),var(--dictionary-reading-veil);-webkit-backdrop-filter:none;backdrop-filter:none}
+.dictionary-popup[data-glass="gpu"]{background:radial-gradient(ellipse at center,var(--dictionary-reading-veil) 50%,transparent 100%);-webkit-backdrop-filter:none;backdrop-filter:none}
 @keyframes dictionary-arrive{from{opacity:0}to{opacity:1}}
 @media(prefers-reduced-motion:reduce){.dictionary-popup{animation:none}}
 @media(prefers-reduced-transparency:reduce){.dictionary-popup{background:var(--paper);-webkit-backdrop-filter:none;backdrop-filter:none}}

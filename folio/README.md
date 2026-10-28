@@ -24,8 +24,14 @@ drawing buffers or changing normal background rendering. The snapshot is local;
 no page content is uploaded. The library's optional inline worker requires the
 scoped `worker-src 'self' blob:` CSP directive. No external script host is allowed.
 
-Reduced motion, reduced transparency, forced colours and printing use the normal
-CSS/opaque fallback. Loading, GPU or snapshot failures also retain that fallback.
+Reduced motion keeps a static GPU lens with animated highlights disabled.
+Reduced transparency, forced colours and printing use the normal CSS/opaque
+fallback. Loading, GPU or snapshot failures also retain that fallback. GPU mode
+is enabled only after liquidGL confirms a rendered texture and a WebGPU/WebGL
+backend. The popup's `data-glass-state` identifies the actual backend or fallback;
+`window.otherLivesDictionaryGlass.status()` reports its state and failure reason.
+Initialisation has a 15-second deadline; fallback reasons are logged explicitly.
+The reading tint is feathered inside the popup so it doesn't cover the bevel.
 The source revision and MIT licence are in `vendor/liquidgl/`; the licence is also
 served at `/scripts/liquidGL.LICENSE.txt`. No upstream demo assets are included.
 Actual GPU appearance and frame rate still require browser/device validation.

@@ -2,9 +2,14 @@
 // native DOM content stays selectable and interactive above it.
 (() => {
  'use strict';
- let loading=null,session=null,generation=0;
- const preferences=['(prefers-reduced-transparency: reduce)','(forced-colors: active)','(prefers-reduced-motion: reduce)','print'].map(query=>matchMedia(query));
+ let loading=null,session=null,statePopup=null,generation=0,lastStatus={state:'idle'};
+ const preferences=['(prefers-reduced-transparency: reduce)','(forced-colors: active)','print'].map(query=>matchMedia(query));
+ const motion=matchMedia('(prefers-reduced-motion: reduce)');
  const disabled=()=>preferences.some(query=>query.matches);
+ function fallback(popup,reason){
+  hide();statePopup=popup;lastStatus={state:'fallback',reason};popup.dataset.glassState='fallback';
+  console.warn('other lives liquidGL fallback',reason);
+ }
  function load(){
   if(window.liquidGL)return Promise.resolve();
   if(!loading)loading=new Promise((resolve,reject)=>{
@@ -17,11 +22,13 @@
  }
  function hide(){
   generation++;
+  if(statePopup){delete statePopup.dataset.glass;delete statePopup.dataset.glassState;statePopup=null;}
+  lastStatus={state:'idle'};
   if(!session)return;
   const current=session;session=null;
   clearTimeout(current.deadline);
   current.lens?.destroy();current.pane.remove();current.scene.remove();
-  delete current.popup.dataset.glass;
+  delete current.popup.dataset.glass;delete current.popup.dataset.glassState;
  }
  function update(popup){
   if(!session||session.popup!==popup)return;
@@ -53,7 +60,9 @@
   document.body.append(scene);return scene;
  }
  async function show(popup,copyBackground){
-  hide();if(disabled()||document.hidden||popup.hidden)return;
+  hide();if(document.hidden||popup.hidden)return;
+  if(disabled()){fallback(popup,'Accessibility or print preference');return;}
+  statePopup=popup;lastStatus={state:'loading'};popup.dataset.glassState='loading';
   const ticket=generation;
   try{
    await load();
@@ -64,18 +73,26 @@
    document.body.append(pane);session={popup,pane,scene,lens:null,deadline:null};update(popup);
    const current=session;
    // An async GPU/snapshot failure must leave the ordinary popup available.
-   current.deadline=setTimeout(()=>{if(session===current&&!popup.dataset.glass)hide();},5000);
+   current.deadline=setTimeout(()=>{if(session===current&&!popup.dataset.glass)fallback(popup,'GPU or snapshot did not initialise within 15 seconds');},15000);
    current.lens=window.liquidGL({target:'#dictionary-glass-pane',snapshot:'#dictionary-glass-scene',content:false,
     resolution:Math.min(2,window.devicePixelRatio||1),engine:'auto',zIndex:29,
-    refraction:.003,bevelDepth:.035,bevelWidth:.13,frost:12,aberration:0,
-    shadow:false,specular:true,reveal:'none',tilt:false,draggable:false,interaction:'none',magnify:1,
+    refraction:.008,bevelDepth:.07,bevelWidth:.1,frost:12,aberration:0,
+    shadow:false,specular:!motion.matches,reveal:'none',tilt:false,draggable:false,interaction:'none',magnify:1,
     tint:getComputedStyle(document.body).getPropertyValue('--dictionary-lens-tint').trim(),
-    on:{init(){if(session===current&&!popup.hidden){clearTimeout(current.deadline);popup.dataset.glass='gpu';}}}
+    on:{init(lens){
+     if(session!==current||popup.hidden)return;
+     const renderer=lens?.renderer,backend=renderer?.backend?.kind;
+     if(!['webgpu','webgl'].includes(backend)||!renderer.hasTexture||!renderer.canvas?.width||!renderer.canvas?.height){fallback(popup,'Renderer did not produce a GPU texture');return;}
+     clearTimeout(current.deadline);popup.dataset.glass='gpu';popup.dataset.glassState=backend;
+     lastStatus={state:'active',backend,width:renderer.canvas.width,height:renderer.canvas.height};
+    }}
    });
-  }catch(error){if(ticket===generation)hide();console.warn('other lives glass fallback',error.message);}
+   if(!current.lens?.renderer)fallback(popup,'WebGPU and WebGL are unavailable');
+  }catch(error){if(ticket===generation)fallback(popup,error.message);}
  }
  for(const preference of preferences)preference.addEventListener('change',()=>{if(disabled())hide();});
  document.addEventListener('visibilitychange',()=>{if(document.hidden)hide();});
  window.addEventListener('pagehide',hide);
- window.otherLivesDictionaryGlass={show,hide,update};
+ motion.addEventListener('change',()=>{if(session?.lens)session.lens.options.specular=!motion.matches;});
+ window.otherLivesDictionaryGlass={show,hide,update,status:()=>({...lastStatus})};
 })();
