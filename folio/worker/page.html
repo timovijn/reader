@@ -136,7 +136,7 @@ body[data-theme="parchment"]{--ink:#342b20;--muted:#76644c;--line:#c7b38e;--pane
 body[data-theme="moss"]{--ink:#e2e6d5;--muted:#aeb9a1;--line:#59644d;--panel:#3c4734;--ambient-base:#30392c;--ambient-shadow:rgba(23,35,22,.45);--ambient-mid:rgba(88,105,72,.3);--ambient-light:rgba(141,161,118,.22);--paper:#30392c;--grain-opacity:.042}
 .ambient-background{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;contain:strict;background:var(--ambient-base)}
 .ambient-background:not([data-renderer="gpu"]){width:var(--ambient-visible-width,100%);height:var(--ambient-visible-height,100%);transform:translate(var(--ambient-visible-left,0px),var(--ambient-visible-top,0px))}
-.ambient-highlight{position:absolute;inset:0;opacity:var(--ambient-pointer-glow,0);background:radial-gradient(circle 260px at var(--ambient-pointer-x,50%) var(--ambient-pointer-y,50%),rgba(255,255,255,.055),transparent);pointer-events:none}
+.ambient-highlight{position:absolute;inset:0;opacity:var(--ambient-pointer-glow,0);background:radial-gradient(ellipse 360px 320px at var(--ambient-pointer-x,50%) var(--ambient-pointer-y,50%),var(--ambient-glow),transparent);pointer-events:none}
 .ambient-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .ambient-background[data-renderer="gpu"] .ambient-field,.ambient-background[data-renderer="gpu"] .ambient-grain,.ambient-background[data-renderer="gpu"] .ambient-highlight{display:none}
 .ambient-field{position:absolute;inset:-24%;background:radial-gradient(ellipse at 8% 5%,var(--ambient-shadow) 0%,transparent 59%),radial-gradient(ellipse at 90% 42%,var(--ambient-mid) 0%,transparent 62%),radial-gradient(ellipse at 14% 92%,var(--ambient-light) 0%,transparent 62%)}
@@ -201,6 +201,12 @@ body>header{max-width:none;min-height:0;height:auto;padding:24px;align-items:cen
 .collection-more{display:flex;align-items:center;justify-content:center;gap:16px;padding:18px 0 40px;font-size:10px;color:var(--muted)}
 .collection-more button{font-size:11px;padding:8px 0}
 @media(max-width:700px){.collection-filters{gap:10px 16px}.collection-filters input{flex-basis:100%}.collection-filters select{max-width:140px}.collection-states{gap:22px}.collection .card{gap:14px}.collection .card-bottom button{font-size:9px}.collection .card h3{font-size:15px}}
+
+/* Theme-specific light: a warm tint remains visible even on Snow. */
+body{--ambient-glow:rgba(246,239,217,.2)}
+body[data-theme="parchment"]{--ambient-glow:rgba(255,249,229,.3)}
+body[data-theme="snow"]{--ambient-glow:rgba(224,208,173,.34)}
+body[data-theme="moss"]{--ambient-glow:rgba(215,232,181,.13)}
 </style></head><body><div class="ambient-background" aria-hidden="true"><div class="ambient-field"></div><div class="ambient-highlight"></div><div class="ambient-grain"></div></div><div class="selection-ink" id="selection-ink" aria-hidden="true"></div><header><button class="brand" id="brand" aria-label="other lives home">other lives</button><nav class="nav"><button id="nav-saved" class="active" aria-current="page">My collection <span id="save-count"></span></button><button class="about" id="about-open" aria-label="About other lives">About</button></nav></header>
 <main class="home" id="home"><section class="intro"><form class="url-form" id="url-form"><input id="url-input" aria-label="Article URL" type="url" placeholder="Article link" required><button class="primary" id="read-button" type="submit">Read</button></form><p class="under-form"><button id="paste-open">Paste text</button></p><div class="error" id="error" role="alert" hidden></div><button id="browser-import-open" class="browser-import-link">Import from your browser</button></section><section class="collection" aria-labelledby="section-title"><div class="section-heading"><h2 id="section-title">My collection</h2><span id="collection-count" class="collection-count" role="status" aria-live="polite" aria-atomic="true"></span></div><div class="collection-toolbar"><div class="collection-states" role="group" aria-label="Reading status"><button data-collection-status="all" aria-pressed="true">All <span>0</span></button><button data-collection-status="ready" aria-pressed="false">Ready <span>0</span></button><button data-collection-status="read" aria-pressed="false">Read <span>0</span></button></div><div class="collection-filters"><input id="collection-search" type="search" placeholder="Search articles" aria-label="Search collection by title, author or article text" maxlength="300"><select id="collection-source" aria-label="Filter by source"><option value="all">All sources</option></select><select id="collection-length" aria-label="Filter by reading time"><option value="all">Any length</option><option value="short">Up to 5 min</option><option value="medium">6–15 min</option><option value="long">Over 15 min</option></select><select id="collection-sort" aria-label="Sort collection"><option value="newest">Newest saved</option><option value="oldest">Oldest saved</option><option value="published">Date published</option><option value="title">Title A–Z</option><option value="shortest">Shortest first</option><option value="longest">Longest first</option><option value="read">Recently read</option></select><button id="collection-clear" hidden>Clear filters</button></div></div><div class="cards" id="cards"></div><div class="empty" id="empty" hidden><p id="empty-message">No saved articles.</p></div><div id="collection-more" class="collection-more" hidden><button id="collection-more-button">Show more</button><span id="collection-shown"></span></div></section></main>
 <section id="reader" hidden><div class="reader-rail"><button id="reader-menu-toggle" class="reader-menu-toggle" aria-label="Show reading controls" aria-expanded="false" aria-controls="reader-panel"></button><nav id="reader-panel" class="reader-panel" aria-label="Reading controls" inert><button class="back" id="back">Back</button><div class="reader-actions"><button id="bookmark" aria-label="Save article"></button><button id="mark-read" aria-pressed="false">Mark as read</button><button id="download-epub">Download EPUB</button><button id="concreteness-toggle" aria-pressed="true" aria-describedby="concreteness-note">Concreteness</button><p id="concreteness-note" class="concreteness-note">Experimental · English word clues. Further right means more tangible.</p><button id="settings-toggle" aria-expanded="false" aria-controls="settings"><span class="action-label">Appearance</span></button><div class="settings" id="settings" hidden><label>Text size</label><div class="setting-row"><button id="size-down" aria-label="Decrease text size">Smaller</button><button id="size-up" aria-label="Increase text size">Larger</button><button id="zoom-reset">Reset zoom</button></div><label for="typeface">Typeface</label><select id="typeface"><option value="serif">Martina Plantijn</option><option value="shinka">Shinka</option><option value="shinka-mono">Shinka Mono</option><option value="sans">System Sans</option></select><label for="font-weight">Font weight</label><select id="font-weight"><option value="300">Light</option><option value="400" selected>Regular</option><option value="500">Medium</option><option value="700">Bold</option><option value="900">Black</option></select><label>Page colour</label><div class="setting-row"><button data-theme="stone">Stone</button><button data-theme="parchment">Parchment</button><button data-theme="snow">Snow</button><button data-theme="moss">Moss</button></div><label>Reading width</label><div class="setting-row"><button data-width="660">Narrow</button><button data-width="820">Wide</button></div></div></div></nav></div><article class="article"><div class="eyebrow" id="article-source"></div><h1 id="article-title"></h1><p class="dek" id="article-dek"></p><div class="byline" id="article-byline"></div><div class="article-body" id="article-body"></div><div class="article-end"><a id="original" target="_blank" rel="noopener noreferrer">Read at the source</a></div></article></section><button id="scroll-dot" class="scroll-dot" role="slider" aria-label="Reading position" aria-orientation="vertical" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><span class="scroll-arrow" aria-hidden="true">→</span></button>
@@ -935,9 +941,20 @@ function handleCursorMovement(event){
 window.addEventListener('pointermove',handleCursorMovement,{passive:true});
 // Compose gradients and dither in one high-precision pass. A separate CSS grain
 // layer cannot undo quantization that has already happened in gradient textures.
+function advanceAmbientPointer(state,milliseconds,reducedMotion=false){
+ if(reducedMotion)return{x:state.targetX,y:state.targetY,vx:0,vy:0};
+ const seconds=Math.max(0,Math.min(100,milliseconds))/1000,omega=1000/170;
+ const decay=1-animationFollowAmount(milliseconds);
+ function axis(position,target,velocity=0){
+  const offset=position-target,travel=(velocity+omega*offset)*seconds;
+  return{position:target+(offset+travel)*decay,velocity:(velocity-omega*travel)*decay};
+ }
+ const x=axis(state.x,state.targetX,state.vx),y=axis(state.y,state.targetY,state.vy);
+ return{x:x.position,y:y.position,vx:x.velocity,vy:y.velocity};
+}
 function animationFollowAmount(milliseconds,reducedMotion=false){
  if(reducedMotion)return 1;
- return 1-Math.pow(.8,Math.max(0,Math.min(100,milliseconds))/(1000/60));
+ return 1-Math.exp(-Math.max(0,Math.min(100,milliseconds))/170);
 }
 function textPinchScale(start,factor){
  const value=start*factor;
@@ -1034,7 +1051,7 @@ function createAmbientRenderer(){
  const gl=canvas.getContext('webgl',{alpha:false,antialias:false,depth:false,stencil:false,powerPreference:'low-power'});
  if(!gl)return null;
  let program,buffer,frame=0,stopped=false,themeGrainStrength=.0364,lastFrameTime=0,backgroundDirty=true,lastViewKey='';
- const pointer={x:.5,y:.5,targetX:.5,targetY:.5,glow:0};
+ const pointer={x:.5,y:.5,targetX:.5,targetY:.5,vx:0,vy:0,glow:0};
  const motion=matchMedia('(prefers-reduced-motion: reduce)');
  const contrast=matchMedia('(forced-colors: active)');
  try{
@@ -1055,7 +1072,7 @@ function createAmbientRenderer(){
    uniform float grainScale;
 
    uniform float grainStrength;
-   uniform vec4 baseColor,shadowColor,midColor,lightColor;
+   uniform vec4 baseColor,shadowColor,midColor,lightColor,glowColor;
    float field(vec2 uv,vec2 centre,vec2 radius){
     return 1.0-smoothstep(0.0,1.0,length((uv-centre)/radius));
    }
@@ -1095,11 +1112,10 @@ function createAmbientRenderer(){
     // reveals different contours and intensities without animating the mesh.
     vec2 lightCentre=gradientCoordinates(pointerGlow.xy);
     vec2 lightDistance=(uv-lightCentre)*vec2(resolution.x/resolution.y,1.0);
-    float radius=0.28+0.12*flowNoise(lightCentre*2.0+shapeSeed);
+    float radius=0.34+0.14*flowNoise(lightCentre*2.0+shapeSeed);
     float texture=0.75+0.35*flowNoise(uv*3.5+shapeSeed.yx);
-    float luminance=dot(colour,vec3(0.2126,0.7152,0.0722));
     float illumination=(1.0-smoothstep(0.0,radius,length(lightDistance)))*pointerGlow.z*texture;
-    colour=mix(colour,vec3(1.0),illumination*(0.04+0.02*(1.0-luminance)));
+    colour=mix(colour,glowColor.rgb,clamp(illumination*glowColor.a,0.0,1.0));
     // Stationary, zero-mean triangular noise before the final 8-bit write.
     // The same monochrome offset preserves the palette and avoids colour specks.
     float dither=(random(gl_FragCoord.xy)+random(gl_FragCoord.xy+vec2(139.7,73.1))-1.0)*1.5/255.0;
@@ -1118,7 +1134,7 @@ function createAmbientRenderer(){
   buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
   gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);
   const position=gl.getAttribLocation(program,'position');gl.enableVertexAttribArray(position);gl.vertexAttribPointer(position,2,gl.FLOAT,false,0,0);
-  const uniforms=Object.fromEntries(['resolution','composition','shapeSeed','pointerGlow','grainScale','grainStrength','baseColor','shadowColor','midColor','lightColor'].map(name=>[name,gl.getUniformLocation(program,name)]));
+  const uniforms=Object.fromEntries(['resolution','composition','shapeSeed','pointerGlow','grainScale','grainStrength','baseColor','shadowColor','midColor','lightColor','glowColor'].map(name=>[name,gl.getUniformLocation(program,name)]));
   gl.uniform4f(uniforms.composition,Math.cos(ambientComposition.angle),Math.sin(ambientComposition.angle),ambientComposition.x,ambientComposition.y);
   gl.uniform2f(uniforms.shapeSeed,ambientComposition.warpX,ambientComposition.warpY);
   function colour(value){
@@ -1131,7 +1147,7 @@ function createAmbientRenderer(){
    if(stopped)return;
    const styles=getComputedStyle(document.body);
    backgroundDirty=true;themeGrainStrength=document.body.dataset.theme==='moss' ? .0308 : .0364;
-   for(const [uniform,variable] of [['baseColor','base'],['shadowColor','shadow'],['midColor','mid'],['lightColor','light']])gl.uniform4fv(uniforms[uniform],colour(styles.getPropertyValue('--ambient-'+variable)));
+   for(const [uniform,variable] of [['baseColor','base'],['shadowColor','shadow'],['midColor','mid'],['lightColor','light'],['glowColor','glow']])gl.uniform4fv(uniforms[uniform],colour(styles.getPropertyValue('--ambient-'+variable)));
    resume();
   }
   function draw(now){
@@ -1154,10 +1170,9 @@ function createAmbientRenderer(){
   }
   function animate(now){
    frame=0;if(stopped||document.hidden||contrast.matches){lastFrameTime=0;return;}
-   const amount=animationFollowAmount(lastFrameTime?now-lastFrameTime:1000/60,motion.matches);lastFrameTime=now;
-   pointer.x+=(pointer.targetX-pointer.x)*amount;pointer.y+=(pointer.targetY-pointer.y)*amount;
-   const moving=Math.abs(pointer.targetX-pointer.x)+Math.abs(pointer.targetY-pointer.y)>.002;
-   if(!moving){pointer.x=pointer.targetX;pointer.y=pointer.targetY;}
+   Object.assign(pointer,advanceAmbientPointer(pointer,lastFrameTime?now-lastFrameTime:1000/60,motion.matches));lastFrameTime=now;
+   const moving=Math.abs(pointer.targetX-pointer.x)+Math.abs(pointer.targetY-pointer.y)>.0005||Math.abs(pointer.vx)+Math.abs(pointer.vy)>.003;
+   if(!moving){pointer.x=pointer.targetX;pointer.y=pointer.targetY;pointer.vx=0;pointer.vy=0;}
    draw(now);if(moving&&pointer.glow>0)frame=requestAnimationFrame(animate);else lastFrameTime=0;
   }
   function resume(){if(!frame&&!stopped&&!document.hidden)frame=requestAnimationFrame(animate);}
@@ -1165,7 +1180,7 @@ function createAmbientRenderer(){
    if(!visible)return;
    const view=ambientViewportMetrics(window.visualViewport,window.innerWidth,window.innerHeight,window.devicePixelRatio);
    pointer.targetX=Math.max(0,Math.min(1,(x-view.left)/view.width));pointer.targetY=Math.max(0,Math.min(1,(y-view.top)/view.height));
-   if(pointer.glow===0&&visible){pointer.x=pointer.targetX;pointer.y=pointer.targetY;}
+   if(pointer.glow===0&&visible){pointer.x=pointer.targetX;pointer.y=pointer.targetY;pointer.vx=0;pointer.vy=0;}
    if(pointer.glow>0)resume();
   }
   canvas.className='ambient-canvas';host.append(canvas);
@@ -1214,10 +1229,25 @@ function updateAmbientDither(){
 window.addEventListener('resize',updateAmbientDither,{passive:true});
 window.visualViewport?.addEventListener('resize',updateAmbientDither,{passive:true});
 window.visualViewport?.addEventListener('scroll',updateAmbientDither,{passive:true});
+let ambientFallbackFrame=0,ambientFallbackTime=0,ambientFallbackInitialised=false;
+const ambientFallbackPointer={x:0,y:0,targetX:0,targetY:0,vx:0,vy:0};
+function moveFallbackGlow(x,y){
+ const point=ambientFallbackPointer,host=$('.ambient-background');
+ point.targetX=x;point.targetY=y;
+ if(!ambientFallbackInitialised||shinkaCursorOpacity===0){point.x=x;point.y=y;point.vx=0;point.vy=0;ambientFallbackInitialised=true;}
+ function animate(now){
+  ambientFallbackFrame=0;
+  if(ambientRenderer||document.hidden){ambientFallbackTime=0;return;}
+  Object.assign(point,advanceAmbientPointer(point,ambientFallbackTime?now-ambientFallbackTime:1000/60,matchMedia('(prefers-reduced-motion: reduce)').matches));ambientFallbackTime=now;
+  host.style.setProperty('--ambient-pointer-x',point.x+'px');host.style.setProperty('--ambient-pointer-y',point.y+'px');
+  const moving=Math.abs(point.targetX-point.x)+Math.abs(point.targetY-point.y)>.25||Math.abs(point.vx)+Math.abs(point.vy)>1;
+  if(moving&&shinkaCursorOpacity>0)ambientFallbackFrame=requestAnimationFrame(animate);else ambientFallbackTime=0;
+ }
+ if(!ambientFallbackFrame)ambientFallbackFrame=requestAnimationFrame(animate);
+}
 function setAmbientPointer(x,y,visible){
  const view=ambientViewportMetrics(window.visualViewport,window.innerWidth,window.innerHeight,window.devicePixelRatio);
- const root=document.documentElement;
- if(visible&&!ambientRenderer){root.style.setProperty('--ambient-pointer-x',(x-view.left)+'px');root.style.setProperty('--ambient-pointer-y',(y-view.top)+'px');}
+ if(visible&&!ambientRenderer)moveFallbackGlow(x-view.left,y-view.top);
  if(visible){const arriving=!ambientPointerPresent;ambientPointerPresent=true;ambientRenderer?.setPointer(x,y,true);if(arriving)syncPointerGlow();}
  else{cancelAnimationFrame(ambientPointerFrame);ambientPointerFrame=0;ambientPointerEvent=null;hideShinkaCursor();}
 }

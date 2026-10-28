@@ -26,8 +26,13 @@ progressive rendering, controls and persistence failure.
 ## Display refresh and animation
 
 Pointer and progress fades use display-paced animation callbacks rather than
-16 ms timers. Glow easing uses elapsed time so its speed is consistent across
-refresh rates. Opacity updates are scoped to the relevant overlay elements;
+16 ms timers. The glow follows a delayed, critically damped spring with
+continuous velocity through direction changes. Its elapsed-time integration
+keeps the movement consistent across refresh rates, and reduced-motion mode
+follows immediately. Stone, Parchment, Snow and Moss each have their own glow
+colour and strength; Snow uses a warm tint so the glow remains distinguishable
+against its light background. The CSS fallback follows the same spring.
+Opacity updates are scoped to the relevant overlay elements;
 pointer events are batched once per frame. Native arrow cursor images use 256
 alpha steps, cached and prepared during idle time where supported.
 
