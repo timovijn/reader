@@ -1,5 +1,28 @@
 # other lives
 
+## My collection
+
+The collection combines **Ready** (saved and still to read) and **Read** articles.
+Mark either state explicitly from a collection row or the reading controls;
+scrolling to the bottom does not automatically mark an article read. **Save as
+read** also saves an article that is not yet in the collection. Existing saved
+articles start as Ready because previous versions did not record completion.
+
+Search matches titles, authors, sources and article text, ignoring case and
+common accents. Combine status, source and reading-time filters; sort by newest
+or oldest saved, publication date, title, shortest/longest or most recently read.
+Filter and sort choices persist in this browser. Returning from an article
+restores the collection position and keyboard focus.
+
+Rows load in batches of 40 as you approach the end, with **Show more** as an
+explicit control and fallback. There is no longer a 100-article loading cap.
+Legacy articles retain their original order until new save/read timestamps are
+recorded. Content is still stored in this browser's localStorage and remains
+subject to its storage capacity; there is no account or cross-device sync.
+Storage failures roll back status changes rather than displaying an unsaved
+state. `tests/collection.test.mjs` covers filtering, sorting, old collections,
+progressive rendering, controls and persistence failure.
+
 ## Display refresh and animation
 
 Pointer and progress fades use display-paced animation callbacks rather than

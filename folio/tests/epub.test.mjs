@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import vm from 'node:vm';
 const source=await readFile(new URL('../worker/page.html',import.meta.url),'utf8');
-const format=vm.runInNewContext('('+source.slice(source.indexOf('function formatArticleDate('),source.indexOf('function renderCards('))+')');
+const format=vm.runInNewContext('('+source.slice(source.indexOf('function formatArticleDate('),source.indexOf('function createCollectionCard('))+')');
 const create=vm.runInNewContext('('+source.slice(source.indexOf('function createArticleEpub('),source.indexOf('function downloadArticleEpub('))+')',{TextEncoder,URL,formatArticleDate:format});
 const article={title:'Café & <Quiet> "Essay"',author:'Writer & Co',url:'https://example.com/story?x=1&y=2',published:'2026-10-27T23:00:00-08:00',excerpt:'A short introduction.',body:[['p','Original words',["A ",{tag:'em',children:['quiet']},' sentence. ',{tag:'a',href:'/context',children:['Context']},{tag:'a',href:'javascript:alert(1)',children:['Safe text']}]],['h2','The next chapter'],['p','Literal <script>alert(1)</script> & more.'],['img','https://example.com/photo.jpg']]};
 const result=create(article),bytes=Buffer.from(result.bytes),entries=new Map();
