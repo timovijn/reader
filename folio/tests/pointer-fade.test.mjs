@@ -43,3 +43,14 @@ movementContext.handleCursorMovement({pointerType:'touch',clientX:100,clientY:10
 movementContext.handleCursorMovement({pointerType:'mouse',clientX:41,clientY:50});assert.equal(wakes,2);
 assert.ok(!/addEventListener\('(wheel|scroll|pointerdown)',wakeShinkaCursor/.test(source));
 console.log('Passed: movement-only pointer wake, stationary-event filtering and touch exclusion.');
+// Scrolling has its own visibility timeline, without waking other pointer UI.
+timers.clear();context.current={};
+vm.runInNewContext(source.slice(source.indexOf('let scrollIndicatorOpacity='),source.indexOf('function scrollDotMetrics(')),context);
+const beforeScrollGlow=glow,beforeScrollCursor=styles.get('--cursor-arrow');
+context.wakeScrollIndicator();advance(duration/2);
+assert.equal(Number(styles.get('--scroll-indicator-opacity')),.5);
+advance(duration/2);assert.equal(Number(styles.get('--scroll-indicator-opacity')),1);
+advance(2000);assert.equal(Number(styles.get('--scroll-indicator-opacity')),0);
+assert.equal(glow,beforeScrollGlow);assert.equal(styles.get('--cursor-arrow'),beforeScrollCursor);
+context.resetScrollIndicator();context.current=null;context.wakeScrollIndicator();assert.equal(timers.size,0);
+console.log('Passed: scroll-only progress reveal/fade, independent pointer visibility and home-view reset.');

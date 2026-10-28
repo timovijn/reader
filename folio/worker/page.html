@@ -115,7 +115,7 @@ html.reading{scrollbar-width:none}html.reading::-webkit-scrollbar{display:none}
 .reader-panel .setting-row{flex-direction:column;align-items:flex-start;gap:4px;margin-bottom:18px}.reader-panel .setting-row button{flex:0 1 auto;font-size:11px;min-height:0}
 .reader-menu-toggle{position:relative;width:28px;height:28px;margin-left:-12px;padding:0;z-index:6;opacity:.55;transition:opacity .2s;color:var(--muted);pointer-events:auto}.reader-menu-toggle::after{content:"";position:absolute;inset:12px auto auto 12px;width:4px;height:4px;background:currentColor;border-radius:50%}.reader-menu-toggle:hover{opacity:1}
 .reader-menu-toggle:focus-visible{opacity:1}.reader-menu-toggle{display:none}.focus .reader-menu-toggle{display:block}
-.scroll-dot{position:fixed;right:8px;top:0;width:24px;height:28px;padding:0;z-index:6;touch-action:none;opacity:var(--pointer-ink-opacity,0);transition:transform .2s ease-out;display:flex;align-items:center;justify-content:center}
+.scroll-dot{position:fixed;right:8px;top:0;width:24px;height:28px;padding:0;z-index:6;touch-action:none;opacity:max(var(--pointer-ink-opacity,0),var(--scroll-indicator-opacity,0));transition:transform .2s ease-out;display:flex;align-items:center;justify-content:center}
 .scroll-arrow{display:flex;align-items:center;justify-content:center;width:24px;height:24px;font:400 22px/1 'Shinka',var(--font-mono);color:var(--muted);opacity:.7;transform:rotate(var(--scroll-angle,90deg));transform-origin:center;transition:transform .48s cubic-bezier(.22,.68,.2,1),opacity .2s}
 .scroll-dot:focus-visible{opacity:1}
 .scroll-dot:hover .scroll-arrow,.scroll-dot:focus-visible .scroll-arrow{opacity:1}.scroll-dot.dragging{transition:none}
@@ -304,8 +304,8 @@ function renderBody(blocks,base){
   const el=document.createElement(tag);if(Array.isArray(content))renderInline(el,content,base);else el.textContent=text;root.append(el);
  }
 }
-function openArticle(article){clearSelectionInk();current=article;document.body.classList.add('focus');document.documentElement.classList.add('reading');setReaderControls(false);$('#scroll-dot').hidden=false;$('#article-body').dir=['rtl','ltr'].includes(article.dir)?article.dir:'auto';$('#home').hidden=true;$('#reader').hidden=false;$('#settings').hidden=true;$('#settings-toggle').setAttribute('aria-expanded','false');$('#article-title').textContent=article.title;$('#article-source').textContent=article.url?new URL(article.url).hostname.replace(/^www\./,''):article.category||'A moment to yourself';$('#article-dek').textContent=article.excerpt||'';$('#article-dek').hidden=!article.excerpt;$('#article-byline').textContent=[article.author||(!article.url?'Folio':''),formatArticleDate(article.published),article.minutes+' min read'].filter(Boolean).join(' · ');renderBody(article.body,article.url);$('#original').hidden=!article.url;if(article.url)$('#original').href=article.url;updateBookmark();document.title=article.title+' — Folio';window.scrollTo(0,0);$('#article-title').tabIndex=-1;$('#article-title').focus({preventScroll:true});resetScrollArrow();scheduleLineNumbers();scheduleScrollDot();}
-function goHome(){clearSelectionInk();current=null;document.body.classList.remove('focus');document.documentElement.classList.remove('reading');setReaderControls(false);$('#scroll-dot').hidden=true;$('#home').hidden=false;$('#reader').hidden=true;document.title='Folio — A little room to read';renderCards();window.scrollTo(0,0)}
+function openArticle(article){clearSelectionInk();current=article;document.body.classList.add('focus');document.documentElement.classList.add('reading');setReaderControls(false);$('#scroll-dot').hidden=false;$('#article-body').dir=['rtl','ltr'].includes(article.dir)?article.dir:'auto';$('#home').hidden=true;$('#reader').hidden=false;$('#settings').hidden=true;$('#settings-toggle').setAttribute('aria-expanded','false');$('#article-title').textContent=article.title;$('#article-source').textContent=article.url?new URL(article.url).hostname.replace(/^www\./,''):article.category||'A moment to yourself';$('#article-dek').textContent=article.excerpt||'';$('#article-dek').hidden=!article.excerpt;$('#article-byline').textContent=[article.author||(!article.url?'Folio':''),formatArticleDate(article.published),article.minutes+' min read'].filter(Boolean).join(' · ');renderBody(article.body,article.url);$('#original').hidden=!article.url;if(article.url)$('#original').href=article.url;updateBookmark();document.title=article.title+' — Folio';window.scrollTo(0,0);$('#article-title').tabIndex=-1;$('#article-title').focus({preventScroll:true});resetScrollArrow();resetScrollIndicator();scheduleLineNumbers();scheduleScrollDot();}
+function goHome(){clearSelectionInk();resetScrollIndicator();current=null;document.body.classList.remove('focus');document.documentElement.classList.remove('reading');setReaderControls(false);$('#scroll-dot').hidden=true;$('#home').hidden=false;$('#reader').hidden=true;document.title='Folio — A little room to read';renderCards();window.scrollTo(0,0)}
 function extract(html,url){const doc=new DOMParser().parseFromString(html,'text/html');const meta=name=>doc.querySelector('meta[property="'+name+'"],meta[name="'+name+'"]')?.getAttribute('content')?.trim();const title=(meta('og:title')||doc.querySelector('h1')?.textContent||doc.title||'Untitled article').trim().slice(0,300);const author=(meta('author')||doc.querySelector('[rel="author"]')?.textContent||'').trim().slice(0,160);const excerpt=(meta('description')||meta('og:description')||'').slice(0,400);const published=(meta('article:published_time')||meta('datePublished')||doc.querySelector('time[itemprop="datePublished"]')?.getAttribute('datetime')||'').slice(0,100);doc.querySelectorAll('script,style,nav,header,footer,aside,form,button,input,iframe,svg,img,picture,source,figcaption,noscript,dialog,[hidden],[aria-hidden="true"],[role="navigation"],[role="dialog"],.advertisement,.ads,.cookie-banner,.newsletter,.related-posts').forEach(x=>x.remove());const candidates=[...doc.querySelectorAll('article,main,[role="main"],.post-content,.entry-content,.article-body,.story-body')];const score=node=>[...node.querySelectorAll('p')].reduce((s,p)=>s+Math.max(0,(p.textContent||'').length-(p.querySelector('a')?.textContent?.length||0)*2),0);let root=candidates.sort((a,b)=>score(b)-score(a))[0];if(!root||score(root)<250){const parentScores=new Map();doc.querySelectorAll('p').forEach(p=>{if(p.textContent.length>70){const par=p.parentElement;parentScores.set(par,(parentScores.get(par)||0)+p.textContent.length)}});root=[...parentScores.entries()].sort((a,b)=>b[1]-a[1])[0]?.[0]||doc.body}const blocks=[];const nodes=root.querySelectorAll('h2,h3,p,blockquote,pre,li');for(const node of nodes){if(node.parentElement?.closest('blockquote,pre,li'))continue;const text=(node.textContent||'').replace(/\s+/g,' ').trim();if(text.length<3||text===title)continue;blocks.push([node.tagName==='LI'?'p':node.tagName.toLowerCase(),node.tagName==='LI'?'• '+text:text])}const words=blocks.filter(b=>b[0]!=='img').map(b=>b[1]).join(' ').split(/\s+/).length;if(words<100)throw Error('There is not enough readable article text on this page. It may require a sign-in or load its content with JavaScript. Try pasting the text instead.');return{id:url,title,author,excerpt,published,body:blocks,minutes:Math.max(1,Math.ceil(words/230)),url,category:'From the web'}}
 // This function runs only when the reader clicks their saved bookmark on an
 // article page. It uses the DOM and clipboard; it makes no network requests.
@@ -416,7 +416,7 @@ const articleResizeObserver=new ResizeObserver(()=>{scheduleLineNumbers();schedu
 articleResizeObserver.observe($('#article-body'));
 document.fonts.ready.then(scheduleLineNumbers);
 document.fonts.addEventListener('loadingdone',scheduleLineNumbers);
-window.addEventListener('scroll',scheduleScrollDot,{passive:true});
+window.addEventListener('scroll',()=>{scheduleScrollDot();wakeScrollIndicator()},{passive:true});
 function refreshReaderGeometry(){
  scheduleLineNumbers();scheduleSelectionInk();scheduleScrollDot();
 }
@@ -474,7 +474,7 @@ document.addEventListener('selectionchange',scheduleSelectionInk);
 window.addEventListener('scroll',scheduleSelectionInk,{passive:true});
 window.addEventListener('resize',scheduleSelectionInk);
 window.visualViewport?.addEventListener('resize',refreshReaderGeometry);
-window.visualViewport?.addEventListener('scroll',()=>{scheduleScrollDot();scheduleSelectionInk()},{passive:true});
+window.visualViewport?.addEventListener('scroll',()=>{scheduleScrollDot();scheduleSelectionInk();wakeScrollIndicator()},{passive:true});
 document.fonts.addEventListener('loadingdone',scheduleSelectionInk);
 selectionContrast.addEventListener('change',scheduleSelectionInk);
 function setReaderControls(visible){
@@ -492,6 +492,29 @@ $('#reader-panel').addEventListener('focusout',()=>requestAnimationFrame(()=>{
  if(!$('#reader-panel').contains(document.activeElement)&&!$('.reader-rail').matches(':hover'))setReaderControls(false);
 }));
 
+let scrollIndicatorOpacity=0,scrollIndicatorTarget=null,scrollIndicatorIdleTimer=0,scrollIndicatorFadeTimer=0;
+function fadeScrollIndicator(target){
+ if(scrollIndicatorTarget===target)return;
+ clearTimeout(scrollIndicatorFadeTimer);scrollIndicatorTarget=target;
+ const start=performance.now(),from=scrollIndicatorOpacity;
+ function fade(){
+  const progress=Math.min(1,(performance.now()-start)/pointerFadeDuration),eased=progress*progress*(3-2*progress);
+  scrollIndicatorOpacity=from+(target-from)*eased;
+  document.documentElement.style.setProperty('--scroll-indicator-opacity',String(scrollIndicatorOpacity));
+  if(progress<1)scrollIndicatorFadeTimer=setTimeout(fade,16);
+ }
+ fade();
+}
+function wakeScrollIndicator(){
+ if(!current)return;
+ clearTimeout(scrollIndicatorIdleTimer);fadeScrollIndicator(1);
+ scrollIndicatorIdleTimer=setTimeout(()=>fadeScrollIndicator(0),2000);
+}
+function resetScrollIndicator(){
+ clearTimeout(scrollIndicatorIdleTimer);clearTimeout(scrollIndicatorFadeTimer);
+ scrollIndicatorOpacity=0;scrollIndicatorTarget=null;
+ document.documentElement.style.setProperty('--scroll-indicator-opacity','0');
+}
 function scrollDotMetrics(scrollTop,scrollHeight,viewportHeight){
  const maximum=Math.max(0,scrollHeight-viewportHeight);
  const progress=maximum?Math.max(0,Math.min(1,scrollTop/maximum)):0;
