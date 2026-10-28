@@ -8,7 +8,7 @@ const {default:worker,validateUrl}=await import('data:text/javascript;base64,'+B
 const html=await readFile('worker/page.html','utf8');new vm.Script(html.match(/<script>([\s\S]*)<\/script>/)[1]);
 for(const url of ['file:///etc/passwd','https://localhost/a','http://127.0.0.1/a','http://0x7f000001/a','http://2130706433/a','http://[::1]/a','http://user:password@example.com/a','http://example.com:8080/a','https://foo.internal/a','http://foo.localhost./a'])assert.throws(()=>validateUrl(url));
 assert.equal(validateUrl('https://example.com/article').hostname,'example.com');
-const page=await worker.fetch(new Request('https://folio.example/'));assert.equal(page.status,200);assert.match(await page.text(),/A little room/);assert.match(page.headers.get('content-security-policy'),/frame-src 'none'/);
+const page=await worker.fetch(new Request('https://folio.example/'));assert.equal(page.status,200);assert.match(await page.text(),/<title>other lives<\/title>/);assert.match(page.headers.get('content-security-policy'),/frame-src 'none'/);
 assert.equal((await worker.fetch(new Request('https://folio.example/api/article'))).status,405);
 assert.equal((await worker.fetch(new Request('https://folio.example/missing'))).status,404);
 const post=url=>new Request('https://folio.example/api/article',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({url})});
