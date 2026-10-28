@@ -31,7 +31,7 @@ function nuxtState(table){
 
 // Parse inert fragments, collecting prose only. Do not concatenate each inline
 // text node as a separate paragraph or include media captions and script text.
-function proseBlocks(value){
+export function proseBlocks(value){
   if(typeof value!=='string'||value.length>2_000_000)return [];
   if(!/<[a-z][\s\S]*>/i.test(value))return value.split(/\n+/).map(normalise).filter(Boolean).map(text=>['p',text]);
   const blocks=[];let visited=0;

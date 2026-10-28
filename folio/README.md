@@ -44,6 +44,33 @@ Original title metadata is kept for later repairs. Re-importing an already saved
 article refreshes its title/author metadata while preserving its saved text,
 save date and Read/Ready state.
 
+## Content boundaries
+
+All extraction candidates pass through `analyseArticleBlocks` before selection.
+The same classifier runs in the browser fallback, bookmarklet and incoming clip
+validation (including clips copied with older bookmarks). This is a deterministic,
+publisher-independent evidence classifier, not a trained language model.
+
+It combines opening/closing position, publication/fulfilment references,
+subscription links, independently extracted author identity, biographical roles,
+and runs of recommendation links. It removes publishing notes, subscription
+messages, trailing author signatures and their outer separators. It preserves
+internal scene breaks, headings, quotes, code and uncertain prose. Structured
+HTML retains quote/code boundaries so metadata cannot reinterpret a quotation
+as a newsletter sign-off. Caption and DOM component filtering still happens
+before this pass.
+
+The analysis returns removal roles and evidence labels without copying article
+text into diagnostics. API results include selected-candidate counts under
+`article.extraction.boundaries`; no user-facing debug controls are added.
+`tests/content-boundaries.test.mjs` covers the reported publishing notes,
+different author/publication names and wording, metadata/embedded alternatives,
+browser parity and similar-looking editorial prose that must survive.
+Fixtures are synthetic; the Works in Progress page's visible opening/closing
+sequence was inspected, but its live raw HTML was not used as a fixture.
+Unfamiliar markup and ambiguous prose can still require further refinement;
+these rules do not promise perfect classification across every website.
+
 ## My collection
 
 The collection combines **Ready** (saved and still to read) and **Read** articles.

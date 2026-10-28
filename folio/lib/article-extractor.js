@@ -1,8 +1,8 @@
 import { parse } from '../vendor/parse5/dist/index.js';
 import { importFailure } from '../worker/index.js';
 import { nytArticleBlocks } from './nyt-extractor.js';
-import { embeddedArticleCandidates, chooseArticleCandidate } from './embedded-articles.js';
-import { isMediaCaption, isAncillaryComponent, cleanArticleBlocks } from './article-boundaries.js';
+import { embeddedArticleCandidates, chooseArticleCandidate, proseBlocks } from './embedded-articles.js';
+import { isMediaCaption, isAncillaryComponent, analyseArticleBlocks } from './article-boundaries.js';
 
 const normalise = value => String(value||'').replace(/\s+/g,' ').trim();
 const attr = (node,name) => node.attrs?.find(item=>item.name===name)?.value || '';
@@ -212,12 +212,10 @@ export function extractArticle(html,url){
     // Use only Article bodies explicitly marked public or without a restriction.
     // A schema declaring paid access is never used to fill missing page content.
     const item=structured.filter(item=>typeof item.articleBody==='string'&&item.isAccessibleForFree!==false&&item.isAccessibleForFree!=='False'&&item.isAccessibleForFree!=='false').sort((a,b)=>b.articleBody.length-a.articleBody.length)[0];
-    if(item?.articleBody?.length>=180){const fragment=parse('<article>'+item.articleBody+'</article>');
-      // Structured bodies may be prose or HTML; parsing decodes entities without
-      // running scripts. Emit text-only paragraphs on this fallback path.
-      const text=walk(fragment,n=>!ignored.has(tag(n))&&!isMediaCaption(attr(n,'class')+' '+attr(n,'id'),attr(n,'itemprop'))).filter(n=>n.nodeName==='#text').map(n=>n.value).join('\n');
-      const parts=text.split(/\n\s*\n|\n/).map(normalise).filter(Boolean);
-      extractionCandidates.push({method:'structured-data',blocks:parts.map(part=>['p',part])});
+    if(item?.articleBody?.length>=180){
+      // Retain paragraph/quote/code boundaries so the shared classifier doesn't
+      // mistake a quoted promotional sentence for the publisher's own message.
+      extractionCandidates.push({method:'structured-data',blocks:proseBlocks(item.articleBody)});
     }
   }
   const publisherBlocks=nytArticleBlocks(all,base);
@@ -234,7 +232,14 @@ export function extractArticle(html,url){
       captionText.add(normalise(walk(part).filter(n=>n.nodeName==='#text').map(n=>n.value).join('')));
     }
   }
-  const selected=chooseArticleCandidate(extractionCandidates.map(candidate=>({...candidate,blocks:cleanArticleBlocks(candidate.blocks).filter(block=>!captionText.has(normalise(block[1])))})));
+  const selected=chooseArticleCandidate(extractionCandidates.map(candidate=>{
+    const analysis=analyseArticleBlocks(candidate.blocks,{author});
+    const filtered=analysis.blocks.filter(block=>!captionText.has(normalise(block[1])));
+    const removedRoles={};for(const decision of analysis.removed)removedRoles[decision.role]=(removedRoles[decision.role]||0)+1;
+    const restoredCaptions=analysis.blocks.length-filtered.length;
+    if(restoredCaptions)removedRoles.caption=restoredCaptions;
+    return {...candidate,blocks:filtered,boundaries:{removedBlocks:analysis.removed.length+restoredCaptions,roles:removedRoles}};
+  }));
   blocks.length=0;blocks.push(...selected.blocks);method=selected.method;
   if(characterCount()<180){
     const text=normalise(rawText(body)).slice(0,12000);
@@ -256,5 +261,5 @@ export function extractArticle(html,url){
     error.diagnostics={extractedWords:wordCount,declaredWords:declaredWordCount,method};throw error;
   }
   const direction=attr(all.find(n=>tag(n)==='html')||{},'dir');
-  return {id:base,url:base,title,author,originalTitle,excerpt,siteName,published,body:blocks,minutes:Math.max(1,Math.ceil(wordCount/230)),wordCount,category:'From the web',extraction:{method},dir:['rtl','ltr'].includes(direction)?direction:'auto'};
+  return {id:base,url:base,title,author,originalTitle,excerpt,siteName,published,body:blocks,minutes:Math.max(1,Math.ceil(wordCount/230)),wordCount,category:'From the web',extraction:{method,boundaries:selected.boundaries},dir:['rtl','ltr'].includes(direction)?direction:'auto'};
 }

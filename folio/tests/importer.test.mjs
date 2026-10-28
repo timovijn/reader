@@ -4,6 +4,7 @@ import { Readable } from 'node:stream';
 import { gzipSync, deflateSync, brotliCompressSync } from 'node:zlib';
 import { createPublicFetch, createVercelHandler, isPublicAddress } from '../lib/vercel-article.js';
 import { extractArticle } from '../lib/article-extractor.js';
+import {cleanArticleBlocks} from '../lib/article-boundaries.js';
 import { handleRequest } from '../worker/index.js';
 
 const articleUrl='https://clereviewofbooks.com/the-anderson-speedway-indianas-data-centers/';
@@ -126,9 +127,11 @@ console.log('Passed: theme layout flags, body/root preservation, outer article w
 const {readFile}=await import('node:fs/promises');const vm=await import('node:vm');
 const client=await readFile(new URL('../worker/page.html',import.meta.url),'utf8');
 const clipFunction=client.slice(client.indexOf('function normaliseBrowserClip('),client.indexOf("\n$('#browser-bookmarklet').href="));
-const normaliseClip=vm.runInNewContext('('+clipFunction+')',{safeHref:value=>{try{const u=new URL(value);return ['https:','http:'].includes(u.protocol)?u.href:null}catch{return null}},Date});
+const normaliseClip=vm.runInNewContext('('+clipFunction+')',{cleanArticleBlocks,safeHref:value=>{try{const u=new URL(value);return ['https:','http:'].includes(u.protocol)?u.href:null}catch{return null}},Date});
 const clip=normaliseClip(JSON.stringify({format:'folio-browser-clip',version:1,title:'A browser article',url:'https://www.washingtonian.com/article/',author:'Author',body:[['p',prose],['img','https://example.com/image.jpg'],['script','alert(1)'],['p','<script>This stays literal text</script>']]}));
 assert.equal(clip.title,'A browser article');assert.equal(clip.body.length,2);assert.equal(clip.body[0][0],'p');assert.equal(clip.url,'https://www.washingtonian.com/article/');
 assert.throws(()=>normaliseClip('not json'),/Please paste/);assert.throws(()=>normaliseClip('{}'),/not an other lives browser clip/);
 assert.equal(normaliseClip(JSON.stringify({format:'folio-browser-clip',version:1,title:'Test',url:'javascript:alert(1)',body:[['p',prose]]})).url,undefined);
+const oldBookmarkClip=normaliseClip(JSON.stringify({format:'folio-browser-clip',version:1,title:'Test',author:'Avery Brooks',body:[['p',prose],['p','* * *'],['p','Avery Brooks is an editor at A Journal.'],['p','Thanks for reading A Journal Newsletter!']]}));
+assert.equal(oldBookmarkClip.body.length,1);assert.equal(oldBookmarkClip.body[0][1],prose);
 console.log('Passed: browser-clip format validation, text-only blocks, unsafe URL rejection and local import model.');
