@@ -37,13 +37,18 @@ assert.equal(context.selectCollection(legacy,view()).length,135);
 assert.equal(context.selectCollection(legacy,view())[0].id,'legacy-0');
 assert.equal(context.selectCollection(legacy,view({sort:'oldest'}))[0].id,'legacy-134');
 const titleHelper=vm.runInNewContext('('+source.slice(source.indexOf('function cleanArticleTitle('),source.indexOf('\nfunction extract(html,url)'))+')');
-const startup={saved:[],prefs:{},collectionSource:context.collectionSource,cleanArticleTitle:titleHelper,localStorage:{getItem:key=>key==='folio-collection'?JSON.stringify(legacy):key==='folio-design'?'typewriter-v1':'{}',setItem(){}}};
+const metadataHelper=vm.runInNewContext('('+source.slice(source.indexOf('function articleTitleMetadata('),source.indexOf('\nfunction cleanArticleTitle('))+')',{cleanArticleTitle:titleHelper});
+const startup={saved:[],prefs:{},collectionSource:context.collectionSource,cleanArticleTitle:titleHelper,articleTitleMetadata:metadataHelper,localStorage:{getItem:key=>key==='folio-collection'?JSON.stringify(legacy):key==='folio-design'?'typewriter-v1':'{}',setItem(){}}};
 vm.runInNewContext(source.slice(source.indexOf("try{const s=JSON.parse(localStorage.getItem('folio-collection')"),source.indexOf('function persist(')),startup);
 assert.equal(startup.saved.length,135);
 const storedArticle={...items[0],title:'Kicking Robots, by James Vincent',author:'James Vincent',readAt:123,savedAt:456};
 startup.localStorage.getItem=key=>key==='folio-collection'?JSON.stringify([storedArticle]):key==='folio-design'?'typewriter-v1':'{}';
 vm.runInNewContext(source.slice(source.indexOf("try{const s=JSON.parse(localStorage.getItem('folio-collection')"),source.indexOf('function persist(')),startup);
 assert.equal(startup.saved[0].title,'Kicking Robots');assert.equal(startup.saved[0].readAt,123);assert.equal(startup.saved[0].savedAt,456);assert.equal(startup.saved[0].id,storedArticle.id);
+const damaged={...storedArticle,title:'Kicking Robots',author:'',originalTitle:'Kicking Robots, by James Vincent'};
+startup.localStorage.getItem=key=>key==='folio-collection'?JSON.stringify([damaged]):key==='folio-design'?'typewriter-v1':'{}';
+vm.runInNewContext(source.slice(source.indexOf("try{const s=JSON.parse(localStorage.getItem('folio-collection')"),source.indexOf('function persist(')),startup);
+assert.equal(startup.saved[0].author,'James Vincent');assert.equal(startup.saved[0].title,'Kicking Robots');
 
 // Exercise the actual renderer and controls with a small DOM implementation.
 class Element{
@@ -79,4 +84,10 @@ assert.equal(timers.size,1);for(const callback of timers.values())callback();tim
 assert.equal($('#cards').children.length,0);assert.equal($('#empty-message').textContent,'No articles match.');
 $('#collection-clear').onclick();assert.equal(context.collectionView.status,'all');assert.equal($('#cards').children.length,40);
 context.saved=[];context.renderCards();assert.equal($('#empty-message').textContent,'No saved articles.');assert.equal($('#collection-more').hidden,true);
+// Re-importing repairs saved metadata without overwriting content or state.
+vm.runInContext(source.slice(source.indexOf('function refreshSavedMetadata('),source.indexOf('function openArticle(')),context);
+context.saved=[{...damaged,originalTitle:undefined}];
+context.refreshSavedMetadata({...damaged,author:'James Vincent',body:[['p','A new server response.']]});
+assert.equal(context.saved[0].author,'James Vincent');assert.equal(context.saved[0].readAt,123);assert.equal(context.saved[0].savedAt,456);assert.equal(context.saved[0].body,damaged.body);
+const repaired=context.saved;persistSuccess=false;context.refreshSavedMetadata({...damaged,author:'A changed author'});assert.equal(context.saved,repaired);
 console.log('Passed: collection search/status/source/time filters, all sorting modes, legacy ordering and >100-item loading, progressive rendering, control state, explicit Read/Ready updates, storage-failure rollback and empty states.');

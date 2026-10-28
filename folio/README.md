@@ -7,6 +7,11 @@ unverified “by” phrases and full visible headlines are preserved. The same
 helper runs in the server importer, browser fallback and bookmarklet. Existing
 collection titles are also corrected on loading when their saved author/source
 metadata confirms a suffix, preserving content, identity and reading state.
+Title and author extraction now run together: when a separate headline confirms
+a combined title's trailing byline, the name is retained in the author field.
+Original title metadata is kept for later repairs. Re-importing an already saved
+article refreshes its title/author metadata while preserving its saved text,
+save date and Read/Ready state.
 
 ## My collection
 

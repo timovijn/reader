@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { extractArticle, cleanArticleTitle } from '../lib/article-extractor.js';
+import { extractArticle, cleanArticleTitle, articleTitleMetadata } from '../lib/article-extractor.js';
 import { cleanArticleBlocks } from '../lib/article-boundaries.js';
 
 const url='https://example.com/articles/interview';
@@ -23,6 +23,8 @@ const {runInNewContext}=await import('node:vm');
 const page=await readFile(new URL('../worker/page.html',import.meta.url),'utf8');
 const browserHelper=page.slice(page.indexOf('function cleanArticleTitle('),page.indexOf('\nfunction extract(html,url)'));
 assert.equal(browserHelper.trim(),cleanArticleTitle.toString().trim());
+const browserMetadata=page.slice(page.indexOf('function articleTitleMetadata('),page.indexOf('\nfunction cleanArticleTitle('));
+assert.equal(browserMetadata.trim(),articleTitleMetadata.toString().trim());
 assert.equal(runInNewContext('('+browserHelper+')')(brandedTitle,['The Creative Factor']),headline);
 const harpersTitle='Kicking Robots, by James Vincent';
 assert.equal(cleanArticleTitle(harpersTitle,[],{author:'James Vincent'}),'Kicking Robots');
@@ -43,7 +45,15 @@ for(const metadata of [
 ]){
  const imported=extractArticle(`<meta property="og:title" content="${harpersTitle}">${metadata}<header><h1>Magazine masthead</h1></header><article><h1>Kicking Robots</h1><p>${intro.repeat(3)}</p></article>`,'https://harpers.org/archive/example');
  assert.equal(imported.title,'Kicking Robots');
+ assert.equal(imported.author,'James Vincent');
+ assert.equal(imported.originalTitle,harpersTitle);
 }
+const recovered=articleTitleMetadata(harpersTitle+' — Harper’s Magazine',['Harper’s Magazine'],{headlines:['Kicking Robots']});
+assert.equal(recovered.title,'Kicking Robots');assert.equal(recovered.author,'James Vincent');
+assert.equal(articleTitleMetadata('Travelling, by Train',[],{headlines:['Travelling, by Train']}).author,'');
+assert.equal(articleTitleMetadata(harpersTitle,[],{headlines:['Kicking Robots'],author:'https://example.com/authors/james'}).author,'James Vincent');
+const profileAuthor=extractArticle(`<meta property="og:title" content="${harpersTitle}"><meta property="article:author" content="https://example.com/author/james"><script type="application/ld+json">{"@type":"Article","author":{"name":"James Vincent"}}</script><article><h1>Kicking Robots</h1><p>${intro.repeat(3)}</p></article>`,'https://example.com/story');
+assert.equal(profileAuthor.author,'James Vincent');
 const hiddenTitle=extractArticle(`<meta property="og:title" content="${harpersTitle}"><div hidden><h1>Kicking Robots</h1></div><article><p>${intro.repeat(3)}</p></article>`,'https://example.com/story');
 assert.equal(hiddenTitle.title,harpersTitle);
 const link=(text,href='/another-story')=>['p',text,[{tag:'a',href,children:[text]}]];

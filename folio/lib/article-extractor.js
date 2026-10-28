@@ -50,6 +50,23 @@ function jsonArticles(nodes){
   return result;
 }
 
+export function articleTitleMetadata(value,siteNames=[],evidence={}){
+  const tidy=text=>String(text||'').replace(/\s+/g,' ').trim();
+  const key=text=>tidy(text).normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]/gu,'');
+  const title=cleanArticleTitle(value,siteNames,evidence);
+  let author=tidy(evidence.author).replace(/^(?:written\s+)?by\s+/i,'').replace(/[,;\s]+$/g,'');
+  if(/^https?:\/\//i.test(author))author='';
+  if(!author){
+    const original=cleanArticleTitle(value,siteNames);
+    const byline=original.match(/^(.+?)(?:,\s*|\s+[|–—-]\s+)(?:written\s+)?by\s+(.+?)\s*$/i);
+    // Only recover a name when independent headline evidence has confirmed
+    // that this suffix is a byline, not part of the headline itself.
+    if(byline&&key(byline[1])===key(title)&&key(original)!==key(title))author=tidy(byline[2]).replace(/[,;\s]+$/g,'');
+  }
+  if(/^https?:\/\//i.test(author))author='';
+  return{title,author:author.slice(0,250),originalTitle:tidy(value).slice(0,500)};
+}
+
 export function cleanArticleTitle(value,siteNames=[],evidence={}){
   let title=String(value||'').replace(/\s+/g,' ').trim();
   const tidy=text=>String(text||'').replace(/\s+/g,' ').trim();
@@ -104,9 +121,10 @@ export function extractArticle(html,url){
   headings.sort((a,b)=>headingRank(b)-headingRank(a));
   const heading=headings[0];
   const schema=structured.find(item=>typeof item.headline==='string')||structured[0]||{};
-  const authorValue=metadata.author||metadata['article:author']||schema.author;
-  const author=normalise(typeof authorValue==='string'?authorValue:Array.isArray(authorValue)?authorValue.map(a=>typeof a==='string'?a:a.name).join(', '):authorValue?.name||rawText(all.find(n=>attr(n,'rel').split(/\s+/).includes('author'))||{})).slice(0,250);
-  const title=cleanArticleTitle(normalise(metadata['og:title']||schema.headline||(heading&&rawText(heading))||rawText(all.find(n=>tag(n)==='title')||{} )||'Untitled article').slice(0,500),[metadata['og:site_name'],schema.publisher?.name,new URL(base).hostname.replace(/^www\./,'').replace(/\.[^.]+$/,'')],{headlines:headings.map(rawText),schemaHeadline:schema.headline,author});
+  const authorNode=all.find(node=>attr(node,'rel').split(/\s+/).includes('author'))||all.find(node=>attr(node,'itemprop')==='author');
+  const authorCandidates=[metadata.author,metadata['article:author'],schema.author,metadata['parsely-author'],metadata['dc.creator'],metadata['dcterms.creator'],authorNode&&rawText(authorNode)];
+  const authorCandidate=authorCandidates.map(value=>normalise(typeof value==='string'?value:Array.isArray(value)?value.map(item=>typeof item==='string'?item:item?.name).filter(Boolean).join(', '):value?.name)).find(value=>value&&!/^https?:\/\//i.test(value))||'';
+  const {title,author,originalTitle}=articleTitleMetadata(normalise(metadata['og:title']||schema.headline||(heading&&rawText(heading))||rawText(all.find(n=>tag(n)==='title')||{} )||'Untitled article').slice(0,500),[metadata['og:site_name'],schema.publisher?.name,new URL(base).hostname.replace(/^www\./,'').replace(/\.[^.]+$/,'')],{headlines:headings.map(rawText),schemaHeadline:schema.headline,author:authorCandidate});
   const excerpt=normalise(metadata.description||metadata['og:description']||schema.description).slice(0,500);
   const published=normalise(metadata['article:published_time']||schema.datePublished).slice(0,100);
   const siteName=normalise(metadata['og:site_name']||schema.publisher?.name||new URL(base).hostname.replace(/^www\./,'')).slice(0,150);
@@ -226,5 +244,5 @@ export function extractArticle(html,url){
     error.diagnostics={extractedWords:wordCount,declaredWords:declaredWordCount,method};throw error;
   }
   const direction=attr(all.find(n=>tag(n)==='html')||{},'dir');
-  return {id:base,url:base,title,author,excerpt,siteName,published,body:blocks,minutes:Math.max(1,Math.ceil(wordCount/230)),wordCount,category:'From the web',extraction:{method},dir:['rtl','ltr'].includes(direction)?direction:'auto'};
+  return {id:base,url:base,title,author,originalTitle,excerpt,siteName,published,body:blocks,minutes:Math.max(1,Math.ceil(wordCount/230)),wordCount,category:'From the web',extraction:{method},dir:['rtl','ltr'].includes(direction)?direction:'auto'};
 }
