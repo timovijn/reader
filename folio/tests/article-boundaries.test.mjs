@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { extractArticle, cleanArticleTitle, articleTitleMetadata } from '../lib/article-extractor.js';
+import { extractArticle, cleanArticleTitle, articleTitleMetadata, cleanArticleExcerpt } from '../lib/article-extractor.js';
 import { isMediaCaption, cleanArticleBlocks } from '../lib/article-boundaries.js';
 
 const url='https://example.com/articles/interview';
@@ -38,6 +38,19 @@ assert.equal(cleanArticleTitle('Travelling, by Train',[],{author:'Train',headlin
 assert.equal(cleanArticleTitle('Travelling, by Train',[],{headlines:['Travelling, by Train'],schemaHeadline:'Travelling'}),'Travelling, by Train');
 assert.equal(cleanArticleTitle(harpersTitle,[],{author:'Different Writer'}),harpersTitle);
 assert.equal(cleanArticleTitle(harpersTitle),harpersTitle); // No unsupported guessing.
+const lrbTitle='Toril Moi · Fredric Jameson as Reader: Fredric the Great';
+assert.equal(cleanArticleTitle(lrbTitle,[],{author:'Toril Moi',headlines:['Fredric Jameson as Reader']}),'Fredric Jameson as Reader');
+assert.equal(cleanArticleTitle(lrbTitle,[],{author:'A Different Writer',headlines:['Fredric Jameson as Reader']}),lrbTitle);
+assert.equal(cleanArticleTitle(lrbTitle,[],{author:'Toril Moi'}),lrbTitle);
+assert.equal(cleanArticleTitle(lrbTitle,[],{author:'Toril Moi',headlines:[lrbTitle]}),lrbTitle);
+assert.equal(cleanArticleTitle('Alex Rivera | An essay: A print subtitle',[],{author:'Alex Rivera',headlines:['An essay']}),'An essay');
+assert.equal(cleanArticleExcerpt('A publisher preview that stops...'),'');
+assert.equal(cleanArticleExcerpt('A publisher preview that stops…'),'');
+assert.equal(cleanArticleExcerpt('A complete introduction.'),'A complete introduction.');
+assert.equal(cleanArticleExcerpt('x'.repeat(501)),'');
+const completeDescription=extractArticle(`<meta name="description" content="An unfinished preview…"><meta property="og:description" content="A complete introduction."><article><p>${intro.repeat(3)}</p></article>`,url);
+assert.equal(completeDescription.excerpt,'A complete introduction.');
+assert.equal(extractArticle(`<meta name="description" content="An unfinished preview..."><article><p>${intro.repeat(3)}</p></article>`,url).excerpt,'');
 for(const metadata of [
  '<meta name="author" content="James Vincent">',
  '<script type="application/ld+json">{"@type":"Article","headline":"Kicking Robots","author":{"name":"James Vincent"}}</script>',
@@ -119,4 +132,14 @@ for(const metadata of [
 }
 // Wording alone is insufficient: the same sentence in normal prose stays.
 assert.ok(extractArticle(`<article><p>${intro.repeat(3)}</p><p>${caption}</p><p>We discussed captions and photographic credits at length.</p></article>`,url).body.some(block=>block[1]===caption));
+// A hidden tooltip can be nested inside an explicitly marked article body.
+// The same boundary applies on unrelated publishers and metadata candidates.
+for(const wrapper of ['class="lrb-tooltip-content" id="letter-cta-tooltip-content"','role="tooltip"','class="contact-cta-copy"']){
+ const imported=extractArticle(`<meta name="author" content="Toril Moi"><meta property="og:title" content="${lrbTitle}"><h1>Fredric Jameson as Reader</h1><main itemprop="articleBody"><div class="article-copy"><p>${intro.repeat(3)}</p><p>${final}</p></div><div ${wrapper}><p>Send Letters To:</p><p>UNWANTED CONTACT INSTRUCTIONS editor@example.com</p></div></main>`,url);
+ assert.equal(imported.title,'Fredric Jameson as Reader');assert.equal(imported.author,'Toril Moi');assert.equal(imported.body.at(-1)[1],final);assert.ok(!JSON.stringify(imported.body).includes('UNWANTED'));assert.ok(!JSON.stringify(imported.body).includes('Send Letters To:'));
+}
+const tooltipMetadata=extractArticle(`<meta name="author" content="Author"><script type="application/ld+json">${JSON.stringify({'@type':'Article',articleBody:`<p>${intro.repeat(12)}</p><div role="tooltip"><p>UNWANTED METADATA TOOLTIP</p></div><p>${final}</p>`})}</script><article><p>${intro.repeat(2)}</p></article>`,url);
+assert.equal(tooltipMetadata.extraction.method,'structured-data');assert.ok(!JSON.stringify(tooltipMetadata.body).includes('UNWANTED'));assert.equal(tooltipMetadata.body.at(-1)[1],final);
+const editorialContact=extractArticle(`<article><p>${intro.repeat(3)}</p><h2>Send Letters To:</h2><p>A history of correspondence, including editor@example.com as an example.</p></article>`,url);
+assert.ok(editorialContact.body.some(block=>block[1]==='Send Letters To:'));
 console.log('Passed: nested article-body boundaries, captions, newsletter widgets/prompts, author bios, related links, mid-article recovery and editorial/list/formatting preservation.');

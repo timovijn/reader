@@ -1,10 +1,13 @@
 import {parse} from '../vendor/parse5/dist/index.js';
 import {assignedData} from './nyt-extractor.js';
-import {isMediaCaption} from './article-boundaries.js';
+import {isMediaCaption,isAncillaryComponent} from './article-boundaries.js';
 
 const normalise=value=>String(value||'').replace(/\s+/g,' ').trim();
 const skip=new Set(['script','style','aside','nav','footer','form','button','img','picture','figcaption','svg','iframe']);
-const isCaption=node=>isMediaCaption((node.attrs||[]).filter(attr=>['class','id'].includes(attr.name)).map(attr=>attr.value).join(' '),node.attrs?.find(attr=>attr.name==='itemprop')?.value);
+const isCaption=node=>{
+  const label=(node.attrs||[]).filter(attr=>['class','id'].includes(attr.name)).map(attr=>attr.value).join(' ');
+  return isMediaCaption(label,node.attrs?.find(attr=>attr.name==='itemprop')?.value)||isAncillaryComponent(label)||node.attrs?.some(attr=>attr.name==='role'&&attr.value==='tooltip');
+};
 
 // Nuxt 3 serializes an indexed table rather than an ordinary object tree.
 // Decode only data/reference wrappers, with bounded work and cycle detection.

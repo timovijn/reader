@@ -1,6 +1,6 @@
 // Component labels and local block context supplement the article-container
 // scorer. Publishers often put recommendations and sign-up forms inside prose.
-const component = /(?:^|[-_])(?:image[-_]caption|image[-_]description|photo[-_]caption|newsletter|related[-_](?:posts?|articles?|stories)|recommended[-_](?:posts?|articles?|stories)|author[-_](?:bio|profile)|social[-_]share|share[-_]buttons|post[-_]navigation)(?:$|[-_])/i;
+const component = /(?:^|[-_])(?:image[-_]caption|image[-_]description|photo[-_]caption|newsletter|tooltip[-_]content|(?:letter|contact|share)[-_]cta|related[-_](?:posts?|articles?|stories)|recommended[-_](?:posts?|articles?|stories)|author[-_](?:bio|profile)|social[-_]share|share[-_]buttons|post[-_]navigation)(?:$|[-_])/i;
 
 export function isMediaCaption(label,itemprop=''){
   const tokens=String(label||'').replace(/([a-z\d])([A-Z])/g,'$1-$2').split(/\s+/);

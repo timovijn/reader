@@ -24,7 +24,7 @@ function excluded(node,articleAncestors,publisherProse){
   if(name==='body')return false;
   if(attr(node,'aria-hidden')==='true'||node.attrs?.some(a=>a.name==='hidden'))return true;
   if(/display\s*:\s*none|visibility\s*:\s*hidden/i.test(attr(node,'style')))return true;
-  if(['navigation','dialog','complementary'].includes(attr(node,'role')))return true;
+  if(['navigation','dialog','complementary','tooltip'].includes(attr(node,'role')))return true;
   const label=attr(node,'class')+' '+attr(node,'id');
   if(isMediaCaption(label,attr(node,'itemprop')))return true;
   if(['main','article'].includes(name)||attr(node,'role')==='main'||attr(node,'itemprop')==='articleBody'||articleAncestors?.has(node))return false;
@@ -49,6 +49,13 @@ function jsonArticles(nodes){
     }catch{/* Invalid publisher metadata should not break a readable page. */}
   }
   return result;
+}
+
+export function cleanArticleExcerpt(value){
+  const text=String(value||'').replace(/\s+/g,' ').trim();
+  // Search previews are often already clipped by the publisher. They must not
+  // appear in the reading view as an unfinished introductory paragraph.
+  return text.length<=500&&!/(?:\.{3}|…)\s*$/.test(text)?text:'';
 }
 
 export function articleTitleMetadata(value,siteNames=[],evidence={}){
@@ -85,6 +92,17 @@ export function cleanArticleTitle(value,siteNames=[],evidence={}){
   const headlines=[evidence.headline,...(Array.isArray(evidence.headlines)?evidence.headlines:[])].filter(value=>typeof value==='string'&&value.trim()).map(value=>withoutSite(tidy(value)));
   const candidates=[...headlines,typeof evidence.schemaHeadline==='string'?withoutSite(tidy(evidence.schemaHeadline)):''].filter(Boolean);
   const author=key(tidy(evidence.author).replace(/^(?:written\s+)?by\s+/i,''));
+  // Some search titles prepend the author and append a print subtitle. Prefer
+  // the visible headline only when both its text and the author are confirmed.
+  const authorPrefix=title.match(/^(.+?)\s+[·|–—-]\s+(.+)$/);
+  if(authorPrefix&&author&&key(authorPrefix[1])===author&&!headlines.some(headline=>key(headline)===key(title))){
+    const rest=tidy(authorPrefix[2]).normalize('NFKC').toLowerCase();
+    const headline=headlines.find(headline=>{
+      const visible=tidy(headline).normalize('NFKC').toLowerCase();
+      return rest===visible||rest.startsWith(visible+':')||rest.startsWith(visible+' — ')||rest.startsWith(visible+' – ');
+    });
+    if(headline)return headline;
+  }
   const byline=title.match(/^(.+?)(?:,\s*|\s+[|–—-]\s+)(?:written\s+)?by\s+(.+?)\s*$/i);
   const plainByline=byline||title.match(/^(.+?)\s+by\s+(.+?)\s*$/i);
   if(plainByline){
@@ -126,7 +144,7 @@ export function extractArticle(html,url){
   const authorCandidates=[metadata.author,metadata['article:author'],schema.author,metadata['parsely-author'],metadata['dc.creator'],metadata['dcterms.creator'],authorNode&&rawText(authorNode)];
   const authorCandidate=authorCandidates.map(value=>normalise(typeof value==='string'?value:Array.isArray(value)?value.map(item=>typeof item==='string'?item:item?.name).filter(Boolean).join(', '):value?.name)).find(value=>value&&!/^https?:\/\//i.test(value))||'';
   const {title,author,originalTitle}=articleTitleMetadata(normalise(metadata['og:title']||schema.headline||(heading&&rawText(heading))||rawText(all.find(n=>tag(n)==='title')||{} )||'Untitled article').slice(0,500),[metadata['og:site_name'],schema.publisher?.name,new URL(base).hostname.replace(/^www\./,'').replace(/\.[^.]+$/,'')],{headlines:headings.map(rawText),schemaHeadline:schema.headline,author:authorCandidate});
-  const excerpt=normalise(metadata.description||metadata['og:description']||schema.description).slice(0,500);
+  const excerpt=[metadata.description,metadata['og:description'],schema.description].map(cleanArticleExcerpt).find(Boolean)||'';
   const published=normalise(metadata['article:published_time']||schema.datePublished).slice(0,100);
   const siteName=normalise(metadata['og:site_name']||schema.publisher?.name||new URL(base).hostname.replace(/^www\./,'')).slice(0,150);
   const body=all.find(n=>tag(n)==='body')||doc;

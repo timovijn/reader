@@ -43,6 +43,16 @@ a combined title's trailing byline, the name is retained in the author field.
 Original title metadata is kept for later repairs. Re-importing an already saved
 article refreshes its title/author metadata while preserving its saved text,
 save date and Read/Ready state.
+Author-prefixed search titles with an extra subtitle are reconciled with the
+visible heading only when the author prefix and heading both match. Tooltip
+content and contact call-to-action components are excluded from prose, including
+when nested inside an `articleBody` container or supplied as structured HTML.
+These rules were checked against the live LRB Jameson page; regression fixtures
+use synthetic article text and include unrelated publishers and preservation cases.
+The reader's introductory line comes from description metadata, not necessarily
+an editorial subtitle. Already truncated previews (ending in an ellipsis) and
+overlong descriptions are omitted; a complete alternate description is preferred
+when available. The importer does not invent missing preview text.
 
 ## Content boundaries
 
