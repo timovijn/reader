@@ -88,7 +88,7 @@ restores the collection position and keyboard focus.
 Rows load in batches of 40 as you approach the end, with **Show more** as an
 explicit control and fallback. There is no longer a 100-article loading cap.
 Legacy articles retain their original order until new save/read timestamps are
-recorded. Content is still stored in this browser's localStorage and remains
+recorded. Content is cached in this browser's localStorage and remains
 subject to its storage capacity; there is no account or cross-device sync.
 Storage failures roll back status changes rather than displaying an unsaved
 state. `tests/collection.test.mjs` covers filtering, sorting, old collections,
@@ -166,7 +166,7 @@ Open http://127.0.0.1:4173. Alternatively run `node scripts/build.mjs`, `node sc
 - Server-side article extraction on Vercel/local preview using an HTML5 parser, article-container and paragraph scoring, link-density filtering, metadata, public JSON-LD and common embedded application data.
 - Extracted content rebuilt from safe DOM elements, preserving links, emphasis and lists, while excluding images and their captions without executing publisher scripts or injecting arbitrary HTML.
 - Browser-assisted import via a clipboard bookmarklet for pages that refuse server requests, plus a paste-text fallback.
-- My collection as the single home view, with browser-local saving, three page colours, serif/sans type, adjustable text size and line width.
+- My collection as the single home view, with browser-local saving and automatic device sync, three page colours, serif/sans type, adjustable text size and line width.
 - Focus view, subtle line numbers and underline-only text selection.
 - Download EPUB from an article's controls or My collection. Exports include title, author, publication date, source link, headings and safe inline formatting, without images or interface decorations. Generation stays in the browser and requires no email account or extra service. For Kindle, upload the EPUB through [Send to Kindle](https://www.amazon.com/sendtokindle) for conversion; EPUB is not a native Kindle USB format.
 
@@ -180,7 +180,7 @@ Fonts are self-hosted from `fonts/MartinaPlantijn` (OTF) and `fonts/Shinka` (WOF
 
 ## Boundaries
 
-This is a first version. Extraction will not work with every website, and complex page layouts may yield imperfect results. Paywalls, authentication, bot protection, PDFs and JavaScript-only article bodies are not supported. It does not bypass access controls. The Vercel/local importer preserves links and common inline formatting; saved plain-text articles remain compatible. The source link is retained. Saved articles and preferences remain in localStorage in the current browser; there is no account sync. Article images and captions are excluded from imports. Images in previously saved articles are not rendered, and the browser policy blocks external image requests.
+This is a first version. Extraction will not work with every website, and complex page layouts may yield imperfect results. Paywalls, authentication, bot protection, PDFs and JavaScript-only article bodies are not supported. It does not bypass access controls. The Vercel/local importer preserves links and common inline formatting; saved plain-text articles remain compatible. The source link is retained. Saved articles and preferences remain in localStorage in the current browser. Automatic device sync is available when Upstash Redis is configured (see below). Article images and captions are excluded from imports. Images in previously saved articles are not rendered, and the browser policy blocks external image requests.
 
 ## Deploy to Vercel
 
@@ -218,3 +218,33 @@ Third-party HTML parsing code and original licences are in `vendor/`: parse5 7.3
 When a publisher returns HTTP 403, the extraction engine has not received the article. Use **Import from an open browser page** to install the **Copy for other lives** bookmarklet. Open an article you can access normally, click that bookmark, then paste the clip into other lives. It captures article text and metadata from the page DOM without images, makes no network requests from the source page, and does not collect cookies, form values, scripts or storage. Query strings and fragments are removed from the source URL. Imported clips stay in the current browser unless the user separately shares them.
 
 The bookmarklet is a user-operated fallback; it does not solve CAPTCHAs, log in, bypass paywalls or guarantee that every page will work. Browser and publisher policies may block bookmarklets; manual text pasting remains available.
+
+## Automatic device sync (Vercel)
+
+Connect Upstash Redis to this Vercel project and deploy the updated source.
+The API accepts either `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`
+or `KV_REST_API_URL` / `KV_REST_API_TOKEN`. Credentials stay server-side.
+For local preview, export these variables before starting `npm run dev`.
+
+This personal deployment uses one shared collection. There is no key, account
+or pairing step: open the same website on another device. Anyone who can access
+the website can read and change the collection. Restrict access at the hosting
+level if privacy is needed. Same-origin checks reject cross-origin browsers;
+they are not authentication or protection against direct API clients.
+
+Saved article text, additions, removals and Read/Ready changes sync. Preferences
+remain device-local. Existing local articles merge automatically on startup.
+The browser retains its collection for offline reading and a durable versioned
+outbox. Older key-based sync settings are ignored; locally saved articles are
+uploaded to the shared collection. Old private Redis namespaces are untouched.
+
+The server atomically merges each article; removals retain tombstones to prevent
+stale devices from resurrecting articles. Conflicts on the same article use the
+latest version (device timestamp plus random tie-breaker; device clocks should
+be accurate). Sync runs on startup, local changes, focus, reconnect and every
+minute while visible. The Sync devices dialog shows status and offers a retry.
+
+Without database configuration, the app reports sync is unavailable and keeps
+saving locally. Production syncing requires the database and deployed code.
+Collections are fetched in full; very large collections will eventually need
+paginated/delta sync.

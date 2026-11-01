@@ -61,3 +61,4 @@ await import('../tests/animation-performance.test.mjs');
 await import('../tests/collection.test.mjs');
 
 await import('../tests/dictionary.test.mjs');
+await import('../tests/collection-sync.test.mjs');
