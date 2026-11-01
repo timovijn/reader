@@ -5,7 +5,7 @@ import { gzipSync, deflateSync, brotliCompressSync } from 'node:zlib';
 import { createPublicFetch, createVercelHandler, isPublicAddress } from '../lib/vercel-article.js';
 import { extractArticle } from '../lib/article-extractor.js';
 import {cleanArticleBlocks} from '../lib/article-boundaries.js';
-import { handleRequest } from '../worker/index.js';
+import { handleRequest, isBrowserChallengePage } from '../worker/index.js';
 
 const articleUrl='https://clereviewofbooks.com/the-anderson-speedway-indianas-data-centers/';
 const prose='This is an original fixture about a town and its changing landscape. People gather to watch a race and talk about the future. The old buildings stand beside new developments, and everyone has a different idea of what comes next. ';
@@ -13,6 +13,25 @@ const paras=Array.from({length:5},(_,i)=>`<p>Section ${i+1}. ${prose}</p>`).join
 const fixture=`<!doctype html><html><head><title>Fallback</title><meta property="og:title" content="A town in motion"><meta name="author" content="Fixture Author"><meta property="og:site_name" content="A Literary Review"></head><body><header><nav>${'<a href="/shop">Store and subscription navigation</a>'.repeat(30)}</nav></header><article><header><h1>A town in motion</h1></header><div class="entry-content">${paras}<h2>Next chapter</h2><p>A <em>quiet</em> moment and <strong>bold</strong> words, with <a href="/context">more context</a> to consider. ${prose}</p><blockquote>A thought to pause on.</blockquote><ol start="3"><li>A first item.</li><li>A second item.</li></ol><img src="data:image/gif;base64,AAAA" data-src="/photo.jpg" alt="The track"><script>alert('unsafe')</script><div class="related-posts"><p>${'UNWANTED RECOMMENDATION '.repeat(100)}</p></div><section class="comments"><p>${'UNWANTED COMMENT '.repeat(100)}</p></section></div></article><footer>${prose.repeat(3)}</footer></body></html>`;
 const post=(url=articleUrl)=>new Request('https://folio.example/api/article',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({url})});
 const response=(html=fixture,options={})=>new Response(html,{headers:{'content-type':'text/html; charset=utf-8'},...options});
+// Some publishers use HTTP 401 for a browser challenge, not a login screen.
+// Use synthetic challenge markup; never store live challenge/session tokens.
+const browserChallenge='<html><head><title>publisher.example</title></head><body><p>Please enable JS and disable any ad blocker</p><script>var dd={cid:"synthetic",hsh:"synthetic"};</script></body></html>';
+assert.equal(isBrowserChallengePage(browserChallenge),true);
+assert.equal(isBrowserChallengePage('<title>Just a moment</title><script src="/cdn-cgi/challenge-platform/example.js"></script>'),true);
+assert.equal(isBrowserChallengePage('<article><p>This article discusses why sites ask users to enable JavaScript and cookies.</p></article>'),false);
+assert.equal(isBrowserChallengePage('<script src="https://geo.captcha-delivery.com/example.js"></script><article><p>A normal article.</p></article>'),false);
+assert.equal(isBrowserChallengePage(browserChallenge+'x'.repeat(65536)),false);
+const sharedUrl='https://www.wsj.com/lifestyle/harvard-class-humanities-32e06366?st=DoqM7q&reflink=desktopwebshare_permalink';
+for(const status of [200,401,403,429]){
+ let fetched='';const fetchChallenge=async url=>{fetched=String(url);return response(browserChallenge,{status});};
+ for(const handler of [request=>handleRequest(request,fetchChallenge),request=>createVercelHandler(fetchChallenge).fetch(request)]){
+  const result=await handler(post(sharedUrl));assert.equal(result.status,422);const data=await result.json();assert.equal(data.code,'bot_protection');assert.match(data.error,/browser verification/);assert.doesNotMatch(data.error,/requires a sign-in/);assert.equal(fetched,sharedUrl);
+ }
+}
+assert.equal((await (await handleRequest(post(),async()=>response('Please sign in to read this article.',{status:401}))).json()).code,'sign_in_required');
+let errorCancelled=false;
+const largeError=new ReadableStream({start(controller){controller.enqueue(new TextEncoder().encode('x'.repeat(100000)));},cancel(){errorCancelled=true;}});
+assert.equal((await (await handleRequest(post(),async()=>new Response(largeError,{status:403}))).json()).code,'access_denied');assert.equal(errorCancelled,true);
 
 // The original filter incorrectly blocked the whole 192.0.*.* range.
 for(const address of ['192.0.78.24','192.0.78.25','192.0.80.1','::ffff:192.0.78.24','::ffff:c000:4e18','2606:4700:4700::1111'])assert.equal(isPublicAddress(address),true,address);

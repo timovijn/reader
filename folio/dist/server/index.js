@@ -97,6 +97,27 @@ export function validateUrl(value) {
  if(!['https:','http:'].includes(url.protocol)||url.username||url.password||(url.port&&!['80','443'].includes(url.port))||!host.includes('.')||host.includes(':')||host.startsWith('[')||/^\d+(\.\d+){3}$/.test(host)||/(^|\.)(localhost|local|internal|test|invalid|home|lan|arpa)$/.test(host)) throw importFailure('invalid_url','Please use a public http or https article URL.');
  url.hash='';return url;
 }
+export function isBrowserChallengePage(html){
+ // Require both a small interstitial and technical challenge evidence. A
+ // normal article discussing JavaScript, captchas or access controls is prose.
+ if(typeof html!=='string'||html.length>65536)return false;
+ const dataDome=/\b(?:var|let|const)\s+dd\s*=\s*\{|(?:geo\.)?captcha-delivery\.com/i.test(html);
+ const cloudflare=/\/cdn-cgi\/challenge-platform\/|\bcf-chl-/i.test(html);
+ const instruction=/please enable (?:js|javascript)|enable javascript and cookies|verify (?:that )?you are human|checking your browser|just a moment|disable (?:any |your )?ad blocker/i.test(html);
+ return instruction&&(dataDome||cloudflare);
+}
+async function readErrorPreview(response,signal){
+ const reader=response.body?.getReader();if(!reader)return '';
+ const chunks=[];let size=0;
+ const cancel=()=>{reader.cancel().catch(()=>{});};signal.addEventListener('abort',cancel,{once:true});
+ try{
+  while(size<65536){signal.throwIfAborted();const {done,value}=await reader.read();if(done)break;const part=value.subarray(0,65536-size);chunks.push(part);size+=part.byteLength;}
+  signal.throwIfAborted();
+ }finally{signal.removeEventListener('abort',cancel);await reader.cancel().catch(()=>{});reader.releaseLock();}
+ const bytes=new Uint8Array(size);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}
+ return new TextDecoder().decode(bytes);
+}
+const browserVerification=()=>importFailure('bot_protection','This website requires browser verification before it will return the article. Open the link at its source, then use “Import from your browser” to copy text you can read.');
 async function readPage(response,signal){
  const reader=response.body?.getReader();if(!reader)throw importFailure('empty_page','This website returned an empty page.');
  let size=0;const chunks=[];
@@ -139,13 +160,15 @@ export async function handleRequest(request, fetchPage = fetch){
  }
  if(!response)throw importFailure('too_many_redirects','This website redirected too many times. Try its final article link.');
  if(!response.ok){
- await response.body?.cancel();
+ const preview=await readErrorPreview(response,signal);
+ if(isBrowserChallengePage(preview))throw browserVerification();
  const errors={401:['sign_in_required','This article requires a sign-in. Open it at the source, then paste text you can access.'],403:['access_denied','This website did not allow other lives to open the article (HTTP 403). Use “Import from an open browser page” below, or paste the article text.'],404:['not_found','This article could not be found. Please check the link.'],429:['rate_limited','This website is limiting requests. Please try again later.']};
  const [code,message]=errors[response.status]||['upstream_error','The website returned an error ('+response.status+'). Please try again later.'];throw importFailure(code,message);
  }
  const type=response.headers.get('content-type')||'';
  if(type&&!/(text\/html|application\/xhtml\+xml|text\/plain)/i.test(type)){await response.body?.cancel();throw importFailure('not_html','This link is not a web article. Please use an article page URL.');}
  const html=await readPage(response,signal);
+ if(isBrowserChallengePage(html))throw browserVerification();
  if(!/<(?:!doctype|html|head|body|article|main|p|div|h1)\b/i.test(html))throw importFailure('not_html','This link does not contain an HTML article.');
  return json({html,url:url.href});
  }catch(error){

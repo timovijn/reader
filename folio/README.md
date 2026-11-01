@@ -215,7 +215,9 @@ Third-party HTML parsing code and original licences are in `vendor/`: parse5 7.3
 
 ## Browser-assisted import
 
-When a publisher returns HTTP 403, the extraction engine has not received the article. Use **Import from an open browser page** to install the **Copy for other lives** bookmarklet. Open an article you can access normally, click that bookmark, then paste the clip into other lives. It captures article text and metadata from the page DOM without images, makes no network requests from the source page, and does not collect cookies, form values, scripts or storage. Query strings and fragments are removed from the source URL. Imported clips stay in the current browser unless the user separately shares them.
+When a publisher blocks the server request, the extraction engine may never receive the article. HTTP 401 is not always a sign-in requirement: WSJ can return a small DataDome JavaScript challenge with that status, including for a shared link. The transport checks a bounded 64 KB error preview for technical challenge markers plus verification instructions and reports `bot_protection` separately from genuine sign-in errors. Small HTTP 200 challenge pages receive the same classification. The supplied URL's query parameters are preserved during fetching; the importer does not execute challenges or redeem browser sessions.
+
+Use **Import from your browser** to install the **Copy for other lives** bookmarklet. Open an article you can access normally, click that bookmark, then paste the clip into other lives. It captures article text and metadata from the page DOM without images, makes no network requests from the source page, and does not collect cookies, form values, scripts or storage. Query strings and fragments are removed from the clipped source URL. The imported article follows the collection's normal local storage and device sync behaviour.
 
 The bookmarklet is a user-operated fallback; it does not solve CAPTCHAs, log in, bypass paywalls or guarantee that every page will work. Browser and publisher policies may block bookmarklets; manual text pasting remains available.
 
