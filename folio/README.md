@@ -190,7 +190,7 @@ Fonts are self-hosted from `fonts/MartinaPlantijn` (OTF) and `fonts/Shinka` (WOF
 
 ## Boundaries
 
-This is a first version. Extraction will not work with every website, and complex page layouts may yield imperfect results. Paywalls, authentication, bot protection, PDFs and JavaScript-only article bodies are not supported. It does not bypass access controls. The Vercel/local importer preserves links and common inline formatting; saved plain-text articles remain compatible. The source link is retained. Saved articles and preferences remain in localStorage in the current browser. Automatic device sync is available when Upstash Redis is configured (see below). Article images and captions are excluded from imports. Images in previously saved articles are not rendered, and the browser policy blocks external image requests.
+This is a first version. Extraction will not work with every website, and complex page layouts may yield imperfect results. Publisher restrictions, authentication and bot protection may prevent imports; PDFs and JavaScript-only bodies are unsupported. The importer does not sign in or solve browser challenges. It can extract full text when the publisher includes it in an anonymous response, including through the scoped NYT request fallback described below. The Vercel/local importer preserves links and common inline formatting; saved plain-text articles remain compatible. The source link is retained. Saved articles and preferences remain in localStorage in the current browser. Automatic device sync is available when Upstash Redis is configured (see below). Article images and captions are excluded from imports. Images in previously saved articles are not rendered, and the browser policy blocks external image requests.
 
 ## Deploy to Vercel
 
@@ -217,7 +217,21 @@ The Node transport validates each destination, filters private DNS answers, and 
 
 The extractor parses HTML without running scripts or loading resources. It chooses prose-heavy semantic containers rather than navigation, comments or related links, and compares that result with public Article JSON-LD, Next.js JSON payloads, Nuxt object/indexed data, Apollo state and initial-state article objects. Article-body boundaries include nested blog content, image-caption components, newsletter widgets and author profiles. A second pass removes standalone newsletter prompts and labelled runs of related-story links even when they sit inside the article body. It resumes at normal prose, preserving subsequent interview answers, editorial references and ordinary lists. This cleanup runs before candidate ranking so a fallback cannot win merely by containing those extras. These are conservative structural rules, not a guarantee of perfect classification on every layout; regression cases are in `tests/article-boundaries.test.mjs`.
 
-Candidate scoring rewards distinct prose and retains formatted HTML when another candidate is similar. Application data must identify the article by URL/title or belong to a named article/story/post/entry object; recommendation branches, mismatched stories and explicitly restricted metadata objects are excluded. Embedded HTML becomes text-only paragraphs without scripts, images or captions. Parsing and traversal have size/depth/work limits; executable application code is never evaluated. Publisher adapters remain available for exceptional formats such as Times paragraph blocks and New Yorker prose markers.
+Candidate scoring rewards distinct prose and retains formatted HTML when another candidate is similar. Typed, URL-matched publisher article data takes priority when it covers at least 90% of the HTML text and at least 80% of its own text is corroborated by HTML paragraphs, excluding surrounding interface labels without accepting a short preview. Application data must identify the article by URL/title or belong to a named article/story/post/entry object; recommendation branches, mismatched stories and explicitly restricted metadata objects are excluded. Embedded HTML becomes text-only paragraphs without scripts, images or captions. Parsing and traversal have size/depth/work limits; executable application code is never evaluated. Publisher adapters remain available for exceptional formats such as Times paragraph blocks and New Yorker prose markers.
+
+For dated NYT article URLs, an initial HTTP 401/403 triggers one retry using
+`Mozilla/5.0 (compatible; Google-InspectionTool/1.0)`, matching the NYT setting in
+the user's supplied paywall-cleaner package. The retry uses the same validated
+public transport, URL query parameters and shared timeout budget. Other domains,
+NYT account/game pages, successful responses and rate limits do not trigger it;
+redirects to other publishers revert to the ordinary request profile. No browser
+cookies, credentials or extension code are sent or executed. NYT may still refuse
+requests from some networks or change its responses; this is not universal access.
+The dark-nutrition article was checked live: the normal profile received a 403
+challenge, while this profile returned HTML containing 45 typed article blocks
+(4,584 words). Automated regression fixtures use synthetic text.
+The iOS app also consumes this request profile and the same typed article parser;
+see `../ios/README.md` for its local WebKit loader and generation/parity checks.
 
 This layer extracts text present in the returned page. It does not sign in, execute client-side applications, or resolve browser challenges. Server-browser rendering is not configured. Sites that withhold text or refuse server requests still need browser-assisted import or pasted text. Regression fixtures for common data formats and candidate selection are in `tests/embedded-articles.test.mjs`.
 

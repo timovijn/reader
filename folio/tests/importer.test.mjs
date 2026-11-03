@@ -22,6 +22,31 @@ assert.equal(isBrowserChallengePage('<article><p>This article discusses why site
 assert.equal(isBrowserChallengePage('<script src="https://geo.captcha-delivery.com/example.js"></script><article><p>A normal article.</p></article>'),false);
 assert.equal(isBrowserChallengePage(browserChallenge+'x'.repeat(65536)),false);
 const sharedUrl='https://www.wsj.com/lifestyle/harvard-class-humanities-32e06366?st=DoqM7q&reflink=desktopwebshare_permalink';
+const nytDeniedUrl='https://www.nytimes.com/2026/10/21/magazine/fixture.html?src=longreads';
+const inspectionAgent='Mozilla/5.0 (compatible; Google-InspectionTool/1.0)';
+const profiles=[];
+const profileResult=await createVercelHandler(async(url,options)=>{
+ profiles.push({url:String(url),agent:options.headers['User-Agent'],signal:options.signal});
+ return options.headers['User-Agent']===inspectionAgent?response(fixture):response(browserChallenge,{status:403});
+}).fetch(post(nytDeniedUrl));
+assert.equal(profileResult.status,200);assert.equal(profiles.length,2);assert.equal(profiles[1].agent,inspectionAgent);assert.equal(profiles[1].url,nytDeniedUrl);assert.equal(profiles[0].signal,profiles[1].signal);assert.equal((await profileResult.json()).article.title,'A town in motion');
+for(const domain of ['nytimes.com.example.org','example.com','www.wsj.com']){
+ let attempts=0;await handleRequest(post(nytDeniedUrl.replace('www.nytimes.com',domain)),async()=>{attempts++;return response(browserChallenge,{status:403});});assert.equal(attempts,1);
+}
+for(const url of ['https://www.nytimes.com/account','https://www.nytimes.com/games/wordle/index.html']){
+ let attempts=0;await handleRequest(post(url),async()=>{attempts++;return response(browserChallenge,{status:403});});assert.equal(attempts,1);
+}
+for(const status of [200,404,429]){
+ let attempts=0;await handleRequest(post(nytDeniedUrl),async()=>{attempts++;return response(status===200?fixture:'not found',{status});});assert.equal(attempts,1);
+}
+let deniedAttempts=0;assert.equal((await (await handleRequest(post(nytDeniedUrl),async()=>{deniedAttempts++;return response(browserChallenge,{status:403});})).json()).code,'bot_protection');assert.equal(deniedAttempts,2);
+const redirectAgents=[];
+await handleRequest(post(nytDeniedUrl),async(url,options)=>{
+ redirectAgents.push(options.headers['User-Agent']);
+ if(redirectAgents.length===1)return response(browserChallenge,{status:403});
+ if(redirectAgents.length===2)return new Response(null,{status:302,headers:{location:'https://example.com/article'}});
+ return response(fixture);
+});assert.equal(redirectAgents.length,3);assert.equal(redirectAgents[1],inspectionAgent);assert.notEqual(redirectAgents[2],inspectionAgent);
 for(const status of [200,401,403,429]){
  let fetched='';const fetchChallenge=async url=>{fetched=String(url);return response(browserChallenge,{status});};
  for(const handler of [request=>handleRequest(request,fetchChallenge),request=>createVercelHandler(fetchChallenge).fetch(request)]){
@@ -88,6 +113,7 @@ assert.ok(JSON.stringify(nytArticle.body).includes('https://www.nytimes.com/cont
 assert.ok(!JSON.stringify(nytArticle.body).includes('javascript:'));assert.ok(!JSON.stringify(nytArticle.body).includes('UNWANTED'));
 assert.equal(extractArticle(nytPage(nytState),articleUrl).extraction.method,'html');
 assert.equal(extractArticle(nytPage(nytState),nytUrl.replace('fixture.html','other.html')).extraction.method,'html');
+assert.equal(extractArticle(nytPage(nytState.replace(nytUrl,nytUrl.replace('www.nytimes.com','different.example'))),nytUrl).extraction.method,'html');
 assert.equal(extractArticle(nytPage('{broken:true}'),nytUrl).extraction.method,'html');
 
 // Simulate actual Node request streams, including compression and failed IPs.

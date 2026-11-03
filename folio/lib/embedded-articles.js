@@ -103,19 +103,25 @@ export function embeddedArticleCandidates(nodes,base,title){
 }
 
 export function chooseArticleCandidate(candidates){
+  const normalise=value=>String(value||'').replace(/\s+/g,' ').trim();
   const metrics=candidate=>{
     const texts=candidate.blocks.map(block=>normalise(block[1])).filter(Boolean);
     const unique=[...new Set(texts)];
     const characters=unique.reduce((sum,text)=>sum+text.length,0);
     const prose=unique.filter(text=>text.length>=80).reduce((sum,text)=>sum+text.length,0);
-    return {characters,score:prose+characters*.15};
+    return {characters,texts:new Set(unique),score:prose+characters*.15};
   };
   let best=candidates[0],quality=metrics(best);
   for(const candidate of candidates.slice(1)){
     const next=metrics(candidate);
+    // A publisher adapter provides typed, URL-matched article paragraphs.
+    // When it agrees with almost all HTML prose, prefer it to the surrounding
+    // header, credits and advertisement labels included by broad DOM roots.
+    const overlap=[...next.texts].filter(text=>quality.texts.has(text)).reduce((sum,text)=>sum+text.length,0);
+    const confirmedBody=candidate.method==='publisher-data'&&next.characters>=quality.characters*.9&&overlap>=next.characters*.8;
     // Prefer the formatted HTML when candidates are similar; avoid replacing it
     // with duplicated cache content or a collection of short interface labels.
-    if(next.characters>=180&&(quality.characters<180||next.score>quality.score*1.3)){
+    if(next.characters>=180&&(quality.characters<180||next.score>quality.score*1.3||confirmedBody)){
       best=candidate;quality=next;
     }
   }

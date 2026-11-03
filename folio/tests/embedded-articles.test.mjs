@@ -44,4 +44,10 @@ const formatted={method:'html',blocks:Array.from({length:4},(_,i)=>['p',`${i} ${
 const duplicate={method:'embedded-data',blocks:Array.from({length:100},()=>['p',prose])};
 assert.equal(chooseArticleCandidate([formatted,duplicate]),formatted);
 assert.equal(chooseArticleCandidate([formatted,{method:'embedded-data',blocks:Array.from({length:100},(_,i)=>['p',`Navigation ${i}`])}]),formatted);
+// Typed publisher paragraphs can remove surrounding DOM clutter when their
+// text corroborates almost all of the HTML body, without preferring previews.
+const typed={method:'publisher-data',blocks:[['p',prose.repeat(8)]]};
+const decorated={method:'html',blocks:[...typed.blocks,['p','Advertisement']]};
+assert.equal(chooseArticleCandidate([decorated,typed]),typed);
+assert.equal(chooseArticleCandidate([decorated,{method:'publisher-data',blocks:[['p',prose]]}]),decorated);
 console.log('Passed: Next.js, Nuxt object/indexed payloads, Apollo and initial-state article extraction; candidate comparison; unrelated/restricted content exclusion; inert parsing and text-only output.');

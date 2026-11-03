@@ -31,7 +31,7 @@ export function nytArticleBlocks(nodes,base){
     const source=(node.childNodes||[]).map(n=>n.value||'').join('');
     const article=assignedData(source)?.loaderData?.data?.article;
     if(!article)continue;
-    if(article.url){try{if(new URL(article.url,base).pathname!==requested.pathname)continue;}catch{continue;}}
+    if(article.url){try{const target=new URL(article.url,base);if(target.hostname.replace(/^www\./,'')!==requested.hostname.replace(/^www\./,'')||target.pathname!==requested.pathname)continue;}catch{continue;}}
     const content=article.sprinkledBody?.content;
     if(!Array.isArray(content))continue;
     const blocks=[];

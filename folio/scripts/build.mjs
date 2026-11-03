@@ -18,7 +18,9 @@ for (const family of ['MartinaPlantijn', 'Shinka']) {
   }
 }
 const dictionary=(await readFile('lib/dictionary.js','utf8')).replace(/^export default .+;$/m,'').replace(/^export /gm,'');
+const publisherProfiles=JSON.parse(await readFile('lib/publisher-profiles.json','utf8'));
 const worker=(await readFile('worker/index.js','utf8'))
+  .replace("import publisherProfiles from '../lib/publisher-profiles.json' with {type:'json'};",()=> 'const publisherProfiles='+JSON.stringify(publisherProfiles)+';')
   .replace("import { handleDictionaryRequest } from '../lib/dictionary.js';",dictionary)
   .replace('"__FOLIO_HTML__"',JSON.stringify(html))
   .replace('"__FOLIO_FONTS__"',JSON.stringify(fonts));

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { extractArticle, cleanArticleTitle, articleTitleMetadata, cleanArticleExcerpt } from '../lib/article-extractor.js';
+import { extractArticle, cleanArticleTitle, articleTitleMetadata, cleanArticleExcerpt,resolveArticleAuthor } from '../lib/article-extractor.js';
 import { isMediaCaption, cleanArticleBlocks } from '../lib/article-boundaries.js';
 
 const url='https://example.com/articles/interview';
@@ -67,6 +67,9 @@ assert.equal(articleTitleMetadata('Travelling, by Train',[],{headlines:['Travell
 assert.equal(articleTitleMetadata(harpersTitle,[],{headlines:['Kicking Robots'],author:'https://example.com/authors/james'}).author,'James Vincent');
 const profileAuthor=extractArticle(`<meta property="og:title" content="${harpersTitle}"><meta property="article:author" content="https://example.com/author/james"><script type="application/ld+json">{"@type":"Article","author":{"name":"James Vincent"}}</script><article><h1>Kicking Robots</h1><p>${intro.repeat(3)}</p></article>`,'https://example.com/story');
 assert.equal(profileAuthor.author,'James Vincent');
+assert.equal(resolveArticleAuthor(['https://example.com/by/a'],[{'@type':'NewsArticle',url:'https://example.com/story',author:[{name:'One Writer'},{name:'Two Writers'}]}],[],'https://example.com/story'),'One Writer, Two Writers');
+assert.equal(resolveArticleAuthor(['By https://example.com/by/a'],[{'@type':'NewsArticle',url:'https://other.example/story',author:{name:'Wrong Writer'}}],['By Fallback Writer'],'https://example.com/story'),'Fallback Writer');
+assert.equal(resolveArticleAuthor([],['invalid JSON',JSON.stringify({'@graph':[{'@type':'Person',name:'Unrelated Person'},{'@type':'NewsArticle',author:{name:'Correct Writer'}}]})]),'Correct Writer');
 const hiddenTitle=extractArticle(`<meta property="og:title" content="${harpersTitle}"><div hidden><h1>Kicking Robots</h1></div><article><p>${intro.repeat(3)}</p></article>`,'https://example.com/story');
 assert.equal(hiddenTitle.title,harpersTitle);
 const link=(text,href='/another-story')=>['p',text,[{tag:'a',href,children:[text]}]];

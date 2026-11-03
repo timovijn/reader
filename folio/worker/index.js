@@ -1,4 +1,5 @@
 import { handleDictionaryRequest } from '../lib/dictionary.js';
+import publisherProfiles from '../lib/publisher-profiles.json' with {type:'json'};
 const page = "__FOLIO_HTML__";
 const fonts = "__FOLIO_FONTS__";
 const json = (data,status=200) => Response.json(data,{status,headers:{'cache-control':'no-store','x-content-type-options':'nosniff'}});
@@ -65,6 +66,16 @@ export async function handleRequest(request, fetchPage = fetch){
  visited.add(url.href);
  const options={redirect:'manual',signal,headers:{'User-Agent':'Mozilla/5.0 (compatible; OtherLivesReader/1.0; article reading view)','Accept':'text/html,application/xhtml+xml;q=0.9','Accept-Language':'en;q=0.8,*;q=0.5'}};
  response=await fetchPage(url,options);
+ // NYT's article response depends on the request profile. This matches the
+ // NYT-specific setting in the user's supplied cleaner, without executing its
+ // extension code or forwarding browser credentials. Keep the normal request
+ // first and retry once, only for denied dated article URLs on this publisher.
+ const profile=publisherProfiles.find(profile=>(url.hostname===profile.domain||url.hostname.endsWith('.'+profile.domain))&&new RegExp(profile.pathPattern).test(url.pathname));
+ if(profile?.retryStatuses.includes(response.status)){
+  await response.body?.cancel();
+  options.headers['User-Agent']=profile.userAgent;
+  response=await fetchPage(url,options);
+ }
  if([502,503,504].includes(response.status)){await response.body?.cancel();response=await fetchPage(url,options);}
  if([301,302,303,307,308].includes(response.status)){
  const location=response.headers.get('location');await response.body?.cancel();if(!location)throw importFailure('bad_redirect','The article redirected without a destination.');

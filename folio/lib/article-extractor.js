@@ -51,6 +51,36 @@ function jsonArticles(nodes){
   return result;
 }
 
+export function resolveArticleAuthor(primary=[],structured=[],fallback=[],base=''){
+  const tidy=value=>String(value||'').replace(/\s+/g,' ').trim();
+  function name(value){
+    if(Array.isArray(value))return [...new Set(value.slice(0,20).map(name).filter(Boolean))].join(', ').slice(0,250);
+    if(value&&typeof value==='object')return name(value.name||value.displayName);
+    if(typeof value!=='string')return '';
+    const text=tidy(value).replace(/^(?:written\s+)?by\s+/i,'');
+    return !text||/^(?:https?:\/\/|www\.|mailto:|nyt:\/\/)/i.test(text)||/[<>]/.test(text)?'':text.slice(0,250);
+  }
+  const direct=primary.map(name).find(Boolean);if(direct)return direct;
+  const queue=[];
+  for(const value of structured.slice(0,40)){
+    try{const item=typeof value==='string'?JSON.parse(value):value;if(item)queue.push(...(Array.isArray(item)?item:[item]));}catch{/* Ignore malformed metadata. */}
+  }
+  let visits=0;
+  while(queue.length&&visits++<500){
+    const item=queue.shift();if(!item||typeof item!=='object')continue;
+    const types=Array.isArray(item['@type'])?item['@type']:[item['@type']];
+    let matches=true;
+    if(base&&typeof item.url==='string'){
+      try{const target=new URL(item.url,base),wanted=new URL(base);matches=target.hostname.replace(/^www\./,'')===wanted.hostname.replace(/^www\./,'')&&target.pathname===wanted.pathname;}catch{matches=false;}
+    }
+    if(matches&&types.some(type=>/^(?:Article|NewsArticle|BlogPosting|Report|Review|ScholarlyArticle|TechArticle)$/i.test(type||''))){
+      const author=name(item.author||item.creator);if(author)return author;
+    }
+    for(const key of ['@graph','mainEntity']){const child=item[key];if(child)queue.push(...(Array.isArray(child)?child.slice(0,100):[child]));}
+  }
+  return fallback.map(name).find(Boolean)||'';
+}
+
 export function cleanArticleExcerpt(value){
   const text=String(value||'').replace(/\s+/g,' ').trim();
   // Search previews are often already clipped by the publisher. They must not
@@ -141,8 +171,7 @@ export function extractArticle(html,url){
   const heading=headings[0];
   const schema=structured.find(item=>typeof item.headline==='string')||structured[0]||{};
   const authorNode=all.find(node=>attr(node,'rel').split(/\s+/).includes('author'))||all.find(node=>attr(node,'itemprop')==='author');
-  const authorCandidates=[metadata.author,metadata['article:author'],schema.author,metadata['parsely-author'],metadata['dc.creator'],metadata['dcterms.creator'],authorNode&&rawText(authorNode)];
-  const authorCandidate=authorCandidates.map(value=>normalise(typeof value==='string'?value:Array.isArray(value)?value.map(item=>typeof item==='string'?item:item?.name).filter(Boolean).join(', '):value?.name)).find(value=>value&&!/^https?:\/\//i.test(value))||'';
+  const authorCandidate=resolveArticleAuthor([metadata.author,metadata['article:author']],structured,[metadata['parsely-author'],metadata['dc.creator'],metadata['dcterms.creator'],authorNode&&rawText(authorNode)],base);
   const {title,author,originalTitle}=articleTitleMetadata(normalise(metadata['og:title']||schema.headline||(heading&&rawText(heading))||rawText(all.find(n=>tag(n)==='title')||{} )||'Untitled article').slice(0,500),[metadata['og:site_name'],schema.publisher?.name,new URL(base).hostname.replace(/^www\./,'').replace(/\.[^.]+$/,'')],{headlines:headings.map(rawText),schemaHeadline:schema.headline,author:authorCandidate});
   const excerpt=[metadata.description,metadata['og:description'],schema.description].map(cleanArticleExcerpt).find(Boolean)||'';
   const published=normalise(metadata['article:published_time']||schema.datePublished).slice(0,100);
