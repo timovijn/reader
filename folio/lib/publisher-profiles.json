@@ -2,7 +2,7 @@
   {
     "id": "nyt-article",
     "domain": "nytimes.com",
-    "pathPattern": "^/\\d{4}/\\d{2}/\\d{2}/.+\\.html$",
+    "pathPattern": "^/\\d{4}/\\d{2}/\\d{2}/.+\\.html/?$",
     "userAgent": "Mozilla/5.0 (compatible; Google-InspectionTool/1.0)",
     "retryStatuses": [401, 403],
     "blockedResourcePatterns": [

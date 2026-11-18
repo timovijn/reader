@@ -15,6 +15,7 @@ const profiles=JSON.parse(await readFile(new URL('../Shared/PublisherProfiles.js
 assert.deepEqual(profiles,JSON.parse(await readFile(new URL('../../folio/lib/publisher-profiles.json',import.meta.url),'utf8')));
 const profileFor=value=>{const url=new URL(value);return profiles.find(profile=>(url.hostname===profile.domain||url.hostname.endsWith('.'+profile.domain))&&new RegExp(profile.pathPattern).test(url.pathname));};
 assert.equal(profileFor('https://www.nytimes.com/2026/10/21/magazine/story.html?src=longreads').userAgent,'Mozilla/5.0 (compatible; Google-InspectionTool/1.0)');
+assert.equal(profileFor('https://www.nytimes.com/2026/11/11/magazine/eagle-cam-big-bear-lake.html/?src=longreads').id,'nyt-article');
 for(const url of ['https://nytimes.com.example.org/2026/10/21/a/story.html','https://www.nytimes.com/account','https://www.nytimes.com/games/wordle.html','https://example.com/2026/10/21/a/story.html'])assert.equal(profileFor(url),undefined);
 assert.ok(profiles[0].blockedResourcePatterns.some(pattern=>new RegExp(pattern).test('https://www.nytimes.com/meter.js')));
 assert.ok(!profiles[0].blockedResourcePatterns.some(pattern=>new RegExp(pattern).test('https://www.nytimes.com/2026/10/21/magazine/story.html')));
@@ -33,6 +34,10 @@ context.document={title:'Search title',cloneNode:()=>clone,
  querySelector:selector=>selector==='h1'?heading:selector.startsWith('meta')?{content:metadata[selector.match(/(?:property|name)="([^"]+)"/)?.[1]]||''}:null,
  querySelectorAll:selector=>selector==='h1'?[heading]:selector==='script[type="application/ld+json"]'?structuredMetadata.map(textContent=>({textContent})):selector==='script'?[{textContent:'window.__preloadedData = '+JSON.stringify({loaderData:{data:{article:{url,sprinkledBody:{content:publisher}}}}})}]:[]};
 const clip=context.otherLivesExtract();
+context.location=new URL(url.replace('.html?', '.html/?'));
+assert.equal(context.otherLivesExtract().body.length,2,'trailing slash must retain URL-matched publisher text');
+assert.equal(context.otherLivesExtract().author,'Example Writer');
+context.location=new URL(url);
 assert.equal(clip.title,'An example article');assert.equal(clip.author,'Example Writer');assert.equal(clip.excerpt,'');
 assert.equal(clip.body.length,2);assert.equal(clip.body[0][1],prose.repeat(6).trim());
 assert.equal(clip.body.at(-1)[1],'The final paragraph is part of the original article.');

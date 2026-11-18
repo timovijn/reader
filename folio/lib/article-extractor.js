@@ -71,7 +71,7 @@ export function resolveArticleAuthor(primary=[],structured=[],fallback=[],base='
     const types=Array.isArray(item['@type'])?item['@type']:[item['@type']];
     let matches=true;
     if(base&&typeof item.url==='string'){
-      try{const target=new URL(item.url,base),wanted=new URL(base);matches=target.hostname.replace(/^www\./,'')===wanted.hostname.replace(/^www\./,'')&&target.pathname===wanted.pathname;}catch{matches=false;}
+      try{const target=new URL(item.url,base),wanted=new URL(base);matches=target.hostname.replace(/^www\./,'')===wanted.hostname.replace(/^www\./,'')&&target.pathname.replace(/\/+$/,'')===wanted.pathname.replace(/\/+$/,'');}catch{matches=false;}
     }
     if(matches&&types.some(type=>/^(?:Article|NewsArticle|BlogPosting|Report|Review|ScholarlyArticle|TechArticle)$/i.test(type||''))){
       const author=name(item.author||item.creator);if(author)return author;

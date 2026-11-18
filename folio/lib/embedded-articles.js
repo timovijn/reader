@@ -67,7 +67,7 @@ export function embeddedArticleCandidates(nodes,base,title){
     const label=normalise(item.headline?.default||item.headline||item.title||item.name).toLowerCase();
     const url=typeof item.url==='string'?item.url:typeof item.canonicalUrl==='string'?item.canonicalUrl:null;
     let matchingUrl=false,mismatchedUrl=false;
-    if(url){try{const target=new URL(url,base);matchingUrl=target.hostname===requested.hostname&&target.pathname===requested.pathname;mismatchedUrl=!matchingUrl;}catch{mismatchedUrl=true;}}
+    if(url){try{const target=new URL(url,base);matchingUrl=target.hostname===requested.hostname&&target.pathname.replace(/\/+$/,'')===requested.pathname.replace(/\/+$/,'');mismatchedUrl=!matchingUrl;}catch{mismatchedUrl=true;}}
     const matchingTitle=label&&wanted&&label===wanted;
     const articleScope=/(?:^|\.)(?:article|story|post|entry)(?:\.|$)/i.test(path)||/^(?:NewsArticle|Article|BlogPosting)$/i.test(item['@type']||item.__typename||'');
     if(articleScope&&(mismatchedUrl||(label&&!matchingTitle&&!matchingUrl)))return;

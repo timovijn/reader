@@ -107,6 +107,7 @@ const nytData={loaderData:{data:{article:{url:nytUrl,sprinkledBody:{content:nytC
 const nytState=JSON.stringify(nytData).replace('"errors":null','"errors":undefined');
 const nytPage=state=>`<article><p>${prose}</p></article><script>window.__preloadedData = ${state}; throw new Error('must never execute');</script>`;
 const nytArticle=extractArticle(nytPage(nytState),nytUrl);
+assert.equal(extractArticle(nytPage(nytState),nytUrl+'/?src=longreads').extraction.method,'publisher-data');
 assert.equal(nytArticle.extraction.method,'publisher-data');assert.equal(nytArticle.body.length,2);
 assert.ok(nytArticle.body[0][1].includes('undefined, and braces { inside a string }'));
 assert.ok(JSON.stringify(nytArticle.body).includes('https://www.nytimes.com/context'));

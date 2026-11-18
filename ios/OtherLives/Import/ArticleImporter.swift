@@ -44,8 +44,6 @@ final class ArticleImporter {
             lastError = ImportError.invalidLink.localizedDescription
             return nil
         }
-        if let existing = existingArticle(for: url, in: context),
-           !existing.author.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return existing }
         let item = Pending(url: url)
         pending.append(item)
         defer { pending.removeAll { $0.id == item.id } }
@@ -71,6 +69,11 @@ final class ArticleImporter {
                !clip.author.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 existing.author = clip.author
             }
+            // A repeat import can replace an earlier preview, while keeping its
+            // identity, read status and dates. Require the old prose to be present
+            // in the longer result so unrelated page content cannot replace it.
+            let incoming = clip.paragraphs.joined(separator: "\n\n")
+            if Self.isExpandedArticle(existing.body, incoming) { existing.body = incoming }
             return existing
         }
         let article = Article(
@@ -83,6 +86,16 @@ final class ArticleImporter {
         )
         context.insert(article)
         return article
+    }
+
+    static func isExpandedArticle(_ previous: String, _ incoming: String) -> Bool {
+        let normalise: (String) -> String = { $0.split(whereSeparator: \.isWhitespace).joined(separator: " ") }
+        let old = Article.paragraphs(in: previous).map(normalise).filter { $0.count >= 80 }
+        let updated = normalise(incoming)
+        guard !old.isEmpty, updated.count > normalise(previous).count else { return false }
+        let total = old.reduce(0) { $0 + $1.count }
+        let retained = old.filter { updated.contains($0) }.reduce(0) { $0 + $1.count }
+        return Double(retained) >= Double(total) * 0.8
     }
 
     private func existingArticle(for url: URL, in context: ModelContext) -> Article? {
@@ -137,11 +150,18 @@ private final class PageExtractor: NSObject, WKNavigationDelegate {
             }
         }
         try await load(url)
-        // Pages that render their text with scripts get a moment longer.
+        // Hydration can replace a short initial preview with the article body.
+        // Sample all stages and keep the most complete result, rather than
+        // accepting the first nonempty paragraph after 0.3 seconds.
+        var best: ArticleClip?
         for delay in [0.3, 1.5, 3.0] {
             try await Task.sleep(for: .seconds(delay))
-            if let clip = try await runExtractor(), clip.hasArticleText { return clip }
+            if let clip = try await runExtractor(), clip.hasArticleText,
+               clip.paragraphs.joined().count > (best?.paragraphs.joined().count ?? 0) {
+                best = clip
+            }
         }
+        if let best { return best }
         throw ArticleImporter.ImportError.noArticleText
     }
 

@@ -20,7 +20,7 @@ function resolveArticleAuthor(primary=[],structured=[],fallback=[],base=''){
     const types=Array.isArray(item['@type'])?item['@type']:[item['@type']];
     let matches=true;
     if(base&&typeof item.url==='string'){
-      try{const target=new URL(item.url,base),wanted=new URL(base);matches=target.hostname.replace(/^www\./,'')===wanted.hostname.replace(/^www\./,'')&&target.pathname===wanted.pathname;}catch{matches=false;}
+      try{const target=new URL(item.url,base),wanted=new URL(base);matches=target.hostname.replace(/^www\./,'')===wanted.hostname.replace(/^www\./,'')&&target.pathname.replace(/\/+$/,'')===wanted.pathname.replace(/\/+$/,'');}catch{matches=false;}
     }
     if(matches&&types.some(type=>/^(?:Article|NewsArticle|BlogPosting|Report|Review|ScholarlyArticle|TechArticle)$/i.test(type||''))){
       const author=name(item.author||item.creator);if(author)return author;
@@ -202,7 +202,7 @@ function nytArticleBlocks(nodes,base){
     const source=(node.childNodes||[]).map(n=>n.value||'').join('');
     const article=assignedData(source)?.loaderData?.data?.article;
     if(!article)continue;
-    if(article.url){try{const target=new URL(article.url,base);if(target.hostname.replace(/^www\./,'')!==requested.hostname.replace(/^www\./,'')||target.pathname!==requested.pathname)continue;}catch{continue;}}
+    if(article.url){try{const target=new URL(article.url,base);if(target.hostname.replace(/^www\./,'')!==requested.hostname.replace(/^www\./,'')||target.pathname.replace(/\/+$/,'')!==requested.pathname.replace(/\/+$/,''))continue;}catch{continue;}}
     const content=article.sprinkledBody?.content;
     if(!Array.isArray(content))continue;
     const blocks=[];
