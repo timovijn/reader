@@ -6,7 +6,7 @@ struct CollectionView: View {
     @Binding var selection: Article?
     @Environment(\.modelContext) private var context
     @Query private var articles: [Article]
-    @AppStorage(Preference.theme) private var theme: PageTheme = .stone
+    @AppStorage(Preference.theme) private var theme: PageTheme = .light
     @AppStorage("collectionStatus") private var status: ReadingStatus = .all
     @AppStorage("collectionSort") private var sort: CollectionSort = .newest
     @State private var query = ""
@@ -42,7 +42,7 @@ struct CollectionView: View {
                 }
             }
             ToolbarItemGroup(placement: .topBarTrailing) {
-                Button("Appearance", systemImage: "textformat.size") { isShowingAppearance = true }
+                Button("Settings", systemImage: "gearshape") { isShowingAppearance = true }
                 Menu("Add", systemImage: "plus") {
                     Button("Add link", systemImage: "link") { isLinkFocused = true }
                     Button("Paste article text", systemImage: "doc.on.clipboard") { isPastingText = true }
@@ -169,7 +169,7 @@ struct CollectionView: View {
 
 private struct ArticleRow: View {
     let article: Article
-    @AppStorage(Preference.theme) private var theme: PageTheme = .stone
+    @AppStorage(Preference.theme) private var theme: PageTheme = .light
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {

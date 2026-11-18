@@ -2,17 +2,19 @@ import SwiftUI
 
 struct AppearanceView: View {
     @Environment(\.dismiss) private var dismiss
-    @AppStorage(Preference.theme) private var theme: PageTheme = .stone
+    @AppStorage(Preference.theme) private var theme: PageTheme = .light
     @AppStorage(Preference.typeface) private var typeface: Typeface = .newYork
     @AppStorage(Preference.weight) private var weight: FontWeight = .regular
     @AppStorage(Preference.textSize) private var textSize = Preference.defaultTextSize
     @AppStorage(Preference.lineWidth) private var lineWidth = Preference.defaultLineWidth
     @AppStorage(Preference.paragraphNumbers) private var paragraphNumbers = true
+    @AppStorage(Preference.readingLayout) private var layout: ReadingLayout = .scroll
+    @AppStorage(Preference.pageColumns) private var columns = 2
 
     var body: some View {
         NavigationStack {
             Form {
-                Section("Page colour") {
+                Section("Appearance") {
                     HStack(spacing: 14) {
                         ForEach(PageTheme.allCases) { option in
                             Button {
@@ -35,6 +37,26 @@ struct AppearanceView: View {
                         }
                     }
                     .padding(.vertical, 4)
+                }
+
+                Section {
+                    Picker("Article layout", selection: $layout) {
+                        ForEach(ReadingLayout.allCases) { Text($0.label).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                    if layout == .pages {
+                        Picker("Columns", selection: $columns) {
+                            Text("One column").tag(1)
+                            Text("Two columns").tag(2)
+                        }
+                        .pickerStyle(.segmented)
+                    }
+                } header: {
+                    Text("Layout")
+                } footer: {
+                    if layout == .pages && columns == 2 {
+                        Text("Two columns appear when the screen is wide enough, such as on iPad or iPhone in landscape.")
+                    }
                 }
 
                 Section("Type") {
@@ -62,7 +84,10 @@ struct AppearanceView: View {
                         }
                     }
                     Toggle("Paragraph numbers", isOn: $paragraphNumbers)
+                        .disabled(layout == .pages)
                 }
+
+                KindleSettingsSection()
 
                 Section("Preview") {
                     Text("The moment the page settles, the words come forward and everything else recedes.")
@@ -72,7 +97,7 @@ struct AppearanceView: View {
                         .listRowBackground(theme.paper)
                 }
             }
-            .navigationTitle("Appearance")
+            .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {

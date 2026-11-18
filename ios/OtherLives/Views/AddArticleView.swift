@@ -6,7 +6,7 @@ struct AddArticleView: View {
     var onSave: (Article) -> Void
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
-    @AppStorage(Preference.theme) private var theme: PageTheme = .stone
+    @AppStorage(Preference.theme) private var theme: PageTheme = .light
     @State private var title = ""
     @State private var author = ""
     @State private var source = ""

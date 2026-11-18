@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct RootView: View {
-    @AppStorage(Preference.theme) private var theme: PageTheme = .stone
+    @AppStorage(Preference.theme) private var theme: PageTheme = .light
     @Environment(\.modelContext) private var context
     @Environment(\.scenePhase) private var scenePhase
     @State private var importer = ArticleImporter()

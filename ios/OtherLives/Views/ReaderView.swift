@@ -1,17 +1,69 @@
 import SwiftUI
 
-/// The reading view: source, headline, introduction, byline and numbered paragraphs.
+/// The reading view: source, headline, introduction, byline and numbered paragraphs,
+/// as one scroll or as pages of one or two columns.
 struct ReaderView: View {
     @Bindable var article: Article
-    @AppStorage(Preference.theme) private var theme: PageTheme = .stone
+    @AppStorage(Preference.theme) private var theme: PageTheme = .light
     @AppStorage(Preference.typeface) private var typeface: Typeface = .newYork
     @AppStorage(Preference.weight) private var weight: FontWeight = .regular
     @AppStorage(Preference.textSize) private var textSize = Preference.defaultTextSize
     @AppStorage(Preference.lineWidth) private var lineWidth = Preference.defaultLineWidth
     @AppStorage(Preference.paragraphNumbers) private var paragraphNumbers = true
+    @AppStorage(Preference.readingLayout) private var layout: ReadingLayout = .scroll
+    @AppStorage(Preference.pageColumns) private var columns = 2
     @State private var isShowingAppearance = false
+    @State private var isShowingKindle = false
 
     var body: some View {
+        Group {
+            switch layout {
+            case .scroll: scroll
+            case .pages: PagedReaderView(article: article)
+            }
+        }
+        .background(AmbientBackground())
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItemGroup(placement: .primaryAction) {
+                Button(article.isRead ? "Mark as Ready" : "Mark as Read",
+                       systemImage: article.isRead ? "checkmark.circle.fill" : "checkmark.circle") {
+                    article.readAt = article.isRead ? nil : .now
+                }
+                layoutMenu
+                Button("Settings", systemImage: "gearshape") { isShowingAppearance = true }
+                Menu("Share", systemImage: "square.and.arrow.up") {
+                    Button("Send to Kindle", systemImage: "paperplane") { isShowingKindle = true }
+                    ShareLink(item: shareText, subject: Text(article.title)) {
+                        Label("Share article", systemImage: "square.and.arrow.up")
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $isShowingAppearance) {
+            AppearanceView()
+        }
+        .sheet(isPresented: $isShowingKindle) {
+            KindleSendView(article: article)
+        }
+        .onAppear { article.lastOpenedAt = .now }
+    }
+
+    private var layoutMenu: some View {
+        Menu("Layout", systemImage: layout.systemImage) {
+            Picker("Layout", selection: $layout) {
+                ForEach(ReadingLayout.allCases) { Label($0.label, systemImage: $0.systemImage).tag($0) }
+            }
+            if layout == .pages {
+                Picker("Columns", selection: $columns) {
+                    Label("One column", systemImage: "rectangle").tag(1)
+                    Label("Two columns", systemImage: "rectangle.split.2x1").tag(2)
+                }
+            }
+        }
+    }
+
+    private var scroll: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 header
@@ -52,22 +104,6 @@ struct ReaderView: View {
             .padding(.vertical, 40)
             .frame(maxWidth: .infinity)
         }
-        .background(AmbientBackground())
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItemGroup(placement: .primaryAction) {
-                Button(article.isRead ? "Mark as Ready" : "Mark as Read",
-                       systemImage: article.isRead ? "checkmark.circle.fill" : "checkmark.circle") {
-                    article.readAt = article.isRead ? nil : .now
-                }
-                Button("Appearance", systemImage: "textformat.size") { isShowingAppearance = true }
-                ShareLink(item: shareText, subject: Text(article.title))
-            }
-        }
-        .sheet(isPresented: $isShowingAppearance) {
-            AppearanceView()
-        }
-        .onAppear { article.lastOpenedAt = .now }
     }
 
     private var header: some View {

@@ -1,72 +1,25 @@
 import SwiftUI
 import CoreText
 
-/// Page colours carried over from the web reader's themes.
+/// Neutral page colours shared by the scrolling and paged readers.
 enum PageTheme: String, CaseIterable, Identifiable {
-    case stone, parchment, snow, moss
+    case light, dark
     var id: Self { self }
 
     var label: String { rawValue.capitalized }
+    var paper: Color { self == .light ? .white : .black }
+    var ink: Color { self == .light ? .black : .white }
+    var muted: Color { Color(white: self == .light ? 0.4 : 0.65) }
+    var line: Color { Color(white: self == .light ? 0.85 : 0.25) }
+    var panel: Color { Color(white: self == .light ? 0.95 : 0.1) }
+    var colorScheme: ColorScheme { self == .light ? .light : .dark }
 
-    var paper: Color {
-        switch self {
-        case .stone: Color(hex: 0x373632)
-        case .parchment: Color(hex: 0xE6D5B3)
-        case .snow: Color(hex: 0xF4F5F2)
-        case .moss: Color(hex: 0x30392C)
-        }
-    }
-
-    var ink: Color {
-        switch self {
-        case .stone: Color(hex: 0xF3F0E7)
-        case .parchment: Color(hex: 0x342B20)
-        case .snow: Color(hex: 0x272D29)
-        case .moss: Color(hex: 0xE2E6D5)
-        }
-    }
-
-    var muted: Color {
-        switch self {
-        case .stone: Color(hex: 0xC1BCB1)
-        case .parchment: Color(hex: 0x76644C)
-        case .snow: Color(hex: 0x69716B)
-        case .moss: Color(hex: 0xAEB9A1)
-        }
-    }
-
-    var line: Color {
-        switch self {
-        case .stone: Color(hex: 0x625E54)
-        case .parchment: Color(hex: 0xC7B38E)
-        case .snow: Color(hex: 0xD9DFD7)
-        case .moss: Color(hex: 0x59644D)
-        }
-    }
-
-    var panel: Color {
-        switch self {
-        case .stone: Color(hex: 0x45423B)
-        case .parchment: Color(hex: 0xDBC7A4)
-        case .snow: Color(hex: 0xE9ECE7)
-        case .moss: Color(hex: 0x3C4734)
-        }
-    }
-
-    /// Ambient mesh tones: shadow, mid and light, as in the web reader's background.
-    var ambient: (shadow: Color, mid: Color, light: Color) {
-        switch self {
-        case .stone: (Color(hex: 0x272722, opacity: 0.48), Color(hex: 0x4B4941, opacity: 0.22), Color(hex: 0x666258, opacity: 0.24))
-        case .parchment: (Color(hex: 0x976F3F, opacity: 0.2), Color(hex: 0xC8A670, opacity: 0.18), Color(hex: 0xF4E9D2, opacity: 0.9))
-        case .snow: (Color(hex: 0xA4AFAE, opacity: 0.13), Color(hex: 0xD3DBD9, opacity: 0.18), Color(hex: 0xFFFFFF, opacity: 0.96))
-        case .moss: (Color(hex: 0x172316, opacity: 0.45), Color(hex: 0x586948, opacity: 0.3), Color(hex: 0x8DA176, opacity: 0.22))
-        }
-    }
-
-    var colorScheme: ColorScheme {
-        switch self {
-        case .stone, .moss: .dark
-        case .parchment, .snow: .light
+    /// Keep the brightness preference when replacing the original coloured themes.
+    static func migrateSavedTheme(in defaults: UserDefaults = .standard) {
+        switch defaults.string(forKey: Preference.theme) {
+        case "stone", "moss": defaults.set(PageTheme.dark.rawValue, forKey: Preference.theme)
+        case "parchment", "snow": defaults.set(PageTheme.light.rawValue, forKey: Preference.theme)
+        default: break
         }
     }
 }
@@ -117,6 +70,23 @@ enum Typeface: String, CaseIterable, Identifiable {
         return italic ? font.italic() : font
     }
 
+    /// The same face for TextKit, which lays out the paged reader.
+    func uiFont(size: CGFloat, weight: FontWeight) -> UIFont {
+        let weight = closestWeight(to: weight)
+        let design: UIFontDescriptor.SystemDesign
+        switch self {
+        case .shinka, .shinkaMono:
+            let family = self == .shinka ? "Shinka" : "ShinkaMono"
+            return UIFont(name: "\(family)-\(weight.name)", size: size) ?? .systemFont(ofSize: size)
+        case .newYork: design = .serif
+        case .sanFrancisco: design = .default
+        case .rounded: design = .rounded
+        case .mono: design = .monospaced
+        }
+        let font = UIFont.systemFont(ofSize: size, weight: weight.uiWeight)
+        return font.fontDescriptor.withDesign(design).map { UIFont(descriptor: $0, size: size) } ?? font
+    }
+
     /// Shinka ships in the app bundle; register it once at launch.
     static func registerBundledFonts() {
         let urls = Bundle.main.urls(forResourcesWithExtension: "ttf", subdirectory: nil) ?? []
@@ -141,6 +111,17 @@ enum FontWeight: String, CaseIterable, Identifiable {
         }
     }
 
+    var uiWeight: UIFont.Weight {
+        switch self {
+        case .thin: .thin
+        case .light: .light
+        case .regular: .regular
+        case .medium: .medium
+        case .bold: .bold
+        case .black: .black
+        }
+    }
+
     var systemWeight: Font.Weight {
         switch self {
         case .thin: .thin
@@ -157,11 +138,20 @@ enum FontWeight: String, CaseIterable, Identifiable {
 enum Preference {
     static let theme = "theme", typeface = "typeface", weight = "weight"
     static let textSize = "textSize", lineWidth = "lineWidth", paragraphNumbers = "paragraphNumbers"
+    static let readingLayout = "readingLayout", pageColumns = "pageColumns"
 
     static let defaultTextSize = 19.0
     static let defaultLineWidth = 660.0
     static let textSizes = 14.0...30.0
     static let lineWidths = 480.0...860.0
+}
+
+/// How an article is laid out: one continuous scroll, or pages of one or two columns.
+enum ReadingLayout: String, CaseIterable, Identifiable {
+    case scroll, pages
+    var id: Self { self }
+    var label: String { rawValue.capitalized }
+    var systemImage: String { self == .scroll ? "scroll" : "book.pages" }
 }
 
 /// The interface face: SF Pro. Reading text uses the chosen typeface instead.

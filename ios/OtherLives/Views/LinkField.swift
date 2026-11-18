@@ -8,7 +8,7 @@ struct LinkField: View {
     var isFocused: FocusState<Bool>.Binding
     @Environment(\.modelContext) private var context
     @Environment(ArticleImporter.self) private var importer
-    @AppStorage(Preference.theme) private var theme: PageTheme = .stone
+    @AppStorage(Preference.theme) private var theme: PageTheme = .light
     @State private var link = ""
 
     var body: some View {

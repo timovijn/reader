@@ -4,6 +4,7 @@ import SwiftData
 @main
 struct OtherLivesApp: App {
     init() {
+        PageTheme.migrateSavedTheme()
         Typeface.registerBundledFonts()
     }
 
