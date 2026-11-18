@@ -544,6 +544,37 @@ function analyseArticleBlocks(blocks,context={}){
     return text.length>0&&linkedCharacters(block[2])/text.length>=.8;
   };
   const subscriptionLink=parts=>(parts||[]).some(part=>typeof part==='object'&&((part.tag==='a'&&/\/(?:print|subscribe|subscription|shop)(?:[/?#]|$)/i.test(part.href||''))||subscriptionLink(part.children)));
+  // Aeon's essay header and footer are part of the same broad article wrapper.
+  // Scope exact interface labels and boundary markers to this publisher only.
+  let aeon=false;
+  try{aeon=/(^|\.)aeon\.co$/.test(new URL(context.url).hostname);}catch{}
+  if(aeon){
+    const textAt=i=>normalise(blocks[i]?.[1]);
+    const syndicate=value=>/^syndicate this (?:essay|idea)$/i.test(value);
+    const opening=blocks.findIndex((block,i)=>i<20&&block[0]==='p'&&syndicate(textAt(i)));
+    const headerEvidence=blocks.slice(0,Math.max(0,opening)).some(block=>/^(?:edited by\s*|[\d,]+ words\b)/i.test(normalise(block[1])));
+    const proseBeforeMarker=blocks.slice(0,Math.max(0,opening)).some(block=>block[0]==='p'&&normalise(block[1]).length>=80&&!/^(?:is |published in association with )/i.test(normalise(block[1])));
+    if(opening>=0&&headerEvidence&&!proseBeforeMarker){
+      for(let i=0;i<=opening;i++)discard(i,'publisher-header',['aeon-domain','syndication-boundary','header-metadata']);
+    }
+    const interfaceLabel=/^(?:syndicate this (?:essay|idea)|listen to this (?:essay|idea)|\d+ minute listen|[\d,]+ words(?: save)?|save(?: share)?|share|prefer aeon on google)$/i;
+    for(let i=0;i<blocks.length;i++){
+      const value=textAt(i),kind=blocks[i][0];
+      const author=normalise(context.author),previous=textAt(i-1);
+      const byline=author&&(value===author||value.toLowerCase()===('by '+author+' + bio').toLowerCase());
+      const biography=author&&previous===author&&/^is (?:an?|the|assistant|associate|professor|senior|currently|based|a[n]? independent)\b/i.test(value);
+      const headline=[context.title,context.excerpt].some(item=>normalise(item)&&normalise(item)===value);
+      if(i<12&&kind==='p'&&(byline||biography||/^edited by\s*\S/i.test(value)||headline))discard(i,'publisher-header',['aeon-domain','opening-position','article-metadata']);
+      if(kind==='p'&&interfaceLabel.test(value))discard(i,'publisher-interface',['aeon-domain','exact-interface-label']);
+      if(kind==='p'&&value.length<=300&&/^published in association with .{1,240},? an aeon (?:strategic )?partner\.?$/i.test(value))discard(i,'publication-note',['aeon-domain','partner-credit']);
+      if(i>blocks.length-12&&kind==='p'&&/^\d{1,2} (?:January|February|March|April|May|June|July|August|September|October|November|December) \d{4}$/.test(value))discard(i,'publication-date',['aeon-domain','closing-position','standalone-date']);
+      if(i>opening&&i>0&&kind==='p'&&syndicate(value)){
+        let end=i+1;
+        while(end<blocks.length&&linkOnly(blocks[end]))end++;
+        for(let j=i+1;j<end;j++)discard(j,'related-links',['aeon-domain','closing-syndication-marker','linked-recommendation']);
+      }
+    }
+  }
   for(let i=0;i<blocks.length;i++){
     const [tag,text]=blocks[i];const value=normalise(text);
     // Match standalone calls to action, never a sentence merely mentioning a
@@ -645,7 +676,7 @@ function cleanArticleTitle(value,siteNames=[],evidence={}){
   return title;
 }
 
-function extract(html,url){const doc=new DOMParser().parseFromString(html,'text/html');doc.querySelectorAll('[class],[id],[itemprop]').forEach(node=>{if(isMediaCaption(node.getAttribute('class')+' '+node.id,node.getAttribute('itemprop')||''))node.remove();});const meta=name=>doc.querySelector('meta[property="'+name+'"],meta[name="'+name+'"]')?.getAttribute('content')?.trim();const authorCandidate=resolveArticleAuthor([meta('author'),meta('article:author')],[...doc.querySelectorAll('script[type="application/ld+json"]')].map(node=>node.textContent),[meta('parsely-author'),doc.querySelector('[rel="author"],[itemprop="author"]')?.textContent],url);const {title,author,originalTitle}=articleTitleMetadata((meta('og:title')||doc.querySelector('h1')?.textContent||doc.title||'Untitled article').trim().slice(0,300),[meta('og:site_name'),new URL(url).hostname.replace(/^www\./,'').replace(/\.[^.]+$/,'')],{headlines:[...doc.querySelectorAll('h1')].filter(node=>!node.closest('[hidden],[aria-hidden="true"],nav,aside,footer')).map(node=>node.textContent),author:authorCandidate});const excerpt=[meta('description'),meta('og:description')].map(cleanArticleExcerpt).find(Boolean)||'';const published=(meta('article:published_time')||meta('datePublished')||doc.querySelector('time[itemprop="datePublished"]')?.getAttribute('datetime')||'').slice(0,100);doc.querySelectorAll('script,style,nav,header,footer,aside,form,button,input,iframe,svg,img,picture,source,figcaption,[role="tooltip"],[class*="tooltip-content"],[id*="tooltip-content"],[class*="letter-cta"],[class*="contact-cta"],noscript,dialog,[hidden],[aria-hidden="true"],[role="navigation"],[role="dialog"],.advertisement,.ads,.cookie-banner,.newsletter,.related-posts').forEach(x=>x.remove());const candidates=[...doc.querySelectorAll('article,main,[role="main"],.post-content,.entry-content,.article-body,.story-body')];const score=node=>[...node.querySelectorAll('p')].reduce((s,p)=>s+Math.max(0,(p.textContent||'').length-(p.querySelector('a')?.textContent?.length||0)*2),0);let root=candidates.sort((a,b)=>score(b)-score(a))[0];if(!root||score(root)<250){const parentScores=new Map();doc.querySelectorAll('p').forEach(p=>{if(p.textContent.length>70){const par=p.parentElement;parentScores.set(par,(parentScores.get(par)||0)+p.textContent.length)}});root=[...parentScores.entries()].sort((a,b)=>b[1]-a[1])[0]?.[0]||doc.body}const blocks=[];const nodes=root.querySelectorAll('h2,h3,p,blockquote,pre,li');for(const node of nodes){if(node.parentElement?.closest('blockquote,pre,li'))continue;const text=(node.textContent||'').replace(/\s+/g,' ').trim();if(text.length<3||text===title)continue;blocks.push([node.tagName==='LI'?'p':node.tagName.toLowerCase(),node.tagName==='LI'?'• '+text:text])}const cleaned=cleanArticleBlocks(blocks,{author});blocks.splice(0,blocks.length,...cleaned);const words=blocks.filter(b=>b[0]!=='img').map(b=>b[1]).join(' ').split(/\s+/).length;if(words<100)throw Error('There is not enough readable article text on this page. It may require a sign-in or load its content with JavaScript. Try pasting the text instead.');return{id:url,title,author,originalTitle,excerpt,published,body:blocks,minutes:Math.max(1,Math.ceil(words/230)),url,category:'From the web'}}
+function extract(html,url){const doc=new DOMParser().parseFromString(html,'text/html');doc.querySelectorAll('[class],[id],[itemprop]').forEach(node=>{if(isMediaCaption(node.getAttribute('class')+' '+node.id,node.getAttribute('itemprop')||''))node.remove();});const meta=name=>doc.querySelector('meta[property="'+name+'"],meta[name="'+name+'"]')?.getAttribute('content')?.trim();const authorCandidate=resolveArticleAuthor([meta('author'),meta('article:author')],[...doc.querySelectorAll('script[type="application/ld+json"]')].map(node=>node.textContent),[meta('parsely-author'),doc.querySelector('[rel="author"],[itemprop="author"]')?.textContent],url);const {title,author,originalTitle}=articleTitleMetadata((meta('og:title')||doc.querySelector('h1')?.textContent||doc.title||'Untitled article').trim().slice(0,300),[meta('og:site_name'),new URL(url).hostname.replace(/^www\./,'').replace(/\.[^.]+$/,'')],{headlines:[...doc.querySelectorAll('h1')].filter(node=>!node.closest('[hidden],[aria-hidden="true"],nav,aside,footer')).map(node=>node.textContent),author:authorCandidate});const excerpt=[meta('description'),meta('og:description')].map(cleanArticleExcerpt).find(Boolean)||'';const published=(meta('article:published_time')||meta('datePublished')||doc.querySelector('time[itemprop="datePublished"]')?.getAttribute('datetime')||'').slice(0,100);doc.querySelectorAll('script,style,nav,header,footer,aside,form,button,input,iframe,svg,img,picture,source,figcaption,[role="tooltip"],[class*="tooltip-content"],[id*="tooltip-content"],[class*="letter-cta"],[class*="contact-cta"],noscript,dialog,[hidden],[aria-hidden="true"],[role="navigation"],[role="dialog"],.advertisement,.ads,.cookie-banner,.newsletter,.related-posts').forEach(x=>x.remove());const candidates=[...doc.querySelectorAll('article,main,[role="main"],.post-content,.entry-content,.article-body,.story-body')];const score=node=>[...node.querySelectorAll('p')].reduce((s,p)=>s+Math.max(0,(p.textContent||'').length-(p.querySelector('a')?.textContent?.length||0)*2),0);let root=candidates.sort((a,b)=>score(b)-score(a))[0];if(!root||score(root)<250){const parentScores=new Map();doc.querySelectorAll('p').forEach(p=>{if(p.textContent.length>70){const par=p.parentElement;parentScores.set(par,(parentScores.get(par)||0)+p.textContent.length)}});root=[...parentScores.entries()].sort((a,b)=>b[1]-a[1])[0]?.[0]||doc.body}const blocks=[];const nodes=root.querySelectorAll('h2,h3,p,blockquote,pre,li');for(const node of nodes){if(node.parentElement?.closest('blockquote,pre,li'))continue;const text=(node.textContent||'').replace(/\s+/g,' ').trim();if(text.length<3||text===title)continue;blocks.push([node.tagName==='LI'?'p':node.tagName.toLowerCase(),node.tagName==='LI'?'• '+text:text])}const cleaned=cleanArticleBlocks(blocks,{author,url:typeof url==='string'?url:location.href});blocks.splice(0,blocks.length,...cleaned);const words=blocks.filter(b=>b[0]!=='img').map(b=>b[1]).join(' ').split(/\s+/).length;if(words<100)throw Error('There is not enough readable article text on this page. It may require a sign-in or load its content with JavaScript. Try pasting the text instead.');return{id:url,title,author,originalTitle,excerpt,published,body:blocks,minutes:Math.max(1,Math.ceil(words/230)),url,category:'From the web'}}
 // This function runs only when the reader clicks their saved bookmark on an
 // article page. It uses the DOM and clipboard; it makes no network requests.
 function browserClipper(){
@@ -666,7 +697,7 @@ function browserClipper(){
   const text=tidy(node.textContent);if(!text||text===originalTitle)continue;
   blocks.push([node.tagName==='LI'?'p':node.tagName.toLowerCase(),node.tagName==='LI'?'• '+text:text]);
  }
- const cleaned=cleanArticleBlocks(blocks,{author});blocks.splice(0,blocks.length,...cleaned);
+ const cleaned=cleanArticleBlocks(blocks,{author,url:typeof url==='string'?url:location.href});blocks.splice(0,blocks.length,...cleaned);
  if(blocks.reduce((n,b)=>n+b[1].length,0)<180){alert('No article text was found on this page. Try selecting and copying its text instead.');return;}
  const cleanUrl=new URL(location.href);cleanUrl.search='';cleanUrl.hash='';cleanUrl.username='';cleanUrl.password='';
  const data=JSON.stringify({format:'folio-browser-clip',version:1,title:originalTitle,originalTitle:metadata.originalTitle,author,published,url:cleanUrl.href,body:blocks});

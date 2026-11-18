@@ -65,8 +65,8 @@ function otherLivesExtract(){
   blocks.push([node.tagName==='LI'?'p':node.tagName.toLowerCase(),node.tagName==='LI'?'• '+text:text]);
  }
  const cleanUrl=new URL(location.href);cleanUrl.search='';cleanUrl.hash='';cleanUrl.username='';cleanUrl.password='';
- const extractionCandidates=[{method:'html',blocks:cleanArticleBlocks(blocks,{author})}];
- if(publisherBlocks.length)extractionCandidates.push({method:'publisher-data',blocks:cleanArticleBlocks(publisherBlocks,{author})});
+ const extractionCandidates=[{method:'html',blocks:cleanArticleBlocks(blocks,{author,url:location.href})}];
+ if(publisherBlocks.length)extractionCandidates.push({method:'publisher-data',blocks:cleanArticleBlocks(publisherBlocks,{author,url:location.href})});
  const selected=chooseArticleCandidate(extractionCandidates);
  // The native clip format uses plain [tag,text] pairs, keeping it compatible
  // with the App Group inbox and Safari's property-list preprocessing.

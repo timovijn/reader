@@ -50,3 +50,5 @@ assert.equal(context.otherLivesExtract().author,'Sophie Haigney');
 structuredMetadata=['malformed JSON',JSON.stringify({'@graph':[{'@type':'NewsArticle',url:'https://another.example/story',author:{name:'Wrong Writer'}},{'@type':'NewsArticle',url,author:[{name:'A Writer'},{name:'B Writer'},{name:'A Writer'}]}]})];
 assert.equal(context.otherLivesExtract().author,'A Writer, B Writer');
 console.log('Passed: native/web extraction parity, shared publisher profiles, NYT resource scope, typed article selection, excluded images/ads, complete paragraph retention and native clip compatibility.');
+
+assert.equal(context.cleanArticleBlocks([['p','Edited byExample Editor'],['p','26 minute listen'],['p',prose.repeat(5)]],{url:'https://aeon.co/essays/example'}).length,1,'native Aeon interface cleanup');

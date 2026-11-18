@@ -280,7 +280,7 @@ export function extractArticle(html,url){
     }
   }
   const selected=chooseArticleCandidate(extractionCandidates.map(candidate=>{
-    const analysis=analyseArticleBlocks(candidate.blocks,{author});
+    const analysis=analyseArticleBlocks(candidate.blocks,{author,url:base,title,excerpt});
     const filtered=analysis.blocks.filter(block=>!captionText.has(normalise(block[1])));
     const removedRoles={};for(const decision of analysis.removed)removedRoles[decision.role]=(removedRoles[decision.role]||0)+1;
     const restoredCaptions=analysis.blocks.length-filtered.length;

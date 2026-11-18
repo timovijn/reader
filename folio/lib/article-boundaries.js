@@ -45,6 +45,37 @@ export function analyseArticleBlocks(blocks,context={}){
     return text.length>0&&linkedCharacters(block[2])/text.length>=.8;
   };
   const subscriptionLink=parts=>(parts||[]).some(part=>typeof part==='object'&&((part.tag==='a'&&/\/(?:print|subscribe|subscription|shop)(?:[/?#]|$)/i.test(part.href||''))||subscriptionLink(part.children)));
+  // Aeon's essay header and footer are part of the same broad article wrapper.
+  // Scope exact interface labels and boundary markers to this publisher only.
+  let aeon=false;
+  try{aeon=/(^|\.)aeon\.co$/.test(new URL(context.url).hostname);}catch{}
+  if(aeon){
+    const textAt=i=>normalise(blocks[i]?.[1]);
+    const syndicate=value=>/^syndicate this (?:essay|idea)$/i.test(value);
+    const opening=blocks.findIndex((block,i)=>i<20&&block[0]==='p'&&syndicate(textAt(i)));
+    const headerEvidence=blocks.slice(0,Math.max(0,opening)).some(block=>/^(?:edited by\s*|[\d,]+ words\b)/i.test(normalise(block[1])));
+    const proseBeforeMarker=blocks.slice(0,Math.max(0,opening)).some(block=>block[0]==='p'&&normalise(block[1]).length>=80&&!/^(?:is |published in association with )/i.test(normalise(block[1])));
+    if(opening>=0&&headerEvidence&&!proseBeforeMarker){
+      for(let i=0;i<=opening;i++)discard(i,'publisher-header',['aeon-domain','syndication-boundary','header-metadata']);
+    }
+    const interfaceLabel=/^(?:syndicate this (?:essay|idea)|listen to this (?:essay|idea)|\d+ minute listen|[\d,]+ words(?: save)?|save(?: share)?|share|prefer aeon on google)$/i;
+    for(let i=0;i<blocks.length;i++){
+      const value=textAt(i),kind=blocks[i][0];
+      const author=normalise(context.author),previous=textAt(i-1);
+      const byline=author&&(value===author||value.toLowerCase()===('by '+author+' + bio').toLowerCase());
+      const biography=author&&previous===author&&/^is (?:an?|the|assistant|associate|professor|senior|currently|based|a[n]? independent)\b/i.test(value);
+      const headline=[context.title,context.excerpt].some(item=>normalise(item)&&normalise(item)===value);
+      if(i<12&&kind==='p'&&(byline||biography||/^edited by\s*\S/i.test(value)||headline))discard(i,'publisher-header',['aeon-domain','opening-position','article-metadata']);
+      if(kind==='p'&&interfaceLabel.test(value))discard(i,'publisher-interface',['aeon-domain','exact-interface-label']);
+      if(kind==='p'&&value.length<=300&&/^published in association with .{1,240},? an aeon (?:strategic )?partner\.?$/i.test(value))discard(i,'publication-note',['aeon-domain','partner-credit']);
+      if(i>blocks.length-12&&kind==='p'&&/^\d{1,2} (?:January|February|March|April|May|June|July|August|September|October|November|December) \d{4}$/.test(value))discard(i,'publication-date',['aeon-domain','closing-position','standalone-date']);
+      if(i>opening&&i>0&&kind==='p'&&syndicate(value)){
+        let end=i+1;
+        while(end<blocks.length&&linkOnly(blocks[end]))end++;
+        for(let j=i+1;j<end;j++)discard(j,'related-links',['aeon-domain','closing-syndication-marker','linked-recommendation']);
+      }
+    }
+  }
   for(let i=0;i<blocks.length;i++){
     const [tag,text]=blocks[i];const value=normalise(text);
     // Match standalone calls to action, never a sentence merely mentioning a

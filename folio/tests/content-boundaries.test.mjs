@@ -59,7 +59,26 @@ for(const type of ['application/ld+json','application/json']){
 const page=await readFile(new URL('../worker/page.html',import.meta.url),'utf8');
 const browserSource=page.slice(page.indexOf('function analyseArticleBlocks('),page.indexOf('function isMediaCaption('));
 assert.equal(browserSource.trim(),(analyseArticleBlocks.toString()+'\n\n'+cleanArticleBlocks.toString()).trim());
-const browserClean=vm.runInNewContext(browserSource+';cleanArticleBlocks');
+const browserClean=vm.runInNewContext(browserSource+';cleanArticleBlocks',{URL});
 assert.equal(JSON.stringify(browserClean(blocks,{author:'Samuel Hughes'})),JSON.stringify(analysis.blocks));
 assert.match(page,/analyseArticleBlocks\.toString\(\)\+';'\+cleanArticleBlocks\.toString\(\)/);
 console.log('Passed: shared publisher-independent boundary classification, explanation evidence, multiple publication styles, author identity, metadata/embedded candidates, preserved quotes/code/scene breaks/editorial references and browser engine parity.');
+
+// Aeon-shaped synthetic content: author/header, audio UI, essay, footer and cards.
+const aeonUrl='https://aeon.co/essays/a-synthetic-essay';
+const aeonBlocks=[['p','Example Writer'],['p','is an independent researcher studying cultural change.'],['p','Edited byExample Editor'],['p','3,400 words Save'],['p','SYNDICATE THIS ESSAY'],['p','Listen to this essay'],['p','26 minute listen'],['p',prose.repeat(3)],['h2','An editorial heading'],['blockquote','Save Share'],['p',conclusion],['p','Published in association with Example Institute, an Aeon Strategic Partner.'],['p','6 August 2024'],['p','Save Share'],['p','SYNDICATE THIS ESSAY'],['p','A recommended essay',[{tag:'a',href:'https://aeon.co/essays/other',children:['A recommended essay']}]]];
+const aeonClean=cleanArticleBlocks(aeonBlocks,{author:'Example Writer',url:aeonUrl});
+assert.deepEqual(aeonClean,aeonBlocks.slice(7,11));
+// Scope must be exact, and quoted interface labels must remain editorial content.
+for(const url of ['https://aeon.co.example.org/essay','https://example.org/essay']){
+ assert.ok(cleanArticleBlocks(aeonBlocks,{author:'Example Writer',url}).some(block=>block[1]==='26 minute listen'));
+}
+const noMarker=aeonBlocks.filter(block=>block[1]!=='SYNDICATE THIS ESSAY').slice(0,10);
+assert.ok(!cleanArticleBlocks(noMarker,{author:'Example Writer',url:aeonUrl}).some(block=>block[1].startsWith('is an independent')));
+const aeonFixture='<meta name="author" content="Example Writer"><article>'+aeonBlocks.map(([tag,text,parts])=>`<${tag}>${parts?`<a href="/essays/other">${text}</a>`:text}</${tag}>`).join('')+'</article>';
+const aeonArticle=extractArticle(aeonFixture,aeonUrl);
+assert.ok(aeonArticle.body.some(block=>block[1]===conclusion));
+assert.ok(!JSON.stringify(aeonArticle.body).includes('26 minute listen'));
+assert.ok(!JSON.stringify(aeonArticle.body).includes('Example Editor'));
+assert.equal(JSON.stringify(browserClean(aeonBlocks,{author:'Example Writer',url:aeonUrl})),JSON.stringify(aeonClean));
+console.log('Passed: Aeon header/audio/partner/footer cleanup, linked recommendations, host scope and preserved editorial formatting.');
